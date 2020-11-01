@@ -1,0 +1,36 @@
+必须参数:
+`sourceTableSql`: 数据源表创建语句;
+`variableSqls`: 基础变量,(指标)计算SQL语句,多个SQL以`;`进行拼接而成;
+`deVariableSqls`: 派生变量sql,多个派生sql语句，一"|"进行拼接;
+`fieldOutNum`: 输出到中间Topic的字段个数(主键 + 变量个数);
+`sourcePrimaryKey`: 主键，唯一标识;
+`concurrency`: 任务并行度;
+`variablePackEn`: 变量包名称，拼接"tmp_" + variablePackEn 后为中间Topic，用于存储中间计算结果;
+`dimensionTableSql`: 维表关联语句;
+`joinSql`: 数据源表和维表关联语句;
+`jobManagerMemory`: JobManager内存;
+`taskManagerMemory`: TaskManager内存;
+`sinkSql`: 结果最终输出语句;
+`testSourcedata`: 测试数据源数据;
+`testDimdata`: 测试时的维表数据;
+`testDimType`: 测试时维表的类型;
+    01: redis
+    02: jdbc
+    03: hbase
+`redisHostPort`: 测试时维表为redis,连接redis的集群信息(host:port);
+`runMode`: 运行模式
+    01: 测试(Local)
+    02: 运行(Yarn)
+`connectorType`: 最终计算结果输出到外部存储系统的类型
+    01: Kafka
+    `kafkaTopic`: Kafka Topic;
+    `kafkaAddress`: (集群)Kafka的地址和端口号;
+    02: JDBC
+    `jdbcURL`: 连接JDBC的url;
+    `jdbcDrive`: JDBC的Driver;
+    `jdbcUserName`: 连接JDBC的用户名; 
+    `jdbcUserPwd`: 连接JDBC用户密码;
+    03: HBase
+    `hbaseZK`: (集群)Zookeeper的地址和端口号;
+    04: ES
+    `esAddress`: ES集群任意一个节点的地址和端口号;
