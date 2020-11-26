@@ -15,7 +15,7 @@ public class FunMapGiveSchema implements MapFunction<Row, String> {
     public FunMapGiveSchema() {
     }
 
-    public FunMapGiveSchema(String[] fieldNames, HashMap fieldTypeHashMap, String primary_key) {
+    public FunMapGiveSchema(String[] fieldNames, HashMap fieldTypeHashMapfieldTypeHashMap, String primary_key) {
         this.fieldNames = fieldNames;
         this.fieldTypeHashMap = fieldTypeHashMap;
         this.primary_key = primary_key;
@@ -32,6 +32,10 @@ public class FunMapGiveSchema implements MapFunction<Row, String> {
         return new FunMapGiveSchema(fieldNames, fieldTypeHashMap, primary_key);
     }
 
+    public static FunMapGiveSchema of(String[] fieldNames, String primary_key) {
+        return of(fieldNames, null, primary_key);
+    }
+
     @Override
     public String map(Row value) throws Exception {
         HashMap<String, String> hashMap = new HashMap<>();
@@ -41,9 +45,9 @@ public class FunMapGiveSchema implements MapFunction<Row, String> {
         String field_values = "";
         for (String fieldName : fieldNames) {
             field_values = sp[cn];
-            if ("TIMESTAMP(3)".equals(fieldTypeHashMap.get(fieldName))){
-                field_values = field_values + "Z";
-            }
+//            if ("TIMESTAMP(3)".equals(fieldTypeHashMap.get(fieldName))){
+//                field_values = field_values + "Z";
+//            }
             if (primary_key.equals(fieldName)){
                 key = fieldName + ":"  + field_values;
             } else {
@@ -52,7 +56,11 @@ public class FunMapGiveSchema implements MapFunction<Row, String> {
             cn += 1;
         }
         String vl = JSONObject.toJSON(hashMap).toString();
-        return key + "\t" + vl;
+        if (key.equals("") && "NVL".equals(primary_key)){
+            return vl;
+        } else {
+            return key + "\t" + vl;
+        }
     }
 
 }

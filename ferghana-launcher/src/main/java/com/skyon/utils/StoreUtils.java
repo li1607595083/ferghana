@@ -1,10 +1,12 @@
 package com.skyon.utils;
 
+import com.skyon.app.AppDealOperation;
 import com.skyon.type.TypeTrans;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
+import org.apache.hadoop.hbase.client.Table;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.IndicesClient;
 import org.elasticsearch.client.RequestOptions;
@@ -19,14 +21,18 @@ import java.sql.*;
 import java.util.*;
 
 public class StoreUtils {
-    public ArrayList<String> msVacherFieldNmae = new ArrayList<String>();
+    public ArrayList<String> msVarcherFieldNmae = new ArrayList<String>();
     public String metate;
     public String fieldStr;
 
+    public StoreUtils() {}
+
+    public StoreUtils(String sql){
+        schemaAndMetate(sql);
+    }
+
     public static StoreUtils of(String sql) {
-        StoreUtils storeUtils = new StoreUtils();
-        storeUtils.schemaAndMetate(sql);
-        return storeUtils;
+        return new StoreUtils(sql);
     }
 
     /**
@@ -34,7 +40,7 @@ public class StoreUtils {
      * @param fieldHash
      * @return
      */
-    private  String getJson(HashMap<String, String> fieldHash) {
+    private  String getEsJson(HashMap<String, String> fieldHash) {
         Iterator<Map.Entry<String, String>> iterator = fieldHash.entrySet().iterator();
         HashMap<String, String> esMap = TypeTrans.typeAsEs();
         String newJson = "{\"properties\":{";
@@ -59,7 +65,7 @@ public class StoreUtils {
      * @throws Exception
      */
     private  void esOperator(Boolean flag, IndicesClient indices, String index, HashMap<String, String> fieldHash, RestHighLevelClient client) throws Exception {
-        if (flag == true){
+        if (flag){
             String oldMapp = "";
             GetMappingsRequest getMappingsRequest = new GetMappingsRequest();
             GetMappingsResponse mapping = indices.getMapping(getMappingsRequest, RequestOptions.DEFAULT);
@@ -83,7 +89,7 @@ public class StoreUtils {
             }
 
             if (fieldHash.size()  > 0){
-                String newJson = getJson(fieldHash);
+                String newJson = getEsJson(fieldHash);
                 PutMappingRequest putMappingRequest = new PutMappingRequest(index);
                 putMappingRequest.source(newJson, XContentType.JSON);
                 indices.putMapping(putMappingRequest, RequestOptions.DEFAULT);
@@ -96,7 +102,7 @@ public class StoreUtils {
                     .put("number_of_replicas", 1)
                     .build();
             indexRequest.settings(settings);
-            String json = getJson(fieldHash);
+            String json = getEsJson(fieldHash);
             indexRequest.mapping(json, XContentType.JSON);
             client.indices().create(indexRequest, RequestOptions.DEFAULT);
         }
@@ -111,8 +117,10 @@ public class StoreUtils {
      * @throws IOException
      */
     public  void createIndexWithMappings() throws Exception {
-        String esAddress = metate.split("hosts", 2)[1].replaceFirst("=", "").replaceAll("'", "").split(",")[0].trim();
-        String[] hostAndPort = esAddress.split(":");
+//        String esAddress = AppDealOperation.getSingMeta(metate+")", "hosts");
+        HashMap<String, String> meta = getMeta(metate);
+        String esAddress = meta.get("hosts");
+        String[] hostAndPort = esAddress.replaceAll("http://", "").split(";")[0].split(":");
         HashMap<String, String> fieldHash = new HashMap<>();
         for (String kv : fieldStr.split(",")) {
             String[] split = kv.trim().split("\\s+");
@@ -120,7 +128,8 @@ public class StoreUtils {
                 fieldHash.put(split[0], split[1]);
             }
         }
-        String index = metate.split("index")[1].replaceFirst("=", "").split(",")[0].replaceAll("'", "").trim();
+//        String index = AppDealOperation.getSingMeta(metate + ")", "index");
+        String index = meta.get("index");
         RestHighLevelClient client = new RestHighLevelClient(
                 RestClient.builder(new HttpHost(hostAndPort[0], Integer.parseInt(hostAndPort[1]), "http")));
         IndicesClient indices = client.indices();
@@ -138,7 +147,6 @@ public class StoreUtils {
     public   org.apache.hadoop.hbase.client.Connection hbaseConnection(HashMap<String, String> serverHashMap) throws IOException {
         Configuration hbaseConfig = HBaseConfiguration.create();
         hbaseConfig.set("hbase.zookeeper.quorum", serverHashMap.get("zookeeper.quorum"));
-        System.out.println( serverHashMap.get("zookeeper.quorum"));
         return ConnectionFactory.createConnection(hbaseConfig);
     }
 
@@ -169,29 +177,39 @@ public class StoreUtils {
      * Operate on the Hbaes Table
      * @param tableName
      * @param admin
-     * @param conn
      * @throws IOException
      */
     private void hbaseTableOperator(TableName tableName, Admin admin, org.apache.hadoop.hbase.client.Connection conn) throws IOException {
-        if (!admin.tableExists(tableName)){
-            ArrayList<String> familyName = new ArrayList<>();
-            for (String s : fieldStr.split(",")) {
-                if (s.trim().contains("ROW")){
-                    familyName.add(s.trim().split("\\s+")[0].trim());
-                }
+        ArrayList<String> familyName = new ArrayList<>();
+        for (String s : fieldStr.split(",")) {
+            if (s.trim().contains("ROW")){
+                familyName.add(s.trim().split("\\s+")[0].trim());
             }
+        }
+        if (!admin.tableExists(tableName)){
             HTableDescriptor hTableDescriptor = new HTableDescriptor(tableName);
             for (String s : familyName) {
                 HColumnDescriptor hColumnDescriptor = new HColumnDescriptor(s);
                 hTableDescriptor.addFamily(hColumnDescriptor);
             }
             admin.createTable(hTableDescriptor);
+        } else {
+            HTableDescriptor tableDescriptor = admin.getTableDescriptor(tableName);
+            for(HColumnDescriptor fdescriptor : tableDescriptor.getColumnFamilies()){
+                familyName.remove(fdescriptor.getNameAsString());
+            }
+            if (familyName.size() > 0){
+                admin.disableTable(tableName);
+                for (String fam : familyName) {
+                    HColumnDescriptor hColumnDescriptor=new HColumnDescriptor(fam);
+                    tableDescriptor.addFamily(hColumnDescriptor);
+                    admin.modifyTable(tableName, tableDescriptor);
+                }
+                admin.enableTable(tableName);
+            }
         }
         if (admin != null){
             admin.close();
-        }
-        if (conn != null){
-            conn.close();
         }
     }
 
@@ -199,14 +217,15 @@ public class StoreUtils {
      * Hbase table creation
      * @throws IOException
      */
-    public  void createHbaseTABLE() throws IOException {
+    public org.apache.hadoop.hbase.client.Connection  createHbaseTABLE() throws IOException {
         HashMap<String, String> serverHashMap = getMeta(metate);
         org.apache.hadoop.hbase.client.Connection conn = hbaseConnection(serverHashMap);
         Admin admin = conn.getAdmin();
         String nameSpacheAndTableName = serverHashMap.get("table-name");
         hbaseNameSpaceOperator(nameSpacheAndTableName, admin);
         TableName tableName = TableName.valueOf(nameSpacheAndTableName);
-        hbaseTableOperator(tableName, admin, conn);
+        hbaseTableOperator(tableName, admin,conn);
+        return conn;
     }
 
 
@@ -254,15 +273,15 @@ public class StoreUtils {
                 pk = split[0] + " " + va[0] + " " + va[1];
                 dealField = "";
             } else {
-                String name = split[0];
+                String name = split[0].replaceAll("`", "");
                 String type = TypeTrans.getType(split[1]);
                 String msKey = TypeTrans.getTranKey(type);
-                String msTy = msHash.get(type);
-                if (msTy.equals("VARCHAR(255)")){
-                    msVacherFieldNmae.add(name);
+                String msTy = msHash.get(msKey);
+                if ("VARCHAR(255)".equals(msTy)){
+                    msVarcherFieldNmae.add(name);
                 }
                 nameAndType.put(name, type.replaceFirst(msKey, msTy));
-                dealField = dealField.split(type, 2)[1].replaceFirst(",", "").trim();
+                dealField = dealField.split(type, 2)[1].split(",", 2)[1].trim();
             }
         }
         return Tuple2.apply(nameAndType, pk);
@@ -280,8 +299,8 @@ public class StoreUtils {
         HashMap<String, String> nameAndType = mySqlSchema._1;
         String pk = mySqlSchema._2;
         if (ifExists.next()){
-            PreparedStatement preparedStatement = conn.prepareStatement("SELECT * FROM " + table_name +" LIMIT 1");
-            ResultSetMetaData metaData = preparedStatement.getMetaData();
+            String sql = "SELECT * FROM " + table_name + " LIMIT 1";
+            ResultSetMetaData metaData = conn.prepareStatement(sql).getMetaData();
             int columnCount = metaData.getColumnCount();
             for (int i = 1; i <= columnCount; i++){
                 String name = metaData.getColumnName(i);
@@ -295,7 +314,7 @@ public class StoreUtils {
                     Map.Entry<String, String> next = iterator.next();
                     String key = next.getKey();
                     String value = next.getValue();
-                    conn.prepareStatement("ALTER TABLE " + table_name + " ADD COLUMN " + key + " " + value).execute();
+                    conn.prepareStatement("ALTER TABLE " + table_name + " ADD COLUMN " + "`" + key + "`" + " " + value).execute();
                 }
             }
 
@@ -307,17 +326,14 @@ public class StoreUtils {
                 Map.Entry<String, String> next = iterator.next();
                 String name = next.getKey();
                 String type = next.getValue();
-                fieldNameAndType = fieldNameAndType + "`" + name + "`" + " " + type + ",";
+                fieldNameAndType = fieldNameAndType  + "`" + name + "`" + " " + type + ",";
             }
             fieldNameAndType = fieldNameAndType + pk;
             Statement statement = conn.createStatement();
-            sqlCreateTable = sqlCreateTable + " " + "`" + table_name  + "`" + "(" + fieldNameAndType + ")";
+            sqlCreateTable = sqlCreateTable + " "  + table_name   + "(" + fieldNameAndType + ")";
             statement.execute(sqlCreateTable);
             if (statement != null){
                 statement.close();
-            }
-            if (conn != null){
-                conn.close();
             }
         }
     }
@@ -327,12 +343,13 @@ public class StoreUtils {
      * MySql table creation
      * @throws Exception
      */
-    public void createMySqlTable() throws Exception{
+    public Connection createMySqlTable() throws Exception{
         HashMap<String, String> msHash = TypeTrans.typeAsMySql();
         HashMap<String, String> metaHashMap = getMeta(metate);
         Connection conn = mySqlConnection(metaHashMap);
         String table_name = metaHashMap.get("table-name");
         mySqlTableOperator(conn, table_name, mySqlSchema(fieldStr, msHash));
+        return conn;
     }
 
     /**

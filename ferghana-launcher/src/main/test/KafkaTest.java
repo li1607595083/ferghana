@@ -32,7 +32,7 @@ public class KafkaTest {
 
     @Test
     public void deleteKafkaTopic(){
-        AdminUtils.deleteTopic(zkUtils, "__consumer_offsets");
+        AdminUtils.deleteTopic(zkUtils, "kfk_test_topic");
     }
 
     @Test

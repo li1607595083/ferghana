@@ -17,7 +17,7 @@ public class HbaseTest {
     @Before
     public void createHbaseConnection() throws IOException {
         Configuration hbaseConfig = HBaseConfiguration.create();
-        hbaseConfig.set("hbase.zookeeper.quorum", "spark01:2181,spark02:2181,spark03:2181");
+        hbaseConfig.set("hbase.zookeeper.quorum", "master:2181");
         conn = ConnectionFactory.createConnection(hbaseConfig);
     }
 
@@ -25,9 +25,9 @@ public class HbaseTest {
     public void updateData() throws IOException {
         TableName tableName = TableName.valueOf("test:products");
         Table table = conn.getTable(tableName);
-        Put put = new Put("5".getBytes());
-        Double unitPrice = 888.88D;
-        put.addColumn("info".getBytes(), "name".getBytes(), "cf".getBytes());
+        Put put = new Put("p3".getBytes());
+        Double unitPrice = 9.99D;
+        put.addColumn("info".getBytes(), "name".getBytes(), "小宝".getBytes());
         put.addColumn("info".getBytes(), "unitPrice".getBytes(), Bytes.toBytes(unitPrice));
         table.put(put);
         if (table != null){
@@ -57,20 +57,20 @@ public class HbaseTest {
 
     @Test
     public void readerData() throws IOException {
-        TableName tableName = TableName.valueOf("test:ordeproduct");
+        TableName tableName = TableName.valueOf("test:products");
         Table table = conn.getTable(tableName);
         ResultScanner scanner = table.getScanner(new Scan());
         for (Result result : scanner) {
             String rk = Bytes.toString(result.getRow());
             // ROW(productId STRING, units INT, orderTime TIMESTAMP(3), proctime TIMESTAMP(3), name STRING, unitPrice DOUBLE)
             Iterator<Map.Entry<byte[], byte[]>> iterator = result.getFamilyMap("info".getBytes()).entrySet().iterator();
-            String productId = Bytes.toString(result.getValue("info".getBytes(), "productId".getBytes()));
-            String units = Bytes.toString(result.getValue("info".getBytes(), "units".getBytes()));
-            String orderTime = Bytes.toString(result.getValue("info".getBytes(), "orderTime".getBytes()));
-            String proctime = Bytes.toString(result.getValue("info".getBytes(), "proctime".getBytes()));
-            String name = Bytes.toString(result.getValue("info2".getBytes(), "name".getBytes()));
-            String unitPrice = Bytes.toString(result.getValue("info2".getBytes(), "unitPrice".getBytes()));
-            System.out.println(rk + "\tproductId: " + productId + "\tunits: " + units + "\torderTime: " + orderTime + "\tproctime: " + proctime + "\tname: " + name + "\tunitPrice: " + unitPrice);
+            String productId = Bytes.toString(result.getValue("info".getBytes(), "name".getBytes()));
+//            String units = Bytes.toString(result.getValue("info".getBytes(), "units".getBytes()));
+//            String orderTime = Bytes.toString(result.getValue("info".getBytes(), "orderTime".getBytes()));
+//            String proctime = Bytes.toString(result.getValue("info".getBytes(), "proctime".getBytes()));
+//            String name = Bytes.toString(result.getValue("info2".getBytes(), "name".getBytes()));
+            Double unitPrice = Bytes.toDouble(result.getValue("info".getBytes(), "unitPrice".getBytes()));
+            System.out.println(rk + "\tproductId: " + productId + "\tunitPrice: " + unitPrice);
         }
         if (table != null){
             table.close();

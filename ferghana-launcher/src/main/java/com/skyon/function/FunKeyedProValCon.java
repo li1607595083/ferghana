@@ -8,7 +8,6 @@ import org.apache.flink.api.scala.typeutils.Types;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
 import org.apache.flink.util.Collector;
-
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -87,7 +86,6 @@ public class FunKeyedProValCon extends KeyedProcessFunction<String, Tuple2<Strin
                 ctx.timerService().deleteProcessingTimeTimer(aLong);
             }
         }
-
     }
 
     @Override
@@ -95,6 +93,7 @@ public class FunKeyedProValCon extends KeyedProcessFunction<String, Tuple2<Strin
             Map<String, String> value = vm_state.value();
             String result = JSONObject.toJSON(value).toString();
             vm_state.clear();
+            timer_state.clear();
             out.collect(result);
     }
 }

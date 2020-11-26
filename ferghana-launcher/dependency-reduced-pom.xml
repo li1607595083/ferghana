@@ -124,22 +124,16 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j-impl</artifactId>
-      <version>2.12.1</version>
-      <scope>compile</scope>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <version>1.7.7</version>
+      <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-api</artifactId>
-      <version>2.12.1</version>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
-      <version>2.12.1</version>
-      <scope>compile</scope>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+      <version>1.2.17</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>redis.clients</groupId>
@@ -156,13 +150,13 @@
     <dependency>
       <groupId>org.elasticsearch</groupId>
       <artifactId>elasticsearch</artifactId>
-      <version>7.6.0</version>
+      <version>7.5.1</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.elasticsearch.client</groupId>
       <artifactId>elasticsearch-rest-client</artifactId>
-      <version>7.6.0</version>
+      <version>7.5.1</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>
@@ -174,7 +168,7 @@
     <dependency>
       <groupId>org.elasticsearch.client</groupId>
       <artifactId>elasticsearch-rest-high-level-client</artifactId>
-      <version>7.6.0</version>
+      <version>7.5.1</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -269,12 +263,6 @@
     </dependency>
     <dependency>
       <groupId>org.apache.flink</groupId>
-      <artifactId>flink-sql-connector-kafka-0.11_2.11</artifactId>
-      <version>1.11.1</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.flink</groupId>
       <artifactId>flink-json</artifactId>
       <version>1.11.1</version>
       <scope>provided</scope>
@@ -294,13 +282,13 @@
     <dependency>
       <groupId>org.apache.kafka</groupId>
       <artifactId>kafka-clients</artifactId>
-      <version>0.11.0.0</version>
+      <version>0.11.0.2</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.kafka</groupId>
       <artifactId>kafka_2.11</artifactId>
-      <version>0.11.0.0</version>
+      <version>0.11.0.2</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -309,6 +297,18 @@
       <version>3.4.6</version>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>org.apache.flink</groupId>
+      <artifactId>flink-statebackend-rocksdb_2.11</artifactId>
+      <version>1.11.1</version>
+      <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>frocksdbjni</artifactId>
+          <groupId>com.data-artisans</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
   </dependencies>
   <properties>
     <druid>1.1.14</druid>
@@ -316,7 +316,7 @@
     <java.version>1.8</java.version>
     <maven.compiler.target>${java.version}</maven.compiler.target>
     <scala.binary.version>2.11</scala.binary.version>
-    <kafka.version>0.11.0.0</kafka.version>
+    <kafka.version>0.11.0.2</kafka.version>
     <log4j.version>2.12.1</log4j.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <redis.version>3.1.0</redis.version>

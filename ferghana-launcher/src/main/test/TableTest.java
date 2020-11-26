@@ -1,15 +1,11 @@
-import com.skyon.function.FunMapJsonForPars;
+import com.skyon.udf.NullForObject;
 import com.skyon.utils.FlinkUtils;
 import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.datastream.DataStreamSource;
-import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.table.expressions.Expression;
 import org.apache.flink.types.Row;
-
-import java.util.HashMap;
 
 import static org.apache.flink.table.api.Expressions.$;
 
@@ -25,7 +21,7 @@ public class TableTest {
         row.setField(1, "fqewrgr24535");
         row.setField(2, "大宝");
         row.setField(3, "9.99");
-        row.setField(4, "2020-08-04T08:37:32.581Z");
+        row.setField(4, "2020-08-04 8:37:32.581");
         DataStream<Row> source = dbEnv.fromElements(row);
 
         Expression[] expressions = new Expression[5];
@@ -45,6 +41,11 @@ public class TableTest {
                 + "FROM shrq_test");
         table.printSchema();
         dbTableEnv.toAppendStream(table, Row.class).print();
+        dbTableEnv.createTemporaryView("fqr", table);
+        dbTableEnv.createTemporarySystemFunction("ifFalseSetNull", new NullForObject());
+        Table table1 = dbTableEnv.sqlQuery("SELECT * FROM (SELECT if(uid = '001', uid, CAST(ifFalseSetNull() AS STRING)) AS uid, name, price FROM fqr) AS tmp");
+        dbTableEnv.toAppendStream(table1, Row.class).print();
+        dbTableEnv.sqlQuery("SELECT * FROM shrq_test").printSchema();
         dbEnv.execute();
     }
 

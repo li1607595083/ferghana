@@ -83,13 +83,22 @@ public class MainAppTmpHbase {
                 + "'zookeeper.quorum' = 'spark01:2181,spark02:2181,spark03:2181'"
                 + ")");
 
-        String sql_output = "INSERT INTO ordeproduct "
+        String sql_output = "INSERT INTO ordeproduct ("
                 + "SELECT orderId, ROW(productId, units, orderTime, proctime) AS info, ROW(name, unitPrice) AS info2 FROM ("
                 + "(SELECT CAST(o.orderId AS STRING) AS orderId, CAST(o.productId AS STRING) AS productId, CAST(o.units AS STRING) AS units, CAST(o.orderTime AS STRING) AS orderTime, CAST(o.proctime AS STRING) AS proctime, CAST(p.name AS STRING) AS name, CAST(p.unitPrice AS STRING) AS unitPrice "
                 + "FROM  order_source_topic AS o "
                 + "LEFT JOIN products FOR SYSTEM_TIME AS OF o.proctime AS p "
                 + "ON o.productId = p.productId))"
-                + " AS tmp";
+                + " AS tmp)";
+
+
+        String fe = "INSERT INTO ordeproduct ("
+                + "SELECT orderId, ROW(productId, units, orderTime, proctime) AS info, ROW(name, unitPrice) AS info2 FROM ("
+                + "(SELECT CAST(o.orderId AS STRING) AS orderId, CAST(o.productId AS STRING) AS productId, CAST(o.units AS STRING) AS units, CAST(o.orderTime AS STRING) AS orderTime, CAST(o.proctime AS STRING) AS proctime, CAST(p.name AS STRING) AS name, CAST(p.unitPrice AS STRING) AS unitPrice "
+                + "FROM  order_source_topic AS o "
+                + "LEFT JOIN products FOR SYSTEM_TIME AS OF o.proctime AS p "
+                + "ON o.productId = p.productId))"
+                + " AS tmp)";
 
         dbTableEnv.executeSql(sql_output);
 

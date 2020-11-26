@@ -2,6 +2,7 @@
 import com.alibaba.fastjson.JSON;
 import com.skyon.udf.NullForObject;
 import com.skyon.utils.FlinkUtils;
+import com.skyon.utils.MySqlUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -330,16 +331,13 @@ public class OperatorTest {
     }
 
     @Test
-    public void jiami(){
-        String str = "{\"sourceTableSql\":\"CREATE TABLE trade_info_table(CUST_NO STRING,TRADE_AMOUNT DOUBLE,TRADE_ACCOUNT STRING,OTHER_ACCOUNT STRING,TRADE_ID STRING,TRADE_TIME TIMESTAMP,proctime AS PROCTIME(),WATERMARK FOR TRADE_TIME as TRADE_TIME - INTERVAL '0' SECOND) WITH ('connector' = 'kafka-0.11' ,'topic' = 'trade_info_topic','properties.bootstrap.servers' = 'master:9092','properties.group.id' = 'ts1','scan.startup.mode' = 'latest-offset','format' = 'json')\",\"sinkSql\":\" insert into mysql_sink_table (select TRADE_ID,paishengceshi1 from test_var_topic)\",\"connectorType\":\"02\",\"deVariableSqls\":\"select TRADE_ID , sum(TRADE_AMOUNT)  over( ORDER BY TRADE_TIME RANGE BETWEEN INTERVAL '10' MINUTE preceding AND CURRENT ROW)  AS tongjichaxun1 FROM trade_info_table;select TRADE_ID , count(TRADE_AMOUNT)  over( ORDER BY TRADE_TIME RANGE BETWEEN INTERVAL '10' MINUTE preceding AND CURRENT ROW)  AS tongjichaxun2 FROM trade_info_table@SELECT TRADE_ID,tongjichaxun1/ tongjichaxun2  as paishengceshi1 FROM 123veerg321@123veerg321@3\",\"kafkaZK\":\"master:2181\",\"jdbcUserPwd\":\"Ferghana@1234\",\"runMode\":\"01\",\"testSourcedata\":[{\"TRADE_ID\":\"1\",\"TRADE_AMOUNT\":\"100\",\"TRADE_TIME\":\"2020-10-18 18:50:15.234\"},{\"TRADE_ID\":\"2\",\"TRADE_AMOUNT\":\"200\",\"TRADE_TIME\":\"2020-10-18 18:50:17.234\"}],\"concurrency\":\"1\",\"fieldOutNum\":2,\"jdbcURL\":\"jdbc:mysql://master:3306/test?characterEncoding=UTF-8\",\"sourcePrimaryKey\":\"TRADE_ID\",\"jdbcUserName\":\"ferghana\",\"jdbcDrive\":\"com.mysql.cj.jdbc.Driver\"}";
+    public void jiami() throws Exception {
+        String str = "{\"sourceTableSql\":\"CREATE TABLE `EP_OPENACCT_FLOW_TABLE`(`TRAN_NO` STRING,`CUST_NO` STRING,`ACCT_NO` STRING,`LOGIN_NO` STRING,`CUST_NAME` STRING,`MOBIL_NO` STRING,`CERT_TYPE` STRING,`CERT_NO` STRING,`BSN_CODE` STRING,`STATUS` STRING,`TERM_CHANNEL` STRING,`TRAN_AMOUNT` DOUBLE,`TRAN_TIME` TIMESTAMP,proctime AS PROCTIME(),WATERMARK FOR `TRAN_TIME` as TRAN_TIME - INTERVAL '0' SECOND) WITH ('connector' = 'kafka-0.11' ,'topic' = 'EP_OPENACCT_FLOW_TOPIC','properties.bootstrap.servers' = 'master:9092','properties.group.id' = 'test-group','scan.startup.mode' = 'latest-offset','format' = 'json')\",\"sinkSql\":\" insert into mysql_sink_table (select TRAN_NO,tjcxwwbwtj1,tjcxwwbytj2 FROM test_var_topic)\",\"connectorType\":\"02\",\"testDimdata\":[{}],\"kafkaZK\":\"master:2181\",\"variableSqls\":\"SELECT TRAN_NO, count(TRAN_NO)  over( PARTITION BY CUST_NO ORDER BY TRAN_TIME RANGE BETWEEN INTERVAL '10' MINUTE preceding AND CURRENT ROW)  AS tjcxwwbwtj1 FROM EP_OPENACCT_FLOW_TABLE;SELECT TRAN_NO, sum(TRAN_AMOUNT_RE)  over( PARTITION BY CUST_NO ORDER BY TRAN_TIME RANGE BETWEEN INTERVAL '10' MINUTE preceding AND CURRENT ROW)  AS tjcxwwbytj2 FROM(SELECT TRAN_NO,IF( TRAN_AMOUNT>500,TRAN_AMOUNT,CAST(ifFalseSetNull() AS DOUBLE)) AS TRAN_AMOUNT_RE,CUST_NO,TRAN_TIME FROM EP_OPENACCT_FLOW_TABLE) AS tmp\",\"jdbcUserPwd\":\"Ferghana@1234\",\"runMode\":\"01\",\"testSourcedata\":[{\"TRAN_NO\":\"1\",\"TRAN_TIME\":\"2020-10-18 18:50:15.234\",\"CUST_NO\":\"001\",\"TRAN_AMOUNT\":\"400\"},{\"TRAN_NO\":\"2\",\"TRAN_TIME\":\"2020-10-18 18:50:16.234\",\"CUST_NO\":\"001\",\"TRAN_AMOUNT\":\"700\"},{\"TRAN_NO\":\"3\",\"TRAN_TIME\":\"2020-10-18 18:50:17.234\",\"CUST_NO\":\"002\",\"TRAN_AMOUNT\":\"800\"}],\"fieldOutNum\":3,\"jdbcURL\":\"jdbc:mysql://master:3306/test?characterEncoding=UTF-8\",\"sourcePrimaryKey\":\"TRAN_NO\",\"jdbcUserName\":\"ferghana\",\"jdbcDrive\":\"com.mysql.cj.jdbc.Driver\"}";
         byte[] bytes = str.getBytes();
         //Base64 加密
         String encoded = Base64.getEncoder().encodeToString(bytes);
         System.out.println("Base 64 加密后：" + encoded);
-
-        System.out.println("()".contains(")"));
-
-        System.out.println("freg;rfer;erer;".split(";").length);
+        System.out.println("ferf".split(",",2)[0]);
     }
 
 }

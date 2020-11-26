@@ -20,11 +20,11 @@ public class KafkaUtils {
 
     /**
      * Create Zookeeper connection
-     * @param zkUrl
+     * @param addrProt
      * @return
      */
-    public static ZkUtils getZkUtils(String zkUrl) {
-        return ZkUtils.apply(zkUrl, sessionTimeout, connectionTimeout, JaasUtils.isZkSecurityEnabled());
+    public static ZkUtils getZkUtils(String addrProt) {
+        return ZkUtils.apply(addrProt, sessionTimeout, connectionTimeout, JaasUtils.isZkSecurityEnabled());
     }
 
     /**

@@ -24,6 +24,7 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Put;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Transaction;
+import scala.collection.mutable.HashMap$;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -35,7 +36,7 @@ public class AppDealOperation {
     /*Kafka topic among*/
     public String middle_table;
     /*Schema information for the intermediate Topic*/
-    public String middle_schema = "";
+//    public String middle_schema = "";
     /*Program run configuration*/
     private Properties properties;
     /*schema*/
@@ -54,47 +55,55 @@ public class AppDealOperation {
         this.properties = properties;
     }
 
+    public void queryRegisterView(StreamTableEnvironment dbTableEnv, String querySql, String name){
+        Table table = dbTableEnv.sqlQuery(querySql);
+        dbTableEnv.createTemporaryView(name, table);
+    }
+
     /**
      * Create a dimension table
      * @param dbTableEnv
      */
     public void createDimTabl(StreamTableEnvironment dbTableEnv) throws Exception {
-        String dimensionTableSql = properties.getProperty("dimensionTableSql");
-        String testDimType = properties.getProperty("testDimType");
-        if ("01".equals(testDimType)){
-
-        } else if (dimensionTableSql != null){
-            String testDimdata = properties.getProperty("testDimdata");
-            Object[] testDimdataArr = null;
-            if (testDimdata != null){
-                testDimdataArr = JSON.parseArray(testDimdata).toArray();
-                String tableNmae = getSingMeta(dimensionTableSql, "table-name");
-                if ("02".equals(testDimType)){
-                    dimensionTableSql = addDataToJdbc(dimensionTableSql, testDimdataArr, tableNmae);
-                } else if ("03".equals(testDimType)){
-                    dimensionTableSql = addDataHbase(dimensionTableSql, testDimdataArr, tableNmae);
+        String dimension = properties.getProperty("dimensionTable");
+        if (dimension != null){
+            Object[] objects = JSON.parseArray(dimension).toArray();
+            for (Object object : objects) {
+                HashMap hashMap = JSON.parseObject(object.toString(), HashMap.class);
+                Object dimensionTableSql = hashMap.get("dimensionTableSql");
+                Object testDimType = hashMap.get("testDimType");
+                Object testDimdata = hashMap.get("testDimdata");
+                Object[] testDimdataArr = null;
+                if (testDimdata != null){
+                    testDimdataArr = JSON.parseArray(testDimdata.toString()).toArray();
+                    String tableNmae = getSingMeta(dimensionTableSql.toString(), "table-name");
+                    if ("02".equals(testDimType.toString())){
+                        dimensionTableSql = addDataToJdbc(dimensionTableSql.toString(), testDimdataArr, tableNmae);
+                    } else if ("03".equals(testDimType)){
+                        dimensionTableSql = addDataHbase(dimensionTableSql.toString(), testDimdataArr, tableNmae);
+                    }
                 }
+                dbTableEnv.executeSql(dimensionTableSql.toString());
             }
-            dbTableEnv.executeSql(dimensionTableSql);
         }
     }
 
-    /**
-     * Add data to the Redis dimension table
-     * @param testDimdataArr
-     */
-    private void addDataRedis(Object[] testDimdataArr){
-        String redisHostPort = properties.getProperty("redisHostPort");
-        String[] hp = redisHostPort.split(":",2);
-        Jedis jedis = new Jedis(hp[0].trim(), Integer.parseInt(hp[1].trim()), 5000);
-        if (jedis.isConnected()){
-            jedis.connect();
-        }
-        Transaction multi = jedis.multi();
-        for (Object o : testDimdataArr) {
-
-        }
-    }
+//    /**
+//     * Add data to the Redis dimension table
+//     * @param testDimdataArr
+//     */
+//    private void addDataRedis(Object[] testDimdataArr){
+//        String redisHostPort = properties.getProperty("redisHostPort");
+//        String[] hp = redisHostPort.split(":",2);
+//        Jedis jedis = new Jedis(hp[0].trim(), Integer.parseInt(hp[1].trim()), 5000);
+//        if (jedis.isConnected()){
+//            jedis.connect();
+//        }
+//        Transaction multi = jedis.multi();
+//        for (Object o : testDimdataArr) {
+//
+//        }
+//    }
 
 
     /**
@@ -106,13 +115,16 @@ public class AppDealOperation {
      * @throws IOException
      */
     private String addDataHbase(String dimensionTableSql, Object[] testDimdataArr, String tableNmae) throws IOException {
-        String hbaseTable = "TEST:" + tableNmae.split(":", 2)[1];
-        String testDimensionTableSql = dimensionTableSql.replace("'" + tableNmae + "'", "'" + hbaseTable + "'");
+        String testHbaseTable = "TEST:" + tableNmae.split(":", 2)[1];
+        String zkquorum = getSingMeta(dimensionTableSql, "zookeeper.quorum");
+        String testZK = properties.getProperty("testZK");
+        String testDimensionTableSql = dimensionTableSql.replace("'" + tableNmae + "'", "'" + testHbaseTable + "'")
+                .replace("'" + zkquorum + "'", "'" + testZK + "'");
         StoreUtils storeUtils = StoreUtils.of(testDimensionTableSql);
-        storeUtils.createHbaseTABLE();
+        org.apache.hadoop.hbase.client.Connection hbaseConnection = storeUtils.createHbaseTABLE();
         String fieldStr = storeUtils.fieldStr;
         HashMap<String, String> nameAndType = new HashMap<>();
-        String fam = fieldStr.split(",", 2)[1].trim().split("PRIMARY", 2)[0].trim();
+        String fam = fieldStr.split(",", 2)[1].split("PRIMARY", 2)[0].trim();
         fam = fam.substring(0, fam.length() - 1).trim();
         String fenge = TypeTrans.getType(fam.split("\\s+", 2)[1]);
         String type = null;
@@ -127,11 +139,11 @@ public class AppDealOperation {
             boolean flag = true;
             while (flag){
                 String[] split = type.split("\\s+", 2);
-                String key = split[0];
+                String key = split[0].replaceAll("`", "");
                 String ty = TypeTrans.getType(split[1]);
                 String values = TypeTrans.getTranKey(ty);
                 nameAndType.put(key, values);
-                String[] sp2 = split[1].split(values + ",", 2);
+                String[] sp2 = split[1].replaceFirst(ty, "").split(",", 2);
                 if (sp2.length == 1){
                     flag = false;
                 } else if (sp2.length == 2){
@@ -145,8 +157,7 @@ public class AppDealOperation {
                 fer = false;
             }
         }
-        org.apache.hadoop.hbase.client.Connection hbaseConnection = storeUtils.hbaseConnection(storeUtils.getMeta(storeUtils.metate));
-        org.apache.hadoop.hbase.client.Table hbaseConnectionTable = hbaseConnection.getTable(TableName.valueOf(hbaseTable));
+        org.apache.hadoop.hbase.client.Table hbaseConnectionTable = hbaseConnection.getTable(TableName.valueOf(testHbaseTable));
         for (Object s : testDimdataArr) {
             JSONObject jsonObject = JSON.parseObject(s.toString());
             String rowkey = jsonObject.getString("rowkey");
@@ -158,7 +169,6 @@ public class AppDealOperation {
                 String value = (String)next.getValue();
                 if (!key.toLowerCase().equals("rowkey")){
                     String[] famAndFile = key.split("\\.", 2);
-                    System.out.println(nameAndType.get(famAndFile[1]));
                     put.addColumn(famAndFile[0].getBytes(), famAndFile[1].getBytes(), TypeTrans.hbaseByte(nameAndType.get(famAndFile[1]), value));
                 }
             }
@@ -182,58 +192,71 @@ public class AppDealOperation {
      * @throws Exception
      */
     private String addDataToJdbc(String dimensionTableSql, Object[] testDimdataArr, String tableNmae) throws Exception {
-        String testDimensionTableSql = dimensionTableSql.replace("'" + tableNmae + "'", "'test_" + tableNmae + "'");
+        String url = getSingMeta(dimensionTableSql, "url");
+        String username = getSingMeta(dimensionTableSql, "username");
+        String password = getSingMeta(dimensionTableSql, "password");
+        String driver = getSingMeta(dimensionTableSql, "driver");
+        String testDimensionTableSql = dimensionTableSql.replace("'" + tableNmae + "'", "'test_" + tableNmae + "'")
+                .replace("'" + url + "'", "'" + properties.getProperty("testDimensionUrl") + "'")
+                .replace("'" + username + "'", "'" + properties.getProperty("testUserName") + "'")
+                .replace("'" + password + "'", "'" + properties.getProperty("testPassWord") + "'")
+                .replace("'" + driver + "'", "'" + properties.getProperty("testDriver") + "'");
         StoreUtils storeUtils = StoreUtils.of(testDimensionTableSql);
-        storeUtils.createMySqlTable();
-        Connection connection = storeUtils.mySqlConnection(storeUtils.getMeta(storeUtils.metate));
+        Connection connection = storeUtils.createMySqlTable();
         Statement statement = connection.createStatement();
         connection.setAutoCommit(false);
-        ArrayList<String> msVacherFieldNmae = storeUtils.msVacherFieldNmae;
+        ArrayList<String> msVacherFieldNmae = storeUtils.msVarcherFieldNmae;
         for (Object s : testDimdataArr) {
             String fieldName = "";
             String filedValue = "";
+            String update = "";
             Iterator<Map.Entry<String, Object>> iterator = JSON.parseObject(s.toString()).entrySet().iterator();
             while (iterator.hasNext()){
                 Map.Entry<String, Object> next = iterator.next();
                 String key = next.getKey();
                 String value = next.getValue().toString();
                 fieldName = fieldName + key + ",";
-                if (msVacherFieldNmae.contains(key)){
+                update = update + key + "=";
+                if (msVacherFieldNmae.contains(key)) {
                     value = "'" + value + "'";
-                    filedValue = filedValue + value + ",";
-                } else {
-                    filedValue = filedValue + value + ",";
                 }
+                filedValue = filedValue + value + ",";
+                update = update + value + ",";
             }
             fieldName = fieldName.substring(0, fieldName.length() - 1);
             filedValue = filedValue.substring(0, filedValue.length() - 1);
-            String insertSql = "INSERT INTO test_" + tableNmae + "(" + fieldName + ")" + " VALUES (" + filedValue + ")";
+            update = update.substring(0, update.length() - 1);
+            String insertSql = "INSERT INTO test_" + tableNmae + "(" + fieldName + ")" + " VALUES (" + filedValue + ")" + " ON DUPLICATE KEY UPDATE " + update;
             statement.execute(insertSql);
         }
         connection.commit();
+
+        if (statement != null){
+            statement.close();
+        }
         if (connection != null){
             connection.close();
         }
         return testDimensionTableSql;
     }
 
-    public String getSingMeta(String sql, String name) {
+    public static String getSingMeta(String sql, String name) {
         String sqlDeal = StringUtils.reverse(StringUtils.reverse(sql).split("\\)", 2)[1]);
         return sqlDeal.split("'" + name + "'", 2)[1]
-                .replaceFirst("=", "").split("',", 2)[0].replaceAll("'", "").trim();
+                .replaceFirst("=", "").split("','", 2)[0].replaceAll("'", "").trim();
     }
 
-    private void inputTestSourceData(String topic){
+    private void inputTestSourceData(String topic, String brokeList){
         String testSourcedata = properties.getProperty("testSourcedata");
         JSONArray jsonArray = JSON.parseArray(testSourcedata);
         Object[] dataArr = jsonArray.toArray();
-        String brokeList = getSingMeta(properties.getProperty("sourceTableSql"), "properties.bootstrap.servers");
-        createKafkaTopic(topic);
+//        String brokeList = getSingMeta(properties.getProperty("sourceTableSql"), "properties.bootstrap.servers");
+        createTopic(topic, properties.getProperty("testZK"));
         KafkaUtils.kafkaProducer(topic, dataArr, brokeList);
     }
 
-    private void createKafkaTopic(String  topic){
-        ZkUtils kafkaZK = KafkaUtils.getZkUtils(properties.getProperty("kafkaZK"));
+    private void createTopic(String  topic, String zkAddAndPort){
+        ZkUtils kafkaZK = KafkaUtils.getZkUtils(zkAddAndPort);
         KafkaUtils.deleteKafkaTopic(kafkaZK,topic);
         KafkaUtils.createKafkaTopic(kafkaZK,topic);
         KafkaUtils.clostZkUtils(kafkaZK);
@@ -245,15 +268,19 @@ public class AppDealOperation {
      */
     public void createSource(StreamTableEnvironment dbTableEnv){
         String sourceTableSql = properties.getProperty("sourceTableSql");
-        if (properties.getProperty("runMode").equals("02")){
+        if ("02".equals(properties.getProperty("runMode"))){
             dbTableEnv.executeSql(sourceTableSql);
         } else if ("01".equals(properties.getProperty("runMode"))){
             String topic =  getSingMeta(sourceTableSql, "topic");
             String test_topic = "test_" + topic;
-            inputTestSourceData(test_topic);
+            String testBrokeList = properties.getProperty("testBrokeList");
+            inputTestSourceData(test_topic, testBrokeList);
             String scanMode = getSingMeta(sourceTableSql, "scan.startup.mode");
-            String testSourceTableSql = sourceTableSql.replace("'" + topic + "'", "'" + test_topic +"'")
-                    .replace("'" + scanMode + "'", "'earliest-offset'");
+            String brokerList = getSingMeta(sourceTableSql,  "properties.bootstrap.servers");
+            String testSourceTableSql = sourceTableSql
+                    .replace("'" + topic + "'", "'" + test_topic +"'")
+                    .replace("'" + scanMode + "'", "'earliest-offset'")
+                    .replace("'" + brokerList + "'", "'" + testBrokeList +"'");
             dbTableEnv.executeSql(testSourceTableSql);
         }
     }
@@ -266,6 +293,11 @@ public class AppDealOperation {
     public static AppDealOperation of(Properties properties){
         return new AppDealOperation(properties);
     }
+
+    public static AppDealOperation of(){
+        return new AppDealOperation();
+    }
+
 
     /**
      * @return SQL query collection
@@ -284,6 +316,12 @@ public class AppDealOperation {
      * @return DataStream<String>
      */
     public DataStream<String> sqlQueryAndUnion(StreamTableEnvironment dbTableEnv, String sqlSet) {
+        String sourcePrimaryKey;
+        if (properties != null){
+            sourcePrimaryKey = properties.getProperty("sourcePrimaryKey");
+        } else {
+            sourcePrimaryKey = "NVL";
+        }
         DataStream<String> db_init = null;
         int counts = 0;
         singleFieldTypeHashMap = new LinkedHashMap<>();
@@ -294,16 +332,16 @@ public class AppDealOperation {
             String[] fieldNames = schema.getFieldNames();
             for (String fieldName : fieldNames) {
                 Optional<DataType> fieldDataType = schema.getFieldDataType(fieldName);
-//                fieldTypeHashMap.put(fieldName, TypeTrans.getType(fieldDataType.get().toString()));
+                // fieldTypeHashMap.put(fieldName, TypeTrans.getType(fieldDataType.get().toString()));
                 singleFieldTypeHashMap.put(fieldName, TypeTrans.getType(fieldDataType.get().toString()));
             }
             if (counts == 0){
                 db_init = dbTableEnv.toAppendStream(table, Row.class)
-                        .map(FunMapGiveSchema.of(fieldNames, singleFieldTypeHashMap, properties.getProperty("sourcePrimaryKey")));
+                        .map(FunMapGiveSchema.of(fieldNames, sourcePrimaryKey));
                 counts += 1;
             } else {
                 arr_db.add(dbTableEnv.toAppendStream(table, Row.class)
-                        .map(FunMapGiveSchema.of(fieldNames, singleFieldTypeHashMap, properties.getProperty("sourcePrimaryKey"))));
+                        .map(FunMapGiveSchema.of(fieldNames, sourcePrimaryKey)));
             }
 
         }
@@ -315,16 +353,16 @@ public class AppDealOperation {
     }
 
 
-    public void schemaConcat(HashMap<String, String> scheCon) {
-        Iterator<Map.Entry<String, String>> iter = scheCon.entrySet().iterator();
-        while (iter.hasNext()){
-            Map.Entry<String, String> next = iter.next();
-            String key = next.getKey();
-            String value = next.getValue();
-            middle_schema = middle_schema + key + " " + value + ",";
-        }
-        middle_schema = middle_schema.substring(0, middle_schema.length() - 1);
-    }
+//    public void schemaConcat(HashMap<String, String> scheCon) {
+//        Iterator<Map.Entry<String, String>> iter = scheCon.entrySet().iterator();
+//        while (iter.hasNext()){
+//            Map.Entry<String, String> next = iter.next();
+//            String key = next.getKey();
+//            String value = next.getValue();
+//            middle_schema = middle_schema + key + " " + value + ",";
+//        }
+//        middle_schema = middle_schema.substring(0, middle_schema.length() - 1);
+//    }
 
     /**
      * Indicators to merge
@@ -343,21 +381,21 @@ public class AppDealOperation {
         return keyedProcess_indicators_merge;
     }
 
-    /**
-     * Create an intermediate table
-     * @param middle_query
-     * @param dbTableEnv
-     */
-    public void createMinddleTable(String middle_query, StreamTableEnvironment dbTableEnv) {
-        String kafkaMeta = ") WITH ("
-                + "'connector' = 'kafka-0.11',"
-                + "'topic' = '" + middle_table + "',"
-                + "'properties.bootstrap.servers' = '" + properties.getProperty("kafkaZK").replace("2181", "9092") + "',"
-                + "'properties.group.id' = 'ts1',"
-                + "'format' = 'json')";
-        String createMinddleTableSql = "CREATE TABLE " + middle_table + "(" + middle_query + kafkaMeta;
-        System.out.println(createMinddleTableSql);
-        dbTableEnv.executeSql(createMinddleTableSql);
-    }
+//    /**
+//     * Create an intermediate table
+//     * @param middle_query
+//     * @param dbTableEnv
+//     */
+//    public void createMinddleTable(String middle_query, StreamTableEnvironment dbTableEnv) {
+//        String kafkaMeta = ") WITH ("
+//                + "'connector' = 'kafka-0.11',"
+//                + "'topic' = '" + middle_table + "',"
+//                + "'properties.bootstrap.servers' = '" + properties.getProperty("kafkaZK").replace("2181", "9092") + "',"
+//                + "'properties.group.id' = 'ts1',"
+//                + "'format' = 'json')";
+//        String createMinddleTableSql = "CREATE TABLE " + middle_table + "(" + middle_query + kafkaMeta;
+//        System.out.println(createMinddleTableSql);
+//        dbTableEnv.executeSql(createMinddleTableSql);
+//    }
 
 }

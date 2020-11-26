@@ -1,24 +1,14 @@
 package com.skyon.utils;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.sql.*;
 
 public class MySqlUtils {
-
-    private static final String url = "jdbc:mysql://master:3306/ferghana?characterEncoding=UTF-8";
-    private static final String username = "ferghana";
-    private static final String password = "Ferghana@1234";
-    private static final String driver = "com.mysql.cj.jdbc.Driver";
-
     /**
      * Get MySQL connection
      * @return
      * @throws Exception
      */
-    public static Connection getConnection() throws Exception {
+    public static Connection getConnection(String url, String username, String password, String driver) throws Exception {
         Class.forName(driver);
         return DriverManager.getConnection(url, username, password);
     }

@@ -9,25 +9,44 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 public class AppRegisFunction {
 
-    private String sql = "select * from t_self_function";
+    // 从指定表读取自定义函数的信息,用以注册函数
+    private String sql = "SELECT * FROM t_self_function";
 
+    /**
+     * Returns a registered function instance
+     * @return
+     */
     public static AppRegisFunction of(){
         return new AppRegisFunction();
     }
 
-    public  void registerFunction(StreamTableEnvironment dbTableEnv) throws Exception {
+    /**
+     * Register custom functions
+     * @param dbTableEnv
+     * @throws Exception
+     */
+    public  void registerFunction(StreamTableEnvironment dbTableEnv, Properties properties) throws Exception {
+        // 对项目模块内的自定义函数进行注册
         dbTableEnv.createTemporarySystemFunction("ifFalseSetNull", new NullForObject());
-        Connection connection = MySqlUtils.getConnection();
+        Connection connection = MySqlUtils.getConnection(properties.getProperty("regisfunUrl"), properties.getProperty("testUserName"), properties.getProperty("testPassWord"), properties.getProperty("testDriver"));
         ResultSet resultSet = MySqlUtils.selectData(connection, sql);
+        // 对非项目模块内的自定义函数进行注册
         for (TSelfFunction dateTran : dateTrans(resultSet)) {
-            dbTableEnv.executeSql("CREATE TEMPORARY SYSTEM FUNCTION IF NOT EXISTS " + dateTran.getFunction_name() + " AS '" + dateTran.getFunction_package_path() + "' LANGUAGE JAVA");
+            dbTableEnv.executeSql("CREATE TEMPORARY SYSTEM FUNCTION IF NOT EXISTS " +  dateTran.getFunction_name() + " AS '" + dateTran.getFunction_package_path() + "' LANGUAGE JAVA");
         }
         MySqlUtils.closeConnection(connection);
     }
 
+    /**
+     * Data is encapsulated in the specified class
+     * @param resultSet
+     * @return
+     * @throws SQLException
+     */
     private List<TSelfFunction> dateTrans(ResultSet resultSet) throws SQLException {
         List<TSelfFunction> tSelfFunctionArrayList = new ArrayList<>();
         while (resultSet.next()){

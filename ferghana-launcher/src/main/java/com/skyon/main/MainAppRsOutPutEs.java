@@ -34,8 +34,8 @@ public class MainAppRsOutPutEs {
                 + "'connector.type' = 'kafka',"
                 + "'connector.version' = '0.11',"
                 + "'connector.topic' = 'order_source_topic',"
-                + "'connector.properties.zookeeper.connect' = 'spark01:2181,spark02:2181,spark03:2181',"
-                + "'connector.properties.bootstrap.servers' = 'spark01:9092,spark02:9092,spark03:9092',"
+                + "'connector.properties.zookeeper.connect' = 'master:2181',"
+                + "'connector.properties.bootstrap.servers' = 'master:9092,slave:9092',"
                 + "'connector.properties.group.id' = 'test123',"
                 + "'connector.startup-mode' = 'latest-offset',"
                 + "'format.type' = 'json')");
@@ -56,7 +56,7 @@ public class MainAppRsOutPutEs {
                 + "PRIMARY KEY (user_id) NOT ENFORCED"
                 + ") WITH ("
                 + "'connector' = 'elasticsearch-7',"
-                + "'hosts' = 'http://spark02:9200',"
+                + "'hosts' = 'http://spark02:9200;http://slave:9200',"
                 + "'index' = 'user'"
                 + ")");
 
