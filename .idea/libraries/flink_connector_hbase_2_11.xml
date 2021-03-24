@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="flink-connector-hbase_2.11">
-    <CLASSES>
-      <root url="file://$MAVEN_REPOSITORY$/org/apache/flink/flink-connector-hbase_2.11" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>
