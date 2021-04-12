@@ -2,6 +2,7 @@
 !.gitignore
 !/ferghana
 /ferghana/.idea
+/ferghana/ferghana.iml
 !/ferghana/pom.xml
 !/ferghana/ferghana-core
 /ferghana/ferghana-core
