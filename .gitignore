@@ -1,0 +1,11 @@
+/*
+!.gitignore
+!ferghana.iml
+!pom.xml
+!/ferghana-core
+/ferghana-core/*
+!/ferghana-core/src
+!/ferghana-core/pom.xml
+!/ferghana-web/
+/ferghana-web/dist
+/ferghana-web/node_modules
