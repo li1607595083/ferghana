@@ -24,8 +24,8 @@
 
     <modules>
         <module>ferghana-core</module>
-     <!--    <module>ferghana-function</module>
-        <module>ferghana-launcher</module> -->
+<!--        <module>ferghana-function</module>-->
+<!--        <module>ferghana-launcher</module>-->
     </modules>
 
 
