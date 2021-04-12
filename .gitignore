@@ -1,5 +1,6 @@
 /*
 !.gitignore
+!/ferghana
 !/ferghana/ferghana.iml
 !/ferghana/pom.xml
 !/ferghana/ferghana-core

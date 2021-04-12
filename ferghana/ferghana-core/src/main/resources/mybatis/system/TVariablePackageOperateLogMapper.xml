@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.skyon.project.system.mapper.TVariablePackageOperateLogMapper">
+
+    <resultMap type="TVariablePackageOperateLog" id="TVariablePackageOperateLogResult">
+        <result property="tVariablePackOperateId"    column="t_variable_pack_operate_id"    />
+        <result property="variablePackNameEn"    column="variable_pack_name_en"    />
+        <result property="operateAuther"    column="operate_auther"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="operateIp"    column="operate_ip"    />
+        <result property="operateType"    column="operate_type"    />
+    </resultMap>
+
+    <sql id="selectTVariablePackageOperateLogVo">
+        select t_variable_pack_operate_id,variable_pack_name_en,operate_auther,create_time,operate_ip,operate_type from t_variable_package_operate_log
+    </sql>
+
+    <select id="selectTVariablePackageOperateLogList" parameterType="String" resultMap="TVariablePackageOperateLogResult">
+        <include refid="selectTVariablePackageOperateLogVo"/>
+        where variable_pack_name_en = #{variablePackNameEn}
+        order by create_time desc
+    </select>
+
+    <insert id="insertTVariablePackageOperateLog" parameterType="TVariablePackageOperateLog" useGeneratedKeys="true" keyProperty="tVariablePackOperateId">
+        insert into t_variable_package_operate_log
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="variablePackNameEn != null  and variablePackNameEn != ''">variable_pack_name_en,</if>
+            <if test="operateAuther != null  and operateAuther != ''">operate_Auther,</if>
+            <if test="operateIp != null  and operateIp != ''">operate_Ip,</if>
+            <if test="operateType != null  and operateType != ''">operate_Type,</if>
+            <if test="createTime != null ">create_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="variablePackNameEn != null  and variablePackNameEn != ''">#{variablePackNameEn},</if>
+            <if test="operateAuther != null  and operateAuther != ''">#{operateAuther},</if>
+            <if test="operateIp != null  and operateIp != ''">#{operateIp},</if>
+            <if test="operateType != null  and operateType != ''">#{operateType},</if>
+            <if test="createTime != null ">#{createTime},</if>
+         </trim>
+    </insert>
+
+</mapper>
