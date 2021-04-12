@@ -512,6 +512,7 @@
 
       // 确认测试
       confirmTest() {
+        console.log(this.form)
         console.log("++++++++qqq");
         console.log(this.form.variableId);
         let tmp = this.form.variableId;
