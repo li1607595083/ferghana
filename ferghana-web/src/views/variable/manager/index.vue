@@ -2301,14 +2301,12 @@
 
       // 关联字段
       relationField() {
-        console.log(this.sourceTableCol)
         if (this.listResultDimension.length > 0) {
           this.variableClassificationOptions.map((data) => {
             if (data.value === this.form.variableClassification) {
               let parse = JSON.parse(data.dimensionRelation);
               // 字段中没有关联字段时，需增加
               let tmpArr = [];
-              let tmpJ = null;
               for (let j = 0; j < parse.length; j++) {
                 let flag = true;
                 for (let i = 0; i < this.sourceTableCol.length; i++) {
@@ -2319,7 +2317,6 @@
                   // }
                   if (parse[j].relation){
                     flag = "true";
-                    tmpJ = j;
                   }
                   if (flag !== "true" && tmp === parse[j].sourceDabField) {
                     flag = false;
@@ -2330,35 +2327,37 @@
                   }
                 }
                 if (flag === true) {
-                  tmpArr = [{
+                  tmpArr.push({
                     dataItem: parse[j].sourceDabField,
                     dataName: parse[j].sourceDabField + "-" + parse[j].dimensionName + "关联字段",
-                  }]
-                  this.sourceTableCol = this.sourceTableCol.concat(tmpArr);
+                  })
                 }
+                // 如果有关联es表，那么分别提取数据源表与之关联的字段
                 else if(flag === "true"){
-                  let j = tmpJ;
-                  let tmpData = this.sourceTableCol.concat(tmpArr);
                   for (let k = 0; k < parse[j].relation.length; k++) {
+                    // 拼接临时数据
+                    let tmpData = this.sourceTableCol.concat(tmpArr);
+                    var flag2 = true;
                     for(let m = 0; m<tmpData.length;m++){
                       let tmp = tmpData[m].dataItem;
                       if (tmp === parse[j].relation[k].sourceDabField) {
+                        flag2 = false;
                         if (tmpData[m].dataName.indexOf("主键") <= 0) { // 主键不修改
                           tmpData[m].dataName = parse[j].relation[k].sourceDabField + "-" + parse[j]
                             .dimensionName + "." + parse[j].relation[k].dimensionDabField + "关联字段";
                         }
-                      } else {
-                        tmpArr = [{
-                          dataItem: parse[j].relation[k].sourceDabField,
-                          dataName: parse[j].relation[k].sourceDabField + "-" + parse[j].dimensionName + "." + parse[j].relation[k].dimensionDabField + "关联字段",
-                        }];
                       }
                     }
+                    if(flag2){
+                      tmpArr.push({
+                        dataItem: parse[j].relation[k].sourceDabField,
+                        dataName: parse[j].relation[k].sourceDabField + "-" + parse[j].dimensionName + "." + parse[j].relation[k].dimensionDabField + "关联字段",
+                      });
+                    }
                   }
-                  this.sourceTableCol = tmpData;
                 }
               }
-
+              this.sourceTableCol = this.sourceTableCol.concat(tmpArr);
             }
           });
         }
