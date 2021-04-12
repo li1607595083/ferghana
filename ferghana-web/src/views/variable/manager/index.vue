@@ -1585,7 +1585,6 @@
       // 确认测试
       confirmTest() {
         // 先校验
-        console.log(this.form)
 
         this.$refs["form"].validate((valid) => {
           if (valid) {

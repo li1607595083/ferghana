@@ -512,13 +512,13 @@
 
       // 确认测试
       confirmTest() {
-        console.log(this.form)
         console.log("++++++++qqq");
         console.log(this.form.variableId);
         let tmp = this.form.variableId;
         this.form.testResultItem = [];
         let dmo = [];
         this.form.testResultItem = this.form.variableId;
+        console.log(this.selectVariableNote)
         for (let i = 0; i < this.selectVariableNote.length; i++) {
           if (this.selectVariableNote[i].variableType === '02') { // 派生变量 去除对应的基础变量 否则会在测试结果中展示出来
             let deriveBaseVariable = this.selectVariableNote[i].deriveBaseVariable;
@@ -610,9 +610,6 @@
               let testSourceTableCol = this.selectVariableNote[i].testSourceTableCol;
               if (testSourceTableCol !== null) {
                 let parse = JSON.parse(testSourceTableCol);
-                console.log("---------[pares]---------")
-                console.log(parse)
-                console.log(this.sourceTableCol)
                 for (let j = 0; j < parse.length; j++) { // 测试的数据结果
                   let flag = true;
                   for (let k = 0; k < this.sourceTableCol.length; k++) { // 变量的测试字段
@@ -1361,8 +1358,6 @@
           this.form = response.data;
           this.form.sourceTableValue = [];
           this.form.variableId = JSON.parse(this.form.variableId);
-          console.log("-----this.form.variableId---");
-          console.log(this.form.variableId);
           this.selectVariableNote = JSON.parse(this.form.selectVariableNoteForm);
 
           this.form.originalVariable = JSON.parse(this.form.originalVariable);
@@ -1385,6 +1380,7 @@
       },
       /** 提交按钮 */
       submitForm: function() {
+        console.log(this.form)
         this.$refs["form"].validate(valid => {
           if (valid) {
             this.form.selectVariableNoteForm = JSON.stringify(this.selectVariableNote);
