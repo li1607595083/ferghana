@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.skyon.project.system.mapper.TVariablePackageManagerMapper">
+    
+    <resultMap type="TVariablePackageManager" id="TVariablePackageManagerResult">
+        <result property="variablePackId"    column="variable_pack_id"    />
+        <result property="variablePackName"    column="variable_pack_name"    />
+        <result property="variablePackEn"    column="variable_pack_en"    />
+        <result property="versionNum"    column="version_num"    />
+        <result property="versionShow"    column="version_show"    />
+        <result property="runingState"    column="runing_state"    />
+        <result property="variableClassification"    column="variable_classification"    />
+        <result property="description"    column="description"    />
+        <result property="variableId"    column="variable_id"    />
+        <result property="selectVariableNoteForm"    column="select_Variable_Note_form"    />
+        <result property="createTableSql"    column="create_table_sql"    />
+        <result property="runingSql"    column="runing_sql"    />
+        <result property="originalVariable"    column="original_Variable"    />
+        <result property="originalVariableSql"    column="original_Variable_sql"    />
+        <result property="configurationType"    column="configuration_type"    />
+        <result property="concurrency"    column="concurrency"    />
+        <result property="jobMemory"    column="job_Memory"    />
+        <result property="taskMemory"    column="task_Memory"    />
+        <result property="applicationId"    column="application_Id"    />
+        <result property="jobId"    column="job_id"    />
+        <result property="varDir"    column="var_Dir"    />
+        <result property="resultTable"    column="result_table"    />
+        <result property="resultTableSql"    column="result_table_sql"    />
+        <result property="taskMemory"    column="task_Memory"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="modifyTime"    column="modify_time"    />
+        <result property="startParamBase"    column="start_Param_Base"    />
+        <result property="savePointDir"    column="save_Point_Dir"    />
+        <result property="createBy"    column="create_By"    />
+        <result property="variableClassificationName"    column="variable_classification_name"    />
+    </resultMap>
+
+    <sql id="selectTVariablePackageManagerVo">
+        select variable_pack_id, variable_pack_name, variable_pack_en, runing_state,select_Variable_Note_form,var_Dir,concurrency,job_Memory,task_Memory,
+         variable_classification, s.description, variable_id, create_table_sql, runing_sql,application_id,job_id,s.result_table,s.result_table_sql,var_Dir,
+         original_Variable,original_Variable_Sql,version_num,version_show,create_By,start_Param_Base,save_Point_Dir,
+         s.create_time, s.modify_time,d.variable_classification_name from t_variable_package_manager s
+         left join t_variable_classification d on s.variable_classification = d.variable_classification_id
+    </sql>
+
+    <select id="selectTVariablePackageManagerByVersion" parameterType="TVariablePackageManager" resultMap="TVariablePackageManagerResult">
+        <include refid="selectTVariablePackageManagerVo"/>
+        <where>
+            <if test="variablePackEn != null  and variablePackEn != ''"> and variable_Pack_En = #{variablePackEn}</if>
+            <if test="versionNum != null  and versionNum != ''"> and version_num = #{versionNum}</if>
+        </where>
+    </select>
+
+    <select id="selectTVariablePackageManagerList" parameterType="TVariablePackageManager" resultMap="TVariablePackageManagerResult">
+        <include refid="selectTVariablePackageManagerVo"/>
+        <where>  
+            <if test="variablePackName != null  and variablePackName != ''"> and variable_pack_name like concat('%', #{variablePackName}, '%')</if>
+            <if test="runingState != null  and runingState != ''"> and runing_state = #{runingState}</if>
+            <if test="variableClassificationName != null  and variableClassificationName != ''"> and variable_classification_name = #{variableClassificationName}</if>
+             and version_show = '1'
+        </where>
+        order by create_time desc
+    </select>
+
+    <select id="selectTVariablePackageManagerVersionList" parameterType="TVariablePackageManager" resultMap="TVariablePackageManagerResult">
+        <include refid="selectTVariablePackageManagerVo"/>
+        <where>
+            <if test="variablePackEn != null  and variablePackEn != ''"> and variable_Pack_En = #{variablePackEn}</if>
+        </where>
+        order by create_time desc
+    </select>
+    
+    <select id="selectTVariablePackageManagerById" parameterType="Long" resultMap="TVariablePackageManagerResult">
+        <include refid="selectTVariablePackageManagerVo"/>
+        where variable_pack_id = #{variablePackId}
+    </select>
+        
+    <insert id="insertTVariablePackageManager" parameterType="TVariablePackageManager" useGeneratedKeys="true" keyProperty="variablePackId">
+        insert into t_variable_package_manager
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="variablePackName != null  and variablePackName != ''">variable_pack_name,</if>
+            <if test="variablePackEn != null  and variablePackEn != ''">variable_pack_en,</if>
+            <if test="runingState != null  and runingState != ''">runing_state,</if>
+            <if test="versionNum != null  and versionNum != ''">version_num,</if>
+            <if test="versionShow != null  and versionShow != ''">version_show,</if>
+            <if test="variableClassification != null  and variableClassification != ''">variable_classification,</if>
+            <if test="description != null  and description != ''">description,</if>
+            <if test="variableId != null  and variableId != ''">variable_id,</if>
+            <if test="selectVariableNoteForm != null  and selectVariableNoteForm != ''">select_Variable_Note_form,</if>
+            <if test="createTableSql != null  and createTableSql != ''">create_table_sql,</if>
+            <if test="runingSql != null  and runingSql != ''">runing_sql,</if>
+            <if test="originalVariable != null  and originalVariable != ''">original_Variable,</if>
+            <if test="originalVariableSql != null  and originalVariableSql != ''">original_Variable_sql,</if>
+            <if test="resultTable != null  and resultTable != ''">result_table,</if>
+            <if test="resultTableSql != null  and resultTableSql != ''">result_table_sql,</if>
+            <if test="varDir != null  and varDir != ''">var_Dir,</if>
+            <if test="savePointDir != null">save_Point_Dir,</if>
+            <if test="createBy != null  and createBy != ''">create_By,</if>
+            <if test="createTime != null ">create_time,</if>
+            <if test="modifyTime != null ">modify_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="variablePackName != null  and variablePackName != ''">#{variablePackName},</if>
+            <if test="variablePackEn != null  and variablePackEn != ''">#{variablePackEn},</if>
+            <if test="runingState != null  and runingState != ''">#{runingState},</if>
+            <if test="versionNum != null  and versionNum != ''">#{versionNum},</if>
+            <if test="versionShow != null  and versionShow != ''">#{versionShow},</if>
+            <if test="variableClassification != null  and variableClassification != ''">#{variableClassification},</if>
+            <if test="description != null  and description != ''">#{description},</if>
+            <if test="variableId != null  and variableId != ''">#{variableId},</if>
+            <if test="selectVariableNoteForm != null  and selectVariableNoteForm != ''">#{selectVariableNoteForm},</if>
+            <if test="createTableSql != null  and createTableSql != ''">#{createTableSql},</if>
+            <if test="runingSql != null  and runingSql != ''">#{runingSql},</if>
+            <if test="originalVariable != null  and originalVariable != ''">#{originalVariable},</if>
+            <if test="originalVariableSql != null  and originalVariableSql != ''">#{originalVariableSql},</if>
+            <if test="resultTable != null  and resultTable != ''">#{resultTable},</if>
+            <if test="resultTableSql != null  and resultTableSql != ''">#{resultTableSql},</if>
+            <if test="varDir != null  and varDir != ''">#{varDir},</if>
+            <if test="savePointDir != null">#{savePointDir},</if>
+            <if test="createBy != null  and createBy != ''">#{createBy},</if>
+
+
+            <if test="createTime != null ">#{createTime},</if>
+            <if test="modifyTime != null ">#{modifyTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateTVariablePackageManager" parameterType="TVariablePackageManager">
+        update t_variable_package_manager
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="variablePackName != null  and variablePackName != ''">variable_pack_name = #{variablePackName},</if>
+            <if test="variablePackEn != null  and variablePackEn != ''">variable_pack_en = #{variablePackEn},</if>
+            <if test="runingState != null  and runingState != ''">runing_state = #{runingState},</if>
+            <if test="versionNum != null  and versionNum != ''">version_Num = #{versionNum},</if>
+            <if test="versionShow != null  and versionShow != ''">version_Show = #{versionShow},</if>
+            <if test="variableClassification != null  and variableClassification != ''">variable_classification = #{variableClassification},</if>
+            <if test="description != null  and description != ''">description = #{description},</if>
+            <if test="variableId != null  and variableId != ''">variable_id = #{variableId},</if>
+            <if test="selectVariableNoteForm != null  and selectVariableNoteForm != ''">select_Variable_Note_Form = #{selectVariableNoteForm},</if>
+            <if test="createTableSql != null  and createTableSql != ''">create_table_sql = #{createTableSql},</if>
+            <if test="runingSql != null  and runingSql != ''">runing_sql = #{runingSql},</if>
+            <if test="originalVariable != null  and originalVariable != ''">original_Variable = #{originalVariable},</if>
+            <if test="originalVariableSql != null  and originalVariableSql != ''">original_Variable_Sql = #{originalVariableSql},</if>
+            <if test="configurationType != null  and configurationType != ''">configuration_type = #{configurationType},</if>
+            <if test="concurrency != null  and concurrency != ''">concurrency = #{concurrency},</if>
+            <if test="jobMemory != null  and jobMemory != ''">job_Memory = #{jobMemory},</if>
+            <if test="taskMemory != null  and taskMemory != ''">task_Memory = #{taskMemory},</if>
+            <if test="applicationId != null">application_Id = #{applicationId},</if>
+            <if test="jobId != null">job_Id = #{jobId},</if>
+            <if test="resultTable != null  and resultTable != ''">result_Table = #{resultTable},</if>
+            <if test="resultTableSql != null  and resultTableSql != ''">result_Table_Sql = #{resultTableSql},</if>
+            <if test="savePointDir != null">save_Point_Dir = #{savePointDir},</if>
+
+            <if test="createTime != null ">create_time = #{createTime},</if>
+            <if test="modifyTime != null ">modify_time = #{modifyTime},</if>
+        </trim>
+        where variable_pack_id = #{variablePackId}
+    </update>
+
+    <update id="updatePackageVersion" parameterType="TVariablePackageManager">
+        update t_variable_package_manager set version_show = '0'
+        where  variable_pack_id = #{variablePackId}
+    </update>
+
+    <update id="updateRuningState" parameterType="java.util.ArrayList">
+        update t_variable_package_manager set runing_state = '0'
+        where variable_pack_id in
+        <foreach collection="list" item="list" separator="," close=")" open="(">
+            #{list}
+        </foreach>
+    </update>
+
+    <update id="updateTVariablePackageManagerOnApplication" parameterType="TVariablePackageManager">
+        update t_variable_package_manager
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="runingState != null  and runingState != ''">runing_state = #{runingState},</if>
+            <if test="applicationId != null">application_Id = #{applicationId},</if>
+            <if test="jobId != null">job_Id = #{jobId},</if>
+            <if test="concurrency != null  and concurrency != ''">concurrency = #{concurrency},</if>
+            <if test="jobMemory != null  and jobMemory != ''">job_Memory = #{jobMemory},</if>
+            <if test="taskMemory != null  and taskMemory != ''">task_Memory = #{taskMemory},</if>
+            <if test="startParamBase != null">start_Param_Base = #{startParamBase},</if>
+            <if test="savePointDir != null">save_Point_Dir = #{savePointDir},</if>
+        </trim>
+        where variable_pack_id = #{variablePackId}
+    </update>
+
+    <delete id="deleteTVariablePackageManagerById" parameterType="Long">
+        delete from t_variable_package_manager where variable_pack_id = #{variablePackId}
+    </delete>
+
+    <delete id="deleteTVariablePackageManagerByIds" parameterType="String">
+        delete from t_variable_package_manager where variable_pack_id in 
+        <foreach item="variablePackId" collection="array" open="(" separator="," close=")">
+            #{variablePackId}
+        </foreach>
+    </delete>
+    
+</mapper>

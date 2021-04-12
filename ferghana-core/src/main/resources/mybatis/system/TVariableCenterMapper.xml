@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.skyon.project.system.mapper.TVariableCenterMapper">
+
+    <resultMap type="TVariableCenter" id="TVariableCenterResult">
+        <result property="variableId"    column="variable_id"    />
+        <result property="variableName"    column="variable_name"    />
+        <result property="variableNameEn"    column="variable_name_EN"    />
+        <result property="versionNum"    column="version_Num"    />
+        <result property="versionShow"    column="version_Show"    />
+        <result property="variableClassification"    column="variable_classification"    />
+        <result property="variableType"    column="variable_type"    />
+        <result property="description"    column="description"    />
+        <result property="variableModelType"    column="variable_Model_Type"    />
+        <result property="variableFactor"    column="variable_Factor"    />
+        <result property="clusterName"    column="cluster_Name"    />
+        <result property="redisFunction"    column="redis_function"    />
+        <result property="redisValue"    column="redis_value"    />
+        <result property="redisKey"    column="redis_key"    />
+        <result property="redisSelfFunctionItem"    column="redis_Self_Function_item"    />
+        <result property="redisElementDistinct"    column="redis_Element_Distinct"    />
+        <result property="statisticsSelfFunctionItem"    column="statistics_Self_Function_item"    />
+
+        <result property="statisticsGroupItem"    column="statistics_Group_Item"    />
+        <result property="statisticsCountModel"    column="statistics_count_model"    />
+        <result property="statisticsModel"    column="statistics_model"    />
+        <result property="statisticsNum"    column="statistics_num"    />
+        <result property="statisticsCycle"    column="statistics_cycle"    />
+        <result property="globalVariableStartTime"    column="global_variable_start_time"    />
+        <result property="globalVariableStopTime"    column="global_variable_stop_time"    />
+        <result property="statisticsConditionOption"    column="statistics_condition_option"    />
+        <result property="statisticsConditions"    column="statistics_conditions"    />
+        <result property="processModel"    column="process_model"    />
+        <result property="processInputParams"    column="process_input_params"    />
+        <result property="userDefinedSql"    column="user_Defined_Sql"    />
+        <result property="deriveVariableModelType"    column="derive_Variable_Model_Type"    />
+        <result property="deriveProcessModel"    column="derive_Process_Model"    />
+        <result property="deriveInputParams"    column="derive_Input_Params"    />
+        <result property="sqlContext"    column="sql_context"    />
+        <result property="deriveBaseVariable"    column="derive_base_Variable"    />
+        <result property="deriveVariableSql"    column="derive_Variable_Sql"    />
+        <result property="testSourceTableCol"    column="test_source_Table_Col"    />
+        <result property="testDimensionTableCol"    column="test_dimension_Table_Col"    />
+
+        <result property="createTime"    column="create_time"    />
+        <result property="modifyTime"    column="modify_time"    />
+        <result property="createBy"    column="create_By"    />
+        <result property="variableClassificationName"    column="variable_classification_name"    />
+    </resultMap>
+
+    <sql id="selectTVariableCenterVo">
+        select variable_id, variable_name, variable_name_EN,variable_classification, variable_type, s.description,version_Num,version_Show,
+         variable_Model_Type, variable_factor, cluster_Name,redis_function,redis_value,redis_key,redis_Self_Function_item,statistics_Self_Function_item,
+         statistics_count_model,statistics_model,statistics_num,statistics_cycle,user_Defined_Sql,derive_Variable_Sql,redis_Element_Distinct,global_variable_start_time,global_variable_stop_time,
+         statistics_condition_option,statistics_conditions,process_model,process_input_params,sql_context,derive_base_Variable,create_By,
+         test_source_Table_Col,test_dimension_Table_Col,statistics_Group_Item,derive_Variable_Model_Type,derive_Process_Model,derive_Input_Params,
+          s.create_time, s.modify_time,d.variable_classification_name from t_variable_center s
+          left join t_variable_classification d on s.variable_classification = d.variable_classification_id
+    </sql>
+
+    <select id="selectTVariableCenterVersion" resultMap="TVariableCenterResult">
+        <include refid="selectTVariableCenterVo"></include>
+        <where>
+            <if test="variableName != null  and variableName != ''"> and variable_name = #{variableName}</if>
+            <if test="variableNameEn != null  and variableNameEn != ''"> and variable_name_en = #{variableNameEn}</if>
+             and version_Num = #{versionNum} and version_show = '1'
+        </where>
+    </select>
+
+
+    <select id="selectTVariableCenterList" parameterType="TVariableCenter" resultMap="TVariableCenterResult">
+        <include refid="selectTVariableCenterVo"/>
+        <where>
+            <if test="variableClassificationName != null  and variableClassificationName != ''"> and variable_classification_name like concat('%', #{variableClassificationName}, '%')</if>
+            <if test="variableName != null  and variableName != ''"> and variable_name like concat('%', #{variableName}, '%')</if>
+            <if test="variableType != null  and variableType != ''"> and variable_type = #{variableType}</if>
+            <if test="variableClassification != null  and variableClassification != ''"> and variable_classification = #{variableClassification}</if>
+            <if test="description != null  and description != ''"> and description like concat('%', #{description}, '%')</if>
+             and version_show = '1'
+        </where>
+        order by create_time desc
+    </select>
+
+    <select id="selectVariableCenterByIds" parameterType="String" resultMap="TVariableCenterResult">
+        select * from t_variable_center where variable_id in
+        <foreach collection="array" separator="," open="(" close=")" item="id">
+            #{id}
+        </foreach>
+         and version_show = '1'
+    </select>
+
+
+    <select id="selectVariableVersionList" parameterType="TVariableCenter" resultMap="TVariableCenterResult">
+        <include refid="selectTVariableCenterVo"/>
+        <where>
+            <if test="variableName != null  and variableName != ''"> and variable_name = #{variableName}</if>
+        </where>
+        order by create_time desc
+    </select>
+
+    <select id="selectTVariableCenterById" parameterType="Long" resultMap="TVariableCenterResult">
+        <include refid="selectTVariableCenterVo"/>
+        where variable_id = #{variableId}
+    </select>
+
+    <select id="selectTVariableCenterByNames" parameterType="Long" resultMap="TVariableCenterResult">
+        <include refid="selectTVariableCenterVo"/>
+        where variable_name_EN in
+        <foreach item="names" collection="array" open="(" separator="," close=")">
+            #{names}
+        </foreach>
+        and version_show = '1'
+    </select>
+
+    <insert id="insertTVariableCenter" parameterType="TVariableCenter" useGeneratedKeys="true" keyProperty="variableId">
+        insert into t_variable_center
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="variableName != null  and variableName != ''">variable_name,</if>
+            <if test="variableNameEn != null  and variableNameEn != ''">variable_name_EN,</if>
+            <if test="versionNum != null  and versionNum != ''">version_Num,</if>
+            <if test="versionShow != null  and versionShow != ''">version_Show,</if>
+            <if test="variableClassification != null  and variableClassification != ''">variable_classification,</if>
+            <if test="variableType != null  and variableType != ''">variable_type,</if>
+            <if test="description != null  and description != ''">description,</if>
+            <if test="variableModelType != null  and variableModelType != ''">variable_Model_Type,</if>
+            <if test="variableFactor != null  and variableFactor != ''">variable_Factor,</if>
+            <if test="clusterName != null  and clusterName != ''">cluster_Name,</if>
+            <if test="redisFunction != null  and redisFunction != ''">redis_function,</if>
+            <if test="redisValue != null  and redisValue != ''">redis_value,</if>
+            <if test="redisKey != null  and redisKey != ''">redis_key,</if>
+            <if test="redisSelfFunctionItem != null  and redisSelfFunctionItem != ''">redis_Self_Function_item,</if>
+            <if test="redisElementDistinct != null  and redisElementDistinct != ''">redis_Element_Distinct,</if>
+            <if test="statisticsSelfFunctionItem != null  and statisticsSelfFunctionItem != ''">statistics_Self_Function_item,</if>
+
+            <if test="statisticsGroupItem != null  and statisticsGroupItem != ''">statistics_Group_Item,</if>
+            <if test="statisticsCountModel != null  and statisticsCountModel != ''">statistics_count_model,</if>
+            <if test="statisticsModel != null  and statisticsModel != ''">statistics_model,</if>
+            <if test="statisticsNum != null  and statisticsNum != ''">statistics_num,</if>
+            <if test="globalVariableStartTime != null  and globalVariableStartTime != ''">global_variable_start_time,</if>
+            <if test="globalVariableStopTime != null  and globalVariableStopTime != ''">global_variable_stop_time,</if>
+            <if test="statisticsCycle != null  and statisticsCycle != ''">statistics_cycle,</if>
+            <if test="statisticsConditionOption != null  and statisticsConditionOption != ''">statistics_condition_option,</if>
+            <if test="statisticsConditions != null  and statisticsConditions != ''">statistics_conditions,</if>
+            <if test="processModel != null  and processModel != ''">process_model,</if>
+            <if test="processInputParams != null  and processInputParams != ''">process_input_params,</if>
+            <if test="userDefinedSql != null  and userDefinedSql != ''">user_Defined_Sql,</if>
+            <if test="sqlContext != null  and sqlContext != ''">sql_context,</if>
+            <if test="deriveVariableModelType != null  and deriveVariableModelType != ''">derive_Variable_Model_Type,</if>
+            <if test="deriveProcessModel != null  and deriveProcessModel != ''">derive_Process_Model,</if>
+            <if test="deriveInputParams != null  and deriveInputParams != ''">derive_Input_Params,</if>
+
+            <if test="deriveBaseVariable != null  and deriveBaseVariable !=''">derive_base_Variable,</if>
+            <if test="deriveVariableSql != null  and deriveVariableSql !=''">derive_Variable_Sql,</if>
+
+            <if test="testSourceTableCol != null  and testSourceTableCol!=''">test_source_Table_Col,</if>
+            <if test="testDimensionTableCol != null  and testDimensionTableCol!=''">test_dimension_Table_Col,</if>
+            <if test="createBy != null  and createBy!=''">create_By,</if>
+
+            <if test="createTime != null ">create_time,</if>
+            <if test="modifyTime != null ">modify_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="variableName != null  and variableName != ''">#{variableName},</if>
+            <if test="variableNameEn != null  and variableNameEn != ''">#{variableNameEn},</if>
+            <if test="versionNum != null  and versionNum != ''">#{versionNum},</if>
+            <if test="versionShow != null  and versionShow != ''">#{versionShow},</if>
+            <if test="variableClassification != null  and variableClassification != ''">#{variableClassification},</if>
+            <if test="variableType != null  and variableType != ''">#{variableType},</if>
+            <if test="description != null  and description != ''">#{description},</if>
+            <if test="variableModelType != null  and variableModelType != ''">#{variableModelType},</if>
+            <if test="variableFactor != null  and variableFactor != ''">#{variableFactor},</if>
+            <if test="clusterName != null  and clusterName != ''">#{clusterName},</if>
+            <if test="redisFunction != null  and redisFunction != ''">#{redisFunction},</if>
+            <if test="redisValue != null  and redisValue != ''">#{redisValue},</if>
+            <if test="redisKey != null  and redisKey != ''">#{redisKey},</if>
+            <if test="redisSelfFunctionItem != null  and redisSelfFunctionItem != ''">#{redisSelfFunctionItem},</if>
+            <if test="redisElementDistinct != null  and redisElementDistinct != ''">#{redisElementDistinct},</if>
+            <if test="statisticsSelfFunctionItem != null  and statisticsSelfFunctionItem != ''">#{statisticsSelfFunctionItem},</if>
+
+            <if test="statisticsGroupItem != null  and statisticsGroupItem != ''">#{statisticsGroupItem},</if>
+            <if test="statisticsCountModel != null  and statisticsCountModel != ''">#{statisticsCountModel},</if>
+            <if test="statisticsModel != null  and statisticsModel != ''">#{statisticsModel},</if>
+            <if test="statisticsNum != null  and statisticsNum != ''">#{statisticsNum},</if>
+            <if test="statisticsCycle != null  and statisticsCycle != ''">#{statisticsCycle},</if>
+            <if test="globalVariableStartTime != null  and globalVariableStartTime != ''">#{globalVariableStartTime},</if>
+            <if test="globalVariableStopTime != null  and globalVariableStopTime != ''">#{globalVariableStopTime},</if>
+            <if test="statisticsConditionOption != null  and statisticsConditionOption != ''">#{statisticsConditionOption},</if>
+            <if test="statisticsConditions != null  and statisticsConditions != ''">#{statisticsConditions},</if>
+            <if test="processModel != null  and processModel != ''">#{processModel},</if>
+            <if test="processInputParams != null  and processInputParams != ''">#{processInputParams},</if>
+            <if test="userDefinedSql != null  and userDefinedSql != ''">#{userDefinedSql},</if>
+            <if test="sqlContext != null  and sqlContext != ''">#{sqlContext},</if>
+            <if test="deriveVariableModelType != null  and deriveVariableModelType != ''">#{deriveVariableModelType},</if>
+            <if test="deriveProcessModel != null  and deriveProcessModel != ''">#{deriveProcessModel},</if>
+            <if test="deriveInputParams != null  and deriveInputParams != ''">#{deriveInputParams},</if>
+            <if test="deriveBaseVariable != null  and deriveBaseVariable!=''">#{deriveBaseVariable},</if>
+            <if test="deriveVariableSql != null  and deriveVariableSql!=''">#{deriveVariableSql},</if>
+            <if test="testSourceTableCol != null  and testSourceTableCol!=''">#{testSourceTableCol},</if>
+            <if test="testDimensionTableCol != null  and testDimensionTableCol!=''">#{testDimensionTableCol},</if>
+            <if test="createBy != null  and createBy!=''">#{createBy},</if>
+
+            <if test="createTime != null ">#{createTime},</if>
+            <if test="modifyTime != null ">#{modifyTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateVersionShow" parameterType="TVariableCenter">
+        update t_variable_center set version_show = '0'
+        where  variable_id = #{variableId}
+    </update>
+
+    <update id="updateTVariableCenter" parameterType="TVariableCenter">
+        update t_variable_center
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="variableName != null  and variableName != ''">variable_name = #{variableName},</if>
+            <if test="variableNameEn != null  and variableNameEn != ''">variable_name_EN = #{variableNameEn},</if>
+            <if test="variableClassification != null  and variableClassification != ''">variable_classification = #{variableClassification},</if>
+            <if test="variableType != null  and variableType != ''">variable_type = #{variableType},</if>
+            <if test="versionShow != null  and versionShow != ''">version_show = #{versionShow},</if>
+            <if test="description != null  and description != ''">description = #{description},</if>
+            <if test="variableModelType != null  and variableModelType != ''">variable_Model_Type = #{variableModelType},</if>
+            <if test="variableFactor != null  and variableFactor != ''">variable_Factor = #{variableFactor},</if>
+            <if test="clusterName != null  and clusterName != ''">cluster_Name = #{clusterName},</if>
+            <if test="redisFunction != null  and redisFunction != ''">redis_function = #{redisFunction},</if>
+            <if test="redisValue != null  and redisValue != ''">redis_value = #{redisValue},</if>
+            <if test="redisKey != null  and redisKey != ''">redis_key = #{redisKey},</if>
+            <if test="redisSelfFunctionItem != null  and redisSelfFunctionItem != ''">redis_Self_Function_item = #{redisSelfFunctionItem},</if>
+            <if test="redisElementDistinct != null  and redisElementDistinct != ''">redis_Element_Distinct = #{redisElementDistinct},</if>
+            <if test="statisticsSelfFunctionItem != null  and statisticsSelfFunctionItem != ''">statistics_Self_Function_item = #{statisticsSelfFunctionItem},</if>
+
+            <if test="statisticsGroupItem != null  and statisticsGroupItem != ''">statistics_Group_Item = #{statisticsGroupItem},</if>
+            <if test="statisticsCountModel != null  and statisticsCountModel != ''">statistics_count_model = #{statisticsCountModel},</if>
+            <if test="statisticsModel != null  and statisticsModel != ''">statistics_model = #{statisticsModel},</if>
+            <if test="statisticsNum != null  and statisticsNum != ''">statistics_num = #{statisticsNum},</if>
+            <if test="statisticsCycle != null  and statisticsCycle != ''">statistics_cycle = #{statisticsCycle},</if>
+            <if test="globalVariableStartTime != null  and globalVariableStartTime != ''">global_variable_start_time = #{globalVariableStartTime},</if>
+            <if test="globalVariableStopTime != null  and globalVariableStopTime != ''">global_variable_stop_time = #{globalVariableStopTime},</if>
+            <if test="statisticsConditionOption != null  and statisticsConditionOption != ''">statistics_condition_option = #{statisticsConditionOption},</if>
+            <if test="statisticsConditions != null">statistics_conditions = #{statisticsConditions},</if>
+            <if test="processModel != null  and processModel != ''">process_Model = #{processModel},</if>
+            <if test="processInputParams != null  and processInputParams != ''">process_Input_Params = #{processInputParams},</if>
+            <if test="userDefinedSql != null">user_Defined_Sql = #{userDefinedSql},</if>
+            <if test="sqlContext != null  and sqlContext != ''">sql_context = #{sqlContext},</if>
+            <if test="deriveVariableModelType != null  and deriveVariableModelType != ''">derive_Variable_Model_Type = #{deriveVariableModelType},</if>
+            <if test="deriveProcessModel != null  and deriveProcessModel != ''">derive_Process_Model = #{deriveProcessModel},</if>
+            <if test="deriveInputParams != null  and deriveInputParams != ''">derive_Input_Params = #{deriveInputParams},</if>
+
+            <if test="deriveBaseVariable != null  and deriveBaseVariable !=''">derive_base_Variable = #{deriveBaseVariable},</if>
+            <if test="deriveVariableSql != null  and deriveVariableSql !=''">derive_Variable_Sql = #{deriveVariableSql},</if>
+            <if test="testSourceTableCol != null  and testSourceTableCol != ''">test_source_Table_Col = #{testSourceTableCol},</if>
+            <if test="testDimensionTableCol != null  and testDimensionTableCol != ''">test_dimension_Table_Col = #{testDimensionTableCol},</if>
+
+            <if test="createTime != null ">create_time = #{createTime},</if>
+            <if test="modifyTime != null ">modify_time = #{modifyTime},</if>
+        </trim>
+        where variable_id = #{variableId}
+    </update>
+
+    <delete id="deleteTVariableCenterById" parameterType="Long">
+        delete from t_variable_center where variable_id = #{variableId}
+    </delete>
+
+    <delete id="deleteTVariableCenterByIds" parameterType="String">
+        delete from t_variable_center where variable_id in
+        <foreach item="variableId" collection="array" open="(" separator="," close=")">
+            #{variableId}
+        </foreach>
+    </delete>
+
+</mapper>

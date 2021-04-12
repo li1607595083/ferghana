@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.skyon.project.system.mapper.TDimensionFieldMapper">
+
+    <resultMap type="TDimensionField" id="TDimensionFieldResult">
+        <result property="id" column="id"/>
+        <result property="dimensionTableName" column="dimension_table_name"/>
+        <result property="connectorType" column="connector_type"/>
+        <result property="fieldName" column="field_name"/>
+        <result property="fieldType" column="field_type"/>
+        <result property="isUsed" column="is_used"/>
+        <result property="usedVariableId" column="used_variable_id"/>
+        <result property="createTime" column="create_time"/>
+        <result property="modifyTime" column="modify_time"/>
+    </resultMap>
+
+    <sql id="selectTDimensionFieldVo">
+        select id,dimension_table_name,connector_type,field_name,field_type,is_used,used_variable_id,create_time, modify_time from t_dimension_field
+    </sql>
+
+<!--    <select id="selectTDatasourceFieldList" parameterType="TDatasourceField" resultMap="TDatasourceFieldResult">-->
+<!--        <include refid="selectTDatasourceFieldVo"/>-->
+<!--        <where>-->
+<!--            <if test="id != null ">and id = #{id}</if>-->
+<!--            <if test="datasourceTableName != null  and datasourceTableName != ''">and datasource_table_name = #{datasourceTableName}-->
+<!--            </if>-->
+<!--            <if test="fieldName != null  and fieldName != ''">and field_name = #{fieldName}</if>-->
+<!--            <if test="fieldType != null  and fieldType != ''">and field_type = #{fieldType}</if>-->
+<!--            <if test="isUsed != null  and isUsed != ''">and is_used = #{isUsed}</if>-->
+<!--            <if test="usedVariableId != null  and usedVariableId != ''">and used_variable_id = #{usedVariableId}</if>-->
+<!--        </where>-->
+<!--    </select>-->
+
+<!--    <select id="selectTDatasourceFieldByName" parameterType="String" resultMap="TDatasourceFieldResult">-->
+<!--        <include refid="selectTDatasourceFieldVo"/>-->
+<!--        where datasource_table_name = #{tableName}-->
+<!--    </select>-->
+
+
+<!--    <select id="selectFieldBYVariableEN" parameterType="Map" resultType="Map">-->
+<!--        select f.field_name from t_variable_classification c-->
+<!--        left join t_datasource_field f on c.source_dab_relation = f.datasource_table_name-->
+<!--        where c.variable_classification_id = #{id} and used_variable_id like concat('%', #{name}, '%')-->
+<!--    </select>-->
+
+    <insert id="insertTDimensionField" parameterType="java.util.ArrayList" useGeneratedKeys="true" keyProperty="id">
+        insert into t_dimension_field (dimension_table_name,connector_type,field_name,field_type,is_used,create_time) values
+        <foreach collection="list" item="item" index="index" separator=",">
+            (#{item.tableName},#{item.connectorType},#{item.fieldName},#{item.fieldType},#{item.isUsed},sysdate())
+        </foreach>
+    </insert>
+
+<!--    <update id="updateFieldName" parameterType="Map">-->
+<!--        <foreach collection="array" item="item" separator=";" open="" close=";">-->
+<!--            update t_datasource_field set field_name = #{item.schemaDefine}-->
+<!--            where is_used = '0' and id = #{item.fieldId}-->
+<!--        </foreach>-->
+<!--    </update>-->
+
+<!--    <update id="updateFieldNameIsUsed" parameterType="Map">-->
+<!--        update t_datasource_field q set q.is_used = '1', q.used_variable_id = CONCAT(IFNULL(q.used_variable_id,''),'',#{variableName}) where q.id in (-->
+<!--            select qq.id from (-->
+<!--                select f.id from t_variable_classification c-->
+<!--                left join t_datasource_field f on c.source_dab_relation = f.datasource_table_name-->
+<!--                where c.variable_classification_id = #{id}-->
+<!--                and f.field_name in-->
+<!--                <foreach collection="fields" item="fields" separator="," open="(" close=")">-->
+<!--                    #{fields}-->
+<!--                </foreach>-->
+<!--                 and (locate(#{variableName},used_variable_id) = 0 or used_variable_id is null)-->
+<!--            ) qq-->
+<!--        )-->
+<!--    </update>-->
+
+<!--    <update id="updateIsUsed0ById" parameterType="Map">-->
+<!--        update t_datasource_field q set used_variable_id = null,q.is_used = '0' where q.id in (-->
+<!--            select qq.id from (-->
+<!--                select f.id from t_variable_classification c-->
+<!--                left join t_datasource_field f on c.source_dab_relation = f.datasource_table_name-->
+<!--                where c.variable_classification_id = #{id}-->
+<!--                    and f.field_name in-->
+<!--                    <foreach collection="fields" item="fields" separator="," open="(" close=")">-->
+<!--                        #{fields}-->
+<!--                     </foreach>-->
+<!--            ) qq-->
+<!--        ) and q.used_variable_id = #{variableName}-->
+<!--    </update>-->
+
+<!--    <update id="updateIsUsed1ById" parameterType="Map">-->
+<!--        update t_datasource_field q set used_variable_id = replace(used_variable_id,#{variableName},'') where q.id in (-->
+<!--            select qq.id from (-->
+<!--                select f.id from t_variable_classification c-->
+<!--                left join t_datasource_field f on c.source_dab_relation = f.datasource_table_name-->
+<!--                where c.variable_classification_id = #{id}-->
+<!--                    and f.field_name in-->
+<!--                    <foreach collection="fields" item="fields" separator="," open="(" close=")">-->
+<!--                        #{fields}-->
+<!--                    </foreach>-->
+<!--            ) qq-->
+<!--        ) and q.used_variable_id != #{variableName}-->
+<!--    </update>-->
+
+    <delete id="deleteTDimensionField" parameterType="String">
+        delete from t_dimension_field where dimension_table_name in
+        <foreach collection="array" item="tableNames" open="(" close=")" separator=",">
+            #{tableNames}
+        </foreach>
+    </delete>
+
+</mapper>

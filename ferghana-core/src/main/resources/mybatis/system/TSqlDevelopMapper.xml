@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.skyon.project.system.mapper.TSqlDevelopMapper">
+
+    <resultMap type="TSqlDevelop" id="TSqlDevelopResult">
+        <result property="sqlDevelopId" column="sql_develop_id"/>
+        <result property="sqlTaskName" column="sql_task_name"/>
+        <result property="sqlContent" column="sql_content"/>
+        <result property="sourceTableId" column="source_table_id"/>
+        <result property="resultTableIds" column="result_table_ids"/>
+        <result property="applicationId" column="application_Id"/>
+        <result property="jobId" column="job_id"/>
+        <result property="sqlTaskVersion" column="sql_task_version"/>
+        <result property="runStatus" column="run_status"/>
+        <result property="startTime" column="start_time"/>
+        <result property="stopTime" column="stop_time"/>
+        <result property="createBy" column="create_By"/>
+        <result property="createTime" column="create_Time"/>
+    </resultMap>
+
+    <resultMap id="paramTaskVersion" type="String">
+        <result property="sqlTaskVersion" column="MAX(sql_task_version)"/>
+    </resultMap>
+
+    <resultMap id="paramSqlDevelopId" type="java.util.Map">
+        <result property="sqlDevelopId" column="sql_develop_id"/>
+        <result property="sqlTaskVersion" column="sql_task_version"/>
+    </resultMap>
+
+    <resultMap id="paramSqlDevelopStatus" type="java.util.Map">
+        <result property="applicationId" column="application_Id"/>
+    </resultMap>
+
+    <sql id="selectTSqlDevelopVo">
+        select sql_develop_id, sql_task_name, sql_content, source_table_id, result_table_ids,application_id, job_id,
+         sql_task_version, run_status,
+        start_time, stop_time, create_By, create_Time from t_sql_develop
+    </sql>
+
+    <sql id="selectTSqlDevelopApplicationId">
+        select application_id from t_sql_develop
+    </sql>
+
+    <sql id="selectMaxVersion">
+        select MAX(sql_task_version) from t_sql_develop
+    </sql>
+
+    <select id="selectBooleanStart" parameterType="TSqlDevelop" resultMap="paramSqlDevelopId">
+        select sql_develop_id,sql_task_version from t_sql_develop
+        <where>
+            and sql_task_name = #{sqlTaskName}
+            and run_status = '1'
+        </where>
+    </select>
+    <select id="selectMaxVersionBySqlTaskName" parameterType="TSqlDevelop" resultMap="paramTaskVersion">
+        <include refid="selectMaxVersion"/>
+        <where>
+            <if test="sqlTaskName != null  and sqlTaskName != ''">and sql_task_name = #{sqlTaskName}</if>
+        </where>
+    </select>
+
+
+    <select id="selectTSqlDevelopList" parameterType="TSqlDevelop" resultMap="TSqlDevelopResult">
+        <include refid="selectTSqlDevelopVo"/>
+        <where>
+            <if test="sqlTaskName != null  and sqlTaskName != ''">and sql_task_name like concat('%', #{sqlTaskName},
+                '%')
+            </if>
+            <if test="sqlContent != null  and sqlContent != ''">and sql_content like concat('%', #{sqlContent}, '%')
+            </if>
+            <if test="sourceTableId != null  and sourceTableId != ''">and source_table_id = #{sourceTableId}</if>
+            <if test="resultTableIds != null  and resultTableIds != ''">and result_table_ids = #{resultTableIds}</if>
+            <if test="sqlTaskVersion != null  and sqlTaskVersion != ''">and sql_task_version = #{sqlTaskVersion}</if>
+            <if test="runStatus != null  and runStatus != ''">and run_status = #{runStatus}</if>
+            <if test="startTime != null ">and start_time = #{startTime}</if>
+            <if test="stopTime != null ">and stop_time = #{stopTime}</if>
+            <if test="createBy != null  and createBy != ''">and create_By = #{createBy}</if>
+            <if test="createTime != null ">and create_Time = #{createTime}</if>
+        </where>
+        order by sql_task_name
+    </select>
+
+    <select id="selectTSqlDevelopById" parameterType="Long" resultMap="TSqlDevelopResult">
+        <include refid="selectTSqlDevelopVo"/>
+        where sql_develop_id = #{sqlDevelopId}
+    </select>
+
+    <insert id="insertTSqlDevelop" parameterType="TSqlDevelop" useGeneratedKeys="true" keyProperty="sqlDevelopId">
+        insert into t_sql_develop
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="sqlTaskName != null  and sqlTaskName != ''">sql_task_name,</if>
+            <if test="sqlContent != null  and sqlContent != ''">sql_content,</if>
+            <if test="sourceTableId != null  and sourceTableId != ''">source_table_id,</if>
+            <if test="resultTableIds != null  and resultTableIds != ''">result_table_ids,</if>
+            <if test="applicationId != null  and applicationId != ''">application_id,</if>
+            <if test="jobId != null  and jobId != ''">job_id,</if>
+            <if test="sqlTaskVersion != null  and sqlTaskVersion != ''">sql_task_version,</if>
+            <if test="runStatus != null  and runStatus != ''">run_status,</if>
+            <if test="startTime != null ">start_time,</if>
+            <if test="stopTime != null ">stop_time,</if>
+            <if test="createBy != null  and createBy != ''">create_By,</if>
+            <if test="createTime != null ">create_Time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="sqlTaskName != null  and sqlTaskName != ''">#{sqlTaskName},</if>
+            <if test="sqlContent != null  and sqlContent != ''">#{sqlContent},</if>
+            <if test="sourceTableId != null  and sourceTableId != ''">#{sourceTableId},</if>
+            <if test="resultTableIds != null  and resultTableIds != ''">#{resultTableIds},</if>
+            <if test="applicationId != null  and applicationId != ''">#{applicationId},</if>
+            <if test="jobId != null  and jobId != ''">#{jobId},</if>
+            <if test="sqlTaskVersion != null  and sqlTaskVersion != ''">#{sqlTaskVersion},</if>
+            <if test="runStatus != null  and runStatus != ''">#{runStatus},</if>
+            <if test="startTime != null ">#{startTime},</if>
+            <if test="stopTime != null ">#{stopTime},</if>
+            <if test="createBy != null  and createBy != ''">#{createBy},</if>
+            <if test="createTime != null ">#{createTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateTSqlDevelop" parameterType="TSqlDevelop">
+        update t_sql_develop
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="sqlTaskName != null  and sqlTaskName != ''">sql_task_name = #{sqlTaskName},</if>
+            <if test="sqlContent != null  and sqlContent != ''">sql_content = #{sqlContent},</if>
+            <if test="sourceTableId != null  and sourceTableId != ''">source_table_id = #{sourceTableId},</if>
+            <if test="resultTableIds != null  and resultTableIds != ''">result_table_ids = #{resultTableIds},</if>
+            <if test="applicationId != null  and applicationId != ''">application_id = #{applicationId},</if>
+            <if test="jobId != null  and jobId != ''">job_id = #{jobId},</if>
+            <if test="sqlTaskVersion != null  and sqlTaskVersion != ''">sql_task_version = #{sqlTaskVersion},</if>
+            <if test="runStatus != null  and runStatus != ''">run_status = #{runStatus},</if>
+            <if test="startTime != null ">start_time = #{startTime},</if>
+            <if test="stopTime != null ">stop_time = #{stopTime},</if>
+            <if test="createBy != null  and createBy != ''">create_By = #{createBy},</if>
+            <if test="createTime != null ">create_Time = #{createTime},</if>
+        </trim>
+        where sql_develop_id = #{sqlDevelopId}
+    </update>
+
+    <delete id="deleteTSqlDevelopById" parameterType="Long">
+        delete from t_sql_develop where sql_develop_id = #{sqlDevelopId}
+    </delete>
+
+    <delete id="deleteTSqlDevelopByIds" parameterType="String">
+        delete from t_sql_develop where sql_develop_id in
+        <foreach item="sqlDevelopId" collection="array" open="(" separator="," close=")">
+            #{sqlDevelopId}
+        </foreach>
+    </delete>
+
+    <select id="selectTSqlDevelopByRunStatus" parameterType="Long" resultMap="paramSqlDevelopStatus">
+        <include refid="selectTSqlDevelopApplicationId"/>
+        where run_status = '1'
+    </select>
+
+
+</mapper>
