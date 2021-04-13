@@ -8,7 +8,7 @@ import java.util.List;
 
 /**
  * 变量分类对象 t_variable_classification
- * 
+ *
  *
  * @date 2020-08-21
  */
@@ -27,9 +27,13 @@ public class TVariableClassification extends BaseEntity
     @Excel(name = "关联数据源表")
     private String sourceDabRelation;
 
-    /** 关联数据维表 */
-    @Excel(name = "关联数据源表")
-    private String dimensionDabRelation;
+    /** 关联数据源表(二) */
+    @Excel(name = "关联数据源表(二)")
+    private String sourceTwoDabRelation;
+
+//    /** 关联数据维表 */
+//    @Excel(name = "关联数据源表")
+//    private String dimensionDabRelation;
 
     /** 备注 */
     @Excel(name = "备注")
@@ -41,12 +45,17 @@ public class TVariableClassification extends BaseEntity
     // 数据源表关联字段
     private String sourceDabField;
 
-    // 关联数据维表
+    /** 关联数据维表 */
+    @Excel(name = "关联数据维表")
     private Object dimensionRelation;
+
+    /** 关联数据源表字段 */
+    @Excel(name = "关联数据源表字段")
+    private Object sourceRelation;
 
     //---------------------关联表字段------------------------
 
-//    private String dimensionName;
+    //    private String dimensionName;
     private String schemaDefine;
 //    private String connectorType;
 //    private String dimensionJdbcSchemaDefine;
@@ -72,13 +81,13 @@ public class TVariableClassification extends BaseEntity
         this.selfDefineDimensionField = selfDefineDimensionField;
     }
 
-    public String getDimensionDabRelation() {
-        return dimensionDabRelation;
-    }
-
-    public void setDimensionDabRelation(String dimensionDabRelation) {
-        this.dimensionDabRelation = dimensionDabRelation;
-    }
+//    public String getDimensionDabRelation() {
+//        return dimensionDabRelation;
+//    }
+//
+//    public void setDimensionDabRelation(String dimensionDabRelation) {
+//        this.dimensionDabRelation = dimensionDabRelation;
+//    }
 
     public String getSourceDabField() {
         return sourceDabField;
@@ -96,6 +105,14 @@ public class TVariableClassification extends BaseEntity
         this.dimensionRelation = dimensionRelation;
     }
 
+    public Object getSourceRelation() {
+        return sourceRelation;
+    }
+
+    public void setSourceRelation(Object sourceRelation) {
+        this.sourceRelation = sourceRelation;
+    }
+
     public String getSchemaPrimaryKey() {
         return schemaPrimaryKey;
     }
@@ -108,48 +125,59 @@ public class TVariableClassification extends BaseEntity
     @Excel(name = "修改时间", width = 30, dateFormat = "yyyy-MM-dd")
     private Date modifyTime;
 
-    public void setVariableClassificationId(Long variableClassificationId) 
+    public void setVariableClassificationId(Long variableClassificationId)
     {
         this.variableClassificationId = variableClassificationId;
     }
 
-    public Long getVariableClassificationId() 
+    public Long getVariableClassificationId()
     {
         return variableClassificationId;
     }
-    public void setVariableClassificationName(String variableClassificationName) 
+    public void setVariableClassificationName(String variableClassificationName)
     {
         this.variableClassificationName = variableClassificationName;
     }
 
-    public String getVariableClassificationName() 
+    public String getVariableClassificationName()
     {
         return variableClassificationName;
     }
-    public void setSourceDabRelation(String sourceDabRelation) 
+    public void setSourceDabRelation(String sourceDabRelation)
     {
         this.sourceDabRelation = sourceDabRelation;
     }
 
-    public String getSourceDabRelation() 
+    public String getSourceDabRelation()
     {
         return sourceDabRelation;
     }
-    public void setDescription(String description) 
+
+    public void setSourceTwoDabRelation(String sourceTwoDabRelation)
+    {
+        this.sourceTwoDabRelation = sourceTwoDabRelation;
+    }
+
+    public String getSourceTwoDabRelation()
+    {
+        return sourceTwoDabRelation;
+    }
+
+    public void setDescription(String description)
     {
         this.description = description;
     }
 
-    public String getDescription() 
+    public String getDescription()
     {
         return description;
     }
-    public void setModifyTime(Date modifyTime) 
+    public void setModifyTime(Date modifyTime)
     {
         this.modifyTime = modifyTime;
     }
 
-    public Date getModifyTime() 
+    public Date getModifyTime()
     {
         return modifyTime;
     }
@@ -160,7 +188,9 @@ public class TVariableClassification extends BaseEntity
                 "variableClassificationId=" + variableClassificationId +
                 ", variableClassificationName='" + variableClassificationName + '\'' +
                 ", sourceDabRelation='" + sourceDabRelation + '\'' +
-                ", dimensionDabRelation='" + dimensionDabRelation + '\''+
+                ", sourceTwoDabRelation='" + sourceTwoDabRelation + '\'' +
+                ", dimensionRelation='" + dimensionRelation + '\''+
+                ", sourceRelation='" + sourceRelation + '\''+
                 ", description='" + description + '\'' +
                 ", modifyTime=" + modifyTime +
                 '}';

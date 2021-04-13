@@ -62,11 +62,16 @@ public class TVariableClassificationServiceImpl implements ITVariableClassificat
     public int insertTVariableClassification(TVariableClassification tVariableClassification) {
         tVariableClassification.setCreateTime(DateUtils.getNowDate());
         setDimensionRelation(tVariableClassification);
+        setSourceRelation(tVariableClassification);
         return tVariableClassificationMapper.insertTVariableClassification(tVariableClassification);
     }
 
     private void setDimensionRelation(TVariableClassification tVariableClassification) {
         tVariableClassification.setDimensionRelation(JSON.toJSONString(tVariableClassification.getDimensionRelation()));
+    }
+
+    private void setSourceRelation(TVariableClassification tVariableClassification) {
+        tVariableClassification.setSourceRelation(JSON.toJSONString(tVariableClassification.getSourceRelation()));
     }
 
     /**
@@ -79,6 +84,7 @@ public class TVariableClassificationServiceImpl implements ITVariableClassificat
     public int updateTVariableClassification(TVariableClassification tVariableClassification) {
         tVariableClassification.setModifyTime(new Date());
         setDimensionRelation(tVariableClassification);
+        setSourceRelation(tVariableClassification);
         return tVariableClassificationMapper.updateTVariableClassification(tVariableClassification);
     }
 

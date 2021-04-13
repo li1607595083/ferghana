@@ -64,12 +64,66 @@
             :disabled="detailViem" />
         </el-form-item>
 
-        <el-form-item label="数据源表" prop="sourceDabRelation">
-          <el-select v-model="form.sourceDabRelation" placeholder="请选择数据源表" @change="sourceDabRelationChange" clearable
-            style="width: 100%" :disabled="detailViem">
-            <el-option v-for="data in sourceDataOptions" :key="data.value" :label="data.name" :value="data.value" />
-          </el-select>
-        </el-form-item>
+        <!-- 数据源表选择框 -->
+        <div class="el-col-24">
+          <!-- 第一个数据源表 -->
+          <el-form-item :label="(sourceTwoDabItem ? '数据源表(一)' : '数据源表')" prop="sourceDabRelation" class="el-col-20">
+            <el-select v-model="form.sourceDabRelation" placeholder="请选择数据源表" @change="sourceDabRelationChange" clearable
+              style="width: 100%" :disabled="detailViem">
+              <el-option v-for="data in sourceDataOptions" :key="data.value" :label="data.name" :value="data.value" />
+            </el-select>
+          </el-form-item>
+
+          <el-form-item class="el-col-4 elementStyle">
+            <span>
+              <!-- 第一个数据源表只能加操作 -->
+              <el-button @click="sourceAddItem" :disabled="detailViem">
+                <i class="el-icon-plus" />
+              </el-button>
+              <el-button :disabled="true">
+                <i class="el-icon-minus" />
+              </el-button>
+            </span>
+          </el-form-item>
+
+          <!-- 第二个数据源表 -->
+          <el-form-item label="数据源表(二)" prop="sourceDabRelation" class="el-col-20" v-if="sourceTwoDabItem">
+            <el-select v-model="form.sourceTwoDabRelation" placeholder="请选择数据源表" @change="sourceTwoDabRelationChange" no-data-text="请先选择数据源表(一)" clearable
+              style="width: 100%" :disabled="detailViem">
+              <el-option v-for="data in sourceTwoDataOptions" :key="data.value" :label="data.name" :value="data.value" />
+            </el-select>
+          </el-form-item>
+
+          <el-form-item class="el-col-4 elementStyle" v-if="sourceTwoDabItem">
+            <span>
+              <!-- 第二个数据源表只能减操作 -->
+              <el-button :disabled="true">
+                <i class="el-icon-plus" />
+              </el-button>
+              <el-button @click="sourceDeleteItem" :disabled="detailViem">
+                <i class="el-icon-minus" />
+              </el-button>
+            </span>
+          </el-form-item>
+
+          <!-- 数据源表关联字段 -->
+          <el-form-item label="源表(一)关联字段" class="el-col-12" v-if="sourceTwoDabItem">
+            <el-select v-model="form.sourceRelation.sourceDabField" placeholder="请选择源表(一)关联字段" @change="refresh"
+              clearable style="width: 100%" :disabled="detailViem" no-data-text="请先选择源表(一)">
+              <el-option v-for="dict in sourceDabFieldOptions" :key="dict.value" :label="dict.label"
+                :value="dict.value" />
+            </el-select>
+          </el-form-item>
+
+          <el-form-item label="源表(二)关联字段" class="el-col-12" v-if="sourceTwoDabItem">
+            <el-select v-model="form.sourceRelation.sourceTwoDabField" placeholder="请选择源表(二)关联字段" @change="refresh" no-data-text="请先选择源表(二)" style="width: 100%"
+              :disabled="detailViem">
+              <el-option v-for="data in sourceTwoDabFieldOptions" :key="data.value" :label="data.name"
+                :value="data.value"/>
+            </el-select>
+          </el-form-item>
+
+        </div>
 
         <div v-for="(item, index) in form.dimensionRelation" :key="index">
           <div class="el-col-24">
@@ -88,7 +142,15 @@
                 @change="refresh()" no-data-text="请先选择数据源表" style="width: 100%"
                 :disabled="detailViem">
                 <el-option v-for="data in sourceDabFieldOptions" :key="data.value" :label="data.name"
-                  :value="data.value" />
+                  :value="data.value"  v-if="!sourceTwoDabItem"/>
+                <el-option-group :label="form.sourceDabRelation" v-if="sourceTwoDabItem">
+                  <el-option v-for="data in sourceDabFieldOptions" :key="data.value" :label="data.name"
+                    :value="data.value"/>
+                </el-option-group>
+                <el-option-group :label="form.sourceTwoDabRelation" v-if="sourceTwoDabItem">
+                  <el-option v-for="data in sourceTwoDabFieldOptions" :key="data.value" :label="data.name"
+                    :value="data.value"/>
+                </el-option-group>
               </el-select>
             </el-form-item>
 
@@ -108,21 +170,29 @@
           <!-- 不止一项，用div包裹起来 -->
           <div v-for="(relation, index2) in item.relation" :key="index2" class="el-col-24" v-show="item.relation">
 
-            <el-form-item label="数据源表关联字段" class="el-col-8" :rules="rules.dimensionRelation.relation.sourceDabField"
-              :prop="'dimensionRelation.'+index+'.relation.'+index2+'.sourceDabField'">
-              <el-select v-model="relation.sourceDabField" placeholder="请选择关联数据源表字段" no-data-text="请先选择数据源表"
-                style="width: 100%" :disabled="detailViem" @change="refresh()">
-                <el-option v-for="data in sourceDabFieldOptions" :key="data.value" :label="data.name"
-                  :value="data.value" />
-              </el-select>
-            </el-form-item>
-
             <el-form-item label="数据维表关联字段" class="el-col-8" :rules="rules.dimensionRelation.relation.dimensionDabField"
               :prop="'dimensionRelation.'+index+'.relation.'+index2+'.dimensionDabField'">
               <el-select v-model="relation.dimensionDabField" placeholder="请选择关联数据维表字段" no-data-text="请先选择数据维表"
                 style="width: 100%" :disabled="detailViem" @change="refresh()">
                 <el-option v-for="data in dimensionDabFieldOptions" :key="data.value" :label="data.name"
-                  :value="data.value" />
+                  :value="data.value"/>
+              </el-select>
+            </el-form-item>
+
+            <el-form-item label="数据源表关联字段" class="el-col-8" :rules="rules.dimensionRelation.relation.sourceDabField"
+              :prop="'dimensionRelation.'+index+'.relation.'+index2+'.sourceDabField'">
+              <el-select v-model="relation.sourceDabField" placeholder="请选择关联数据源表字段" no-data-text="请先选择数据源表"
+                style="width: 100%" :disabled="detailViem" @change="refresh()">
+                <el-option v-for="data in sourceDabFieldOptions" :key="data.value" :label="data.name"
+                  :value="data.value"  v-if="!sourceTwoDabItem"/>
+                <el-option-group :label="form.sourceDabRelation" v-if="sourceTwoDabItem">
+                  <el-option v-for="data in sourceDabFieldOptions" :key="data.value" :label="data.name"
+                    :value="data.value"/>
+                </el-option-group>
+                <el-option-group :label="form.sourceTwoDabRelation" v-if="sourceTwoDabItem">
+                  <el-option v-for="data in sourceTwoDabFieldOptions" :key="data.value" :label="data.name"
+                    :value="data.value"/>
+                </el-option-group>
               </el-select>
             </el-form-item>
 
@@ -190,12 +260,18 @@
         title: "",
         // 是否显示弹出层
         open: false,
+        // 第二个数据源表选择框是否显示，默认false
+        sourceTwoDabItem: false,
         // 数据源表options
         sourceDataOptions: [],
+        // 数据源表(二)options
+        sourceTwoDataOptions: [],
         // 数据维表options
         dimensionDataOptions: [],
         // 数据源表关联字段options
         sourceDabFieldOptions: [],
+         // 数据源表(二)关联字段options
+        sourceTwoDabFieldOptions: [],
         // 数据维表关联字段options
         dimensionDabFieldOptions: [],
         detailViem: false,
@@ -256,8 +332,14 @@
     created() {
       this.getList();
     },
+    watch:{
+      sourceTwoDabItem(newVal){
+        if(newVal && this.form.sourceTwoDabRelation && this.form.sourceTwoDabRelation !== ""){
+          this.sourceTwoDabRelationChange(this.form.sourceTwoDabRelation);
+        }
+      }
+    },
     methods: {
-
       // jdbc增加行
       dimensionAddItem() {
         this.form.dimensionRelation.push({
@@ -274,6 +356,19 @@
           return false;
         }
         this.form.dimensionRelation.splice(index, 1);
+      },
+      // 数据源表增加行
+      sourceAddItem(){
+        this.sourceTwoDabItem = true;
+      },
+      // 数据源表减少行
+      sourceDeleteItem(){
+        this.sourceTwoDabItem = false;
+        this.form.sourceTwoDabRelation = undefined;
+        this.form.sourceRelation = {
+          sourceDabField:"",
+          sourceTwoDabField:""
+        }
       },
       // 数据维表字段添加行
       fieIdAddItem(index) {
@@ -299,6 +394,12 @@
         this.form.sourceDabField = value;
         let that = this;
         if (value && value !== "") {
+          // 不能选择两个相同的数据源表相关联
+          for(let i=0;i<this.sourceDataOptions.length;i++){
+            if(this.sourceDataOptions[i].value !== value){
+              this.sourceTwoDataOptions.push(this.sourceDataOptions[i])
+            }
+          }
           const baseUrl = process.env.VUE_APP_BASE_API;
           axios({
             method: 'get',
@@ -318,12 +419,44 @@
                 name: resp.data.rows[0][i].key,
               })
             }
-            // that.$forceUpdate();
+            that.$forceUpdate();
           }).catch(resp => {
             console.log('获取数据源表请求失败!');
           });
         } else {
           that.sourceDabFieldOptions = [];
+        }
+      },
+      // 数据源表(二)切换
+      sourceTwoDabRelationChange(value) {
+        this.form.sourceDabField = value;
+        let that = this;
+        if (value && value !== "") {
+          const baseUrl = process.env.VUE_APP_BASE_API;
+          axios({
+            method: 'get',
+            url: baseUrl + '/source/manage/querySchema',
+            headers: {
+              'Authorization': 'Bearer ' + getToken()
+            },
+            responseType: 'json',
+            params: {
+              dataSourceName: value
+            },
+          }).then(function(resp) {
+            that.sourceTwoDabFieldOptions = [];
+            for (let i = 0; i < resp.data.rows[0].length; i++) {
+              that.sourceTwoDabFieldOptions.push({
+                value: resp.data.rows[0][i].key,
+                name: resp.data.rows[0][i].key,
+              })
+            }
+            that.$forceUpdate();
+          }).catch(resp => {
+            console.log('获取数据源表请求失败!');
+          });
+        } else {
+          that.sourceTwoDabFieldOptions = [];
         }
       },
       // 数据维表切换
@@ -452,6 +585,7 @@
           variableClassificationId: undefined,
           variableClassificationName: undefined,
           sourceDabRelation: undefined,
+          sourceTwoDabRelation: undefined,
           description: undefined,
           createTime: undefined,
           modifyTime: undefined,
@@ -459,9 +593,14 @@
           dimensionRelation: [{
             dimensionName: "",
             sourceDabField: ""
-          }]
+          }],
+          sourceRelation:{
+            sourceDabField:"",
+            sourceTwoDabField:""
+          }
         };
         this.resetForm("form");
+        this.sourceTwoDabItem = false;
         this.sourceDataOptions = [];
         this.dimensionRelationOptions = [];
         this.sourceDabFieldOptions = [];
@@ -503,6 +642,10 @@
           this.form = response.data;
           let parse = JSON.parse(this.form.dimensionRelation);
           this.form.dimensionRelation = JSON.parse(this.form.dimensionRelation);
+          this.form.sourceRelation = JSON.parse(this.form.sourceRelation);
+          if(this.form.sourceTwoDabRelation && this.form.sourceTwoDabRelation !== ""){
+            this.sourceTwoDabItem = true;
+          }
           this.open = true;
           this.detailViem = true;
           this.title = "查看变量分类";
@@ -518,6 +661,11 @@
         getClassification(variableClassificationId).then(response => {
           this.form = response.data;
           this.form.dimensionRelation = JSON.parse(this.form.dimensionRelation);
+          this.form.sourceRelation = JSON.parse(this.form.sourceRelation);
+          console.log(this.form.sourceTwoDabRelation)
+          if(this.form.sourceTwoDabRelation && this.form.sourceTwoDabRelation !== ""){
+            this.sourceTwoDabItem = true;
+          }
           this.open = true;
           this.title = "修改变量分类";
           let tmp = this.form.sourceDabField;
