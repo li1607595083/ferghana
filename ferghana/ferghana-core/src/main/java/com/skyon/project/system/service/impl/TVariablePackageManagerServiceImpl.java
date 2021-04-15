@@ -96,14 +96,15 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
     /**
      * 新增变量包管理
      *
-     * @param tVariablePackageManager 变量包管理
+     * @param pkManager 变量包管理
      * @return 结果
      */
     @Override
     public int insertTVariablePackageManager(Map map, TVariablePackageManager pkManager, String runFlag) {
         pkManager.setCreateTime(DateUtils.getNowDate());
         pkManager.setRuningState("0"); // 初始化都是0 停止
-        pkManager.setResultTableSql(setResultTableSql(pkManager, runFlag, ""));
+        Map map1 = setResultTableSql(pkManager, runFlag, "");
+        pkManager.setResultTableSql(map1.get("resultSql").toString());
         pkManager.setVariableId(JSON.toJSONString(pkManager.getVariableId()));
         pkManager.setVarDir(System.currentTimeMillis() + "");
         pkManager.setOriginalVariableSql(joinOriginalVariableSql(map, pkManager));
@@ -171,8 +172,10 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
         return sb.toString();
     }
 
+
     // 结果表sql赋值
-    private String setResultTableSql(TVariablePackageManager pkManager, String runFlag, String millis) {
+    private Map setResultTableSql(TVariablePackageManager pkManager, String runFlag, String millis) {
+        Map mapResult = new HashMap();
         // insert into 结果表表名 select 输出字段,输出字段,输出字段 from tmp_变量包英文名;
         TDataResultSource resultSource = resultSourceService.selectTDataResultSourceByTableName(pkManager.getResultTable());
 
@@ -187,14 +190,24 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
             stringArray[i] = objects[i].toString();
         }
         List<TVariableCenter> list = tVariableCenterMapper.selectTVariableCenterByNames(stringArray);
+        // 顺序跳转，让该顺序与页面的选择顺序一致
+        List<TVariableCenter> l = new ArrayList();
+        for (String s : stringArray) {
+            for (TVariableCenter tVariableCenter : list) {
+                if (s.equals(tVariableCenter.getVariableNameEn())){
+                    l.add(tVariableCenter);
+                    break;
+                }
+            }
+        }
 
         List<TVariableCenter> listTmp = new ArrayList<>();
-        listTmp.addAll(list);
+        listTmp.addAll(l);
 
         // 目的是移除派生变量的基础变量
         ArrayList<TVariableCenter> listDmo = new ArrayList();
-        for (int i = 0; i < list.size(); i++) {
-            TVariableCenter tVariableCenter = list.get(i);
+        for (int i = 0; i < l.size(); i++) {
+            TVariableCenter tVariableCenter = l.get(i);
             if ("02".equals(tVariableCenter.getVariableType())) { // 派生变量
                 String deriveBaseVariable = tVariableCenter.getDeriveBaseVariable().toString();
                 JSONArray array = JSON.parseArray(deriveBaseVariable);
@@ -209,6 +222,9 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
             }
         }
         listTmp.removeAll(listDmo);
+
+        mapResult.put("outVariableNum",listTmp.size());
+
 
         String ssss = "";
         String shbase = "";
@@ -225,8 +241,8 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
             Map map = tVariablePackageManagerService.getKeyByVariableId(pkManager.getVariableClassification());
 
             // 若有决策引擎，把sql添加进去
-            for (int i = 0; i < list.size(); i++) {
-                TVariableCenter tVariableCenter = list.get(i);
+            for (int i = 0; i < l.size(); i++) {
+                TVariableCenter tVariableCenter = l.get(i);
                 if ("02".equals(tVariableCenter.getVariableType()) && "02".equals(tVariableCenter.getDeriveVariableModelType())) {
                     sb.append(tVariableCenter.getSqlContext()).append(" AS ").append(tVariableCenter.getVariableNameEn()).append(",");
                 }
@@ -272,7 +288,8 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
                 }
             }
         }
-        return sb.toString();
+        mapResult.put("resutltSql",sb.toString());
+        return mapResult;
     }
 
     /**
@@ -284,7 +301,8 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
     @Override
     public int updateTVariablePackageManager(Map map, TVariablePackageManager tVariablePackageManager) {
         tVariablePackageManager.setModifyTime(new Date());
-        tVariablePackageManager.setResultTableSql(setResultTableSql(tVariablePackageManager, "start", ""));
+        Map map1 = setResultTableSql(tVariablePackageManager, "start", "");
+        tVariablePackageManager.setResultTableSql(map1.get("resultSql").toString());
         tVariablePackageManager.setVariableId(JSON.toJSONString(tVariablePackageManager.getVariableId()));
         tVariablePackageManager.setOriginalVariableSql(joinOriginalVariableSql(map, tVariablePackageManager));
         ArrayList array = (ArrayList) tVariablePackageManager.getOriginalVariable();
@@ -443,7 +461,14 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
                 }
             }
         }
-        mapParam.put("fieldOutNum", objects.length + 1 + num);
+
+        Map map1 = setResultTableSql(pk, runFlag, millis);
+
+        // 输出参数sql
+        mapParam.put("sinkSql",map1.get("resutltSql"));
+
+
+        mapParam.put("fieldOutNum", (int)map1.get("outVariableNum") + 1 + num);
         mapParam.put("sourcePrimaryKey", map.get("schemaPrimaryKey").toString());
         ArrayList sourceTableValue = (ArrayList) pk.getSourceTableValue();
         if (sourceTableValue != null && sourceTableValue.size() > 0) {
@@ -467,8 +492,7 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
             }
             mapParam.put("testSourcedata", value);
         }
-        // 输出参数sql
-        mapParam.put("sinkSql", setResultTableSql(pk, runFlag, millis));
+
 
         // 原始变量
         if (originalVariable != null) {
