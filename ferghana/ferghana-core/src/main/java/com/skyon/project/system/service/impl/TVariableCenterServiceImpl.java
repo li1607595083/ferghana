@@ -693,18 +693,42 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
         }
     }
 
+    //
+    public Map parseTwoStreamJoinSQl(Map mapParam,Map map,JSONObject sourceRelation){
+        Object sourceDabRelation = map.get("sourceDabRelation");
+        Object sourceTwoDabRelation = map.get("sourceTwoDabRelation");
+        String sql = "SELECT * FROM " + sourceDabRelation + " LEFT JOIN " + sourceTwoDabRelation + " ON " + sourceDabRelation + "." +
+                sourceRelation.getString("sourceDabField") + " = " + sourceTwoDabRelation + "." + sourceRelation.getString("sourceTwoDabField")
+                + " AND " + sourceDabRelation + "." + map.get("waterMarkName");
+        int lowScope = Integer.parseInt(sourceRelation.getString("lowScope"));
+        int highScope = Integer.parseInt(sourceRelation.getString("highScope"));
+        if(lowScope >= 0){
+            sql = sql + " BETWEEN " + sourceTwoDabRelation + "." + map.get("waterMarkTwoName") + " + INTERVAL '" + lowScope + "' SECOND";
+        }
+        else{
+            sql = sql + " BETWEEN " + sourceTwoDabRelation + "." + map.get("waterMarkTwoName") + " - INTERVAL '" + Math.abs(lowScope) + "' SECOND";
+        }
+        if(highScope >= 0){
+            sql = sql + " AND " + sourceTwoDabRelation + "." + map.get("waterMarkTwoName") + " + INTERVAL '" + highScope + "' SECOND";
+        }
+        else{
+            sql = sql + " AND " + sourceTwoDabRelation + "." + map.get("waterMarkTwoName") + " - INTERVAL '" + Math.abs(highScope) + "' SECOND";
+        }
+        mapParam.put("twoStreamJoinSqls",sql+"|"+map.get("tableName")+"_"+map.get("tableTwoName")+"|["+lowScope+","+highScope+"]");
+        return mapParam;
+    }
+
     @Override
     public String variableTest(TVariableCenter variable, Map map, String millis) {
         Map mapParam = new HashMap();
         mapParam.put("runMode", "01");
         mapParam.put("testTopicName", millis);
-        mapParam.put("sourceTableSql", map.get("createTableSql"));
         // 有维表时
         JSONArray dimensionRelation = JSON.parseArray(map.get("dimensionRelation").toString());
+        JSONObject sourceRelation = JSON.parseObject(map.get("sourceRelation").toString());
         ArrayList array = (ArrayList) variable.getTestDimdata();
         // 当有维表的时候拼接joinSQL 和 维表测试数据
         parseJoinSQl(mapParam, dimensionRelation, map, array);
-
         TVariableClassification variableClassification = tVariableClassificationMapper
                 .selectTVariableClassificationById(new Long(variable.getVariableClassification()));
         JSONArray dimensionName = JSON.parseArray(variableClassification.getDimensionRelation().toString());
@@ -727,6 +751,14 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
         ArrayList sourceTableValue = (ArrayList) variable.getSourceTableValue();
         if (sourceTableValue != null && sourceTableValue.size() > 0) {
             mapParam.put("testSourcedata", parseSplit(sourceTableValue));
+        }
+        // 如果有两个数据源表，sourceTableSql用分号隔开，新增sourceTableSql参数
+        if(StringUtils.isNotEmpty(map.get("createTableSql").toString()) && StringUtils.isNotNull(map.get("createTableSql").toString())){
+            mapParam.put("sourceTableSql", map.get("createTableSql")+";"+map.get("createTableTwoSql"));
+            parseTwoStreamJoinSQl(mapParam,map, sourceRelation);
+        }
+        else{
+            mapParam.put("sourceTableSql", map.get("createTableSql"));
         }
 
         return JSON.toJSONString(mapParam);

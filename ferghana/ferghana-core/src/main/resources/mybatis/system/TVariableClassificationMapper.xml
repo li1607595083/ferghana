@@ -20,14 +20,21 @@
 
     <resultMap id="schemaPrimaryKey" type="java.util.Map">
         <result property="schemaPrimaryKey"    column="schema_Primary_Key"  />
+        <result property="schemaTwoPrimaryKey"    column="schema_two_Primary_Key"  />
         <result property="createTableSql"    column="create_table_sql"  />
+        <result property="createTableTwoSql"    column="create_table_two_sql"  />
         <result property="tableName"    column="table_name"  />
+        <result property="tableTwoName"    column="table_two_name"  />
         <result property="sourceDabField"    column="source_dab_field"  />
         <result property="sourceDabRelation"    column="source_dab_relation"    />
         <result property="sourceTwoDabRelation"    column="source_two_dab_relation"    />
         <result property="sourceDabField"    column="source_dab_field"    />
         <result property="dimensionRelation"    column="dimension_relation"    />
+        <result property="sourceRelation"    column="source_relation"    />
         <result property="waterMarkTime"    column="water_mark_time"  />
+        <result property="waterMarkTwoTime"    column="water_mark_two_time"  />
+        <result property="waterMarkName"    column="water_mark_name"  />
+        <result property="waterMarkTwoName"    column="water_mark_two_name"  />
     </resultMap>
 
     <sql id="selectTVariableClassificationVo">
@@ -38,9 +45,9 @@
     </sql>
 
     <sql id="selectSchemaPrimaryKey">
-        select d.schema_primary_key,d.create_table_sql,d.table_name,s.source_dab_field,s.source_dab_relation,s.source_two_dab_relation,s.dimension_relation,s.source_relation,water_mark_time
-        from t_variable_classification s
-                 left join t_data_source d on s.source_dab_relation = d.table_name
+        SELECT d.schema_primary_key,t.schema_primary_key as schema_two_primary_key,d.create_table_sql,t.create_table_sql as create_table_two_sql,d.table_name,t.table_name as table_two_name,
+               s.source_dab_field,s.dimension_relation,s.source_dab_relation,s.source_two_dab_relation,s.source_relation,d.water_mark_time,t.water_mark_time as water_mark_two_time,d.water_mark_name,t.water_mark_name as water_mark_two_name FROM ( t_variable_classification s LEFT JOIN t_data_source d ON s.source_dab_relation = d.table_name )
+                   LEFT JOIN t_data_source t ON s.source_two_dab_relation = t.table_name
     </sql>
 
     <select id="selectSchemaPrimaryKeyByVariableId" resultMap="schemaPrimaryKey">
