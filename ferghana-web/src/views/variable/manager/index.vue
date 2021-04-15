@@ -212,9 +212,17 @@
           <el-form-item label="2" class="el-col-7" v-show="redisKeyItem" id="redisKeyItem">
             <el-select v-model="form.redisKey" placeholder="请输入key" style="width: 100%" id="redisKey"
                        no-data-text="未选择变量分类" clearable :disabled="detailViem">
-              <el-option-group label="数据源表">
+              <el-option-group :label="dataSourceName">
                 <el-option
                   v-for="data in variableFactorOptions"
+                  :key="data.value"
+                  :label="data.label"
+                  :value="data.value"
+                />
+              </el-option-group>
+              <el-option-group :label="dataSourceTwoName">
+                <el-option
+                  v-for="data in variableFactorTwoOptions"
                   :key="data.value"
                   :label="data.label"
                   :value="data.value"
@@ -277,6 +285,15 @@
                   :type="data.type"
                 />
               </el-option-group>
+              <el-option-group :label="dataSourceTwoName" v-if="dataSourceTwoName!=='' && dataSourceTwoName!==null">
+                <el-option
+                  v-for="data in variableFactorTwoOptions"
+                  :key="data.value"
+                  :label="data.label"
+                  :value="data.value"
+                  :type="data.type"
+                />
+              </el-option-group>
               <div v-for="dataAll in listDimension">
                 <el-option-group :label="dataAll.name" v-show="dimensionitem" size="medium">
                   <el-option
@@ -327,6 +344,15 @@
                     :key="data.value"
                     :label="data.name"
                     :value="data.value"
+                  />
+                </el-option-group>
+                <el-option-group :label="dataSourceTwoName" v-if="dataSourceTwoName!=='' && dataSourceTwoName!==null">
+                  <el-option
+                    v-for="data in statisticsGroupTwoOptions"
+                    :key="data.value"
+                    :label="data.label"
+                    :value="data.value"
+                    :type="data.type"
                   />
                 </el-option-group>
                 <div v-for="dataAll in listDimension">
@@ -415,6 +441,15 @@
                           v-for="data in statisticsfieldOptions"
                           :key="data.value"
                           :label="data.name"
+                          :value="data.value"
+                          :type="data.type"
+                        />
+                      </el-option-group>
+                      <el-option-group :label="dataSourceTwoName" v-if="dataSourceTwoName!=='' && dataSourceTwoName!==null">
+                        <el-option
+                          v-for="data in statisticsfieldTwoOptions"
+                          :key="data.value"
+                          :label="data.label"
                           :value="data.value"
                           :type="data.type"
                         />
@@ -526,12 +561,22 @@
                       <span v-if="scope.row.fieldType === '01'">
                         <el-select v-model="scope.row.selfDataSourceOutParams" placeholder="请选择字段" clearable
                                    no-data-text="未选择变量分类" :disabled="detailViem" style="width:50%">
-                          <el-option-group label="数据源表">
+                          <el-option-group :label="dataSourceName">
                             <el-option
                               v-for="data in statisticsfieldOptions"
                               :key="data.value"
                               :label="data.name"
                               :value="data.value"
+                              :type="data.type"
+                            />
+                          </el-option-group>
+                          <el-option-group :label="dataSourceTwoName" v-if="dataSourceTwoName!=='' && dataSourceTwoName!==null">
+                            <el-option
+                              v-for="data in statisticsfieldTwoOptions"
+                              :key="data.value"
+                              :label="data.label"
+                              :value="data.value"
+                              :type="data.type"
                             />
                           </el-option-group>
                           <div v-for="dataAll in listDimension">
@@ -1025,6 +1070,8 @@
         allVariableOptions: [],
         // 变量因子options
         variableFactorOptions: [],
+        // 变量因子options 数据为数据源表(二)的字段
+        variableFactorTwoOptions : [],
         dimensionDataProps: {
           label: 'label',
           children: 'dimensionSchemas'
@@ -1043,8 +1090,12 @@
         statisticsCountModelOptions: [],
         // 统计分组 数据为数据源表的字段
         statisticsGroupOptions: [],
+        // 统计分组 数据为数据源表(二)的字段
+        statisticsGroupTwoOptions : [],
         // 统计字段名称与类型
         statisticsfieldOptions: [],
+        // 统计字段名称与类型 数据为数据源表(二)的字段
+        statisticsfieldTwoOptions : [],
 
         // 统计运算符号
         statisticsConditionOperatorOption: [],
@@ -1121,6 +1172,8 @@
         listResultDimension: [],
         // 数据源表的名字
         dataSourceName:"",
+        // 数据源表(二)的名字
+        dataSourceTwoName:"",
         // redis
         redisSelfFunctionOptions:[],
         // 元素去重
@@ -1585,6 +1638,8 @@
       // 确认测试
       confirmTest() {
         // 先校验
+        
+        console.log(this.form)
 
         this.$refs["form"].validate((valid) => {
           if (valid) {
@@ -2821,8 +2876,16 @@
       variableClassificationChange(value, flag) {
         this.variableClassificationOptions.map((data) => {
           if (data.value === value) {
+            console.log("-------【sourceTwoDabRelation】--------")
+            console.log(data.sourceTwoDabRelation)
             // 数据源变量因子赋值
-            this.sourceDataChange(data.sourceDabRelation, flag);
+            if(data.sourceTwoDabRelation && data.sourceTwoDabRelation !== null && data.sourceTwoDabRelation !== ""){
+              this.sourceDataChange(data.sourceDabRelation, flag);
+              this.sourceDataChange(data.sourceTwoDabRelation, flag, "true");
+            }
+            else{
+              this.sourceDataChange(data.sourceDabRelation, flag, "false");
+            }
             let parse1 = JSON.parse(data.dimensionRelation);
 
             if (parse1 !== null && parse1.length > 0) {
@@ -2892,6 +2955,7 @@
               value: resp.data.rows[i].variableClassificationId,
               name: resp.data.rows[i].variableClassificationName,
               sourceDabRelation: resp.data.rows[i].sourceDabRelation,
+              sourceTwoDabRelation: resp.data.rows[i].sourceTwoDabRelation,
               dimensionRelation: resp.data.rows[i].dimensionRelation,
               sourceFieldSchema: resp.data.rows[i].schemaDefine,
             });
@@ -3172,7 +3236,7 @@
       },
 
       // 切换变量分类
-      sourceDataChange(value, flag) {
+      sourceDataChange(value, flag, valueTwo) {
         setTimeout(_ => {
           let that = this;
           const baseUrl = process.env.VUE_APP_BASE_API;
@@ -3185,35 +3249,73 @@
               dataSourceName: value
             }
           }).then(function (resp) {
-            that.dataSourceName = "数据源表："+value;
+            console.log("-----------------【resp】--------------------")
+            console.log(resp);
             // 多次点击先清空。否则会重复叠加
             if (flag !== "test") {
               that.form.variableFactor = "";
             }
-            that.variableFactorOptions = [];
-            that.statisticsGroupOptions = [];
-            that.statisticsfieldOptions = [];
-            for (let j = 0; j < resp.data.rows[0].length; j++) {
-              that.variableFactorOptions.push({
-                label: value + "." + resp.data.rows[0][j].key, // 表名.字段
-                value: value + "." + resp.data.rows[0][j].key,
-                type: resp.data.rows[0][j].value,// 类型
-              });
-              // 给统计分组辅助
-              that.statisticsGroupOptions.push({
-                name: value + "." + resp.data.rows[0][j].key,
-                value: value + "." + resp.data.rows[0][j].key
-              });
-              // 给统计分组辅助
-              that.statisticsfieldOptions.push({
-                name: value + "." + resp.data.rows[0][j].key,
-                value: value + "." + resp.data.rows[0][j].key,
-                type: resp.data.rows[0][j].value,
-              });
+            if(!valueTwo || valueTwo === "false"){
+              if(valueTwo === "false"){
+                that.dataSourceTwoName = "";
+                that.variableFactorTwoOptions = [];
+                that.statisticsGroupTwoOptions = [];
+                that.statisticsfieldTwoOptions = [];
+              }
+              that.dataSourceName = "数据源表："+value;
+              that.variableFactorOptions = [];
+              that.statisticsGroupOptions = [];
+              that.statisticsfieldOptions = [];
+              for (let j = 0; j < resp.data.rows[0].length; j++) {
+                that.variableFactorOptions.push({
+                  label: value + "." + resp.data.rows[0][j].key, // 表名.字段
+                  value: value + "." + resp.data.rows[0][j].key,
+                  type: resp.data.rows[0][j].value,// 类型
+                });
+                // 给统计分组辅助
+                that.statisticsGroupOptions.push({
+                  name: value + "." + resp.data.rows[0][j].key,
+                  value: value + "." + resp.data.rows[0][j].key
+                });
+                // 给统计分组辅助
+                that.statisticsfieldOptions.push({
+                  name: value + "." + resp.data.rows[0][j].key,
+                  value: value + "." + resp.data.rows[0][j].key,
+                  type: resp.data.rows[0][j].value,
+                });
+              }
+              that.sourceTwoCol = [];
+              for (let i = 0; i < resp.data.rows[1].length; i++) {
+                that.sourceTwoCol = that.sourceTwoCol.concat(resp.data.rows[1][i]);
+              }
             }
-            that.sourceTwoCol = [];
-            for (let i = 0; i < resp.data.rows[1].length; i++) {
-              that.sourceTwoCol = that.sourceTwoCol.concat(resp.data.rows[1][i]);
+            else if(valueTwo === "true"){
+              that.dataSourceTwoName = "数据源表："+value;
+              that.variableFactorTwoOptions = [];
+              that.statisticsGroupTwoOptions = [];
+              that.statisticsfieldTwoOptions = [];
+              for (let j = 0; j < resp.data.rows[0].length; j++) {
+                that.variableFactorTwoOptions.push({
+                  label: value + "." + resp.data.rows[0][j].key, // 表名.字段
+                  value: value + "." + resp.data.rows[0][j].key,
+                  type: resp.data.rows[0][j].value,// 类型
+                });
+                // 给统计分组辅助
+                that.statisticsGroupTwoOptions.push({
+                  name: value + "." + resp.data.rows[0][j].key,
+                  value: value + "." + resp.data.rows[0][j].key
+                });
+                // 给统计分组辅助
+                that.statisticsfieldTwoOptions.push({
+                  name: value + "." + resp.data.rows[0][j].key,
+                  value: value + "." + resp.data.rows[0][j].key,
+                  type: resp.data.rows[0][j].value,
+                });
+              }
+              // that.sourceTwoCol = [];
+              // for (let i = 0; i < resp.data.rows[1].length; i++) {
+              //   that.sourceTwoCol = that.sourceTwoCol.concat(resp.data.rows[1][i]);
+              // }
             }
 
 

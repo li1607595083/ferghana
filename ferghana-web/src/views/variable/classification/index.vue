@@ -29,7 +29,7 @@
     <el-table v-loading="loading" :data="classificationList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="变量分类" align="center" prop="variableClassificationName" />
-      <el-table-column label="关联数据源表" align="center" prop="sourceDabRelation" />
+      <el-table-column label="关联数据源表" align="center" prop="sourceDab" />
       <el-table-column label="备注" align="center" prop="description" />
       <el-table-column label="创建时间" align="center" prop="createTime" width="180">
         <template slot-scope="scope">
@@ -87,7 +87,7 @@
           </el-form-item>
 
           <!-- 第二个数据源表 -->
-          <el-form-item label="数据源表(二)" prop="sourceDabRelation" class="el-col-20" v-if="sourceTwoDabItem">
+          <el-form-item label="数据源表(二)" :prop="sourceTwoDabItem ? 'sourceTwoDabRelation' : ''" class="el-col-20" v-if="sourceTwoDabItem">
             <el-select v-model="form.sourceTwoDabRelation" placeholder="请选择数据源表" @change="sourceTwoDabRelationChange" no-data-text="请先选择数据源表(一)" clearable
               style="width: 100%" :disabled="detailViem">
               <el-option v-for="data in sourceTwoDataOptions" :key="data.value" :label="data.name" :value="data.value" />
@@ -107,7 +107,7 @@
           </el-form-item>
 
           <!-- 数据源表关联字段 -->
-          <el-form-item label="源表(一)关联字段" class="el-col-12" v-if="sourceTwoDabItem">
+          <el-form-item label="源表(一)关联字段" :prop="sourceTwoDabItem ? 'sourceRelation.sourceDabField' : ''" class="el-col-12" v-if="sourceTwoDabItem">
             <el-select v-model="form.sourceRelation.sourceDabField" placeholder="请选择源表(一)关联字段" @change="refresh"
               clearable style="width: 100%" :disabled="detailViem" no-data-text="请先选择源表(一)">
               <el-option v-for="dict in sourceDabFieldOptions" :key="dict.value" :label="dict.label"
@@ -115,12 +115,24 @@
             </el-select>
           </el-form-item>
 
-          <el-form-item label="源表(二)关联字段" class="el-col-12" v-if="sourceTwoDabItem">
+          <el-form-item label="源表(二)关联字段" :prop="sourceTwoDabItem ? 'sourceRelation.sourceTwoDabField' : ''" class="el-col-12" v-if="sourceTwoDabItem">
             <el-select v-model="form.sourceRelation.sourceTwoDabField" placeholder="请选择源表(二)关联字段" @change="refresh" no-data-text="请先选择源表(二)" style="width: 100%"
               :disabled="detailViem">
               <el-option v-for="data in sourceTwoDabFieldOptions" :key="data.value" :label="data.name"
                 :value="data.value"/>
             </el-select>
+          </el-form-item>
+
+          <el-form-item label="关联时间范围" class="el-col-24" v-if="sourceTwoDabItem" :rules="[{ required: true}]">
+            <el-form-item class="el-col-11" :prop="sourceTwoDabItem ? 'sourceRelation.lowScope' : ''" v-if="sourceTwoDabItem">
+              <el-input type="number" :validate-event="true" v-model.number="form.sourceRelation.lowScope"></el-input>
+            </el-form-item>
+            <el-form-item class="el-col-2" v-if="sourceTwoDabItem">
+              <el-col class="line" style="text-align: center;">-</el-col>
+            </el-form-item>
+            <el-form-item class="el-col-11" :prop="sourceTwoDabItem ? 'sourceRelation.highScope' : ''" v-if="sourceTwoDabItem">
+              <el-input type="number" validate-event="true" v-model.number="form.sourceRelation.highScope"></el-input>
+            </el-form-item>
           </el-form-item>
 
         </div>
@@ -139,17 +151,17 @@
             <el-form-item label="数据源表关联字段" class="el-col-10" v-show="!judgeEs(item.relation)"
               :rules="(!judgeEs(item.relation) ? rules.dimensionRelation.sourceDabField : 'null')" :prop="'dimensionRelation.'+index+'.sourceDabField'">
               <el-select v-model="item.sourceDabField" placeholder="请选择关联数据源表字段"
-                @change="refresh()" no-data-text="请先选择数据源表" style="width: 100%"
+                @change="sourceDabFieldChange" no-data-text="请先选择数据源表" style="width: 100%"
                 :disabled="detailViem">
                 <el-option v-for="data in sourceDabFieldOptions" :key="data.value" :label="data.name"
-                  :value="data.value"  v-if="!sourceTwoDabItem"/>
+                  :value="'sourceDabField,'+data.value"  v-if="!sourceTwoDabItem"/>
                 <el-option-group :label="form.sourceDabRelation" v-if="sourceTwoDabItem">
                   <el-option v-for="data in sourceDabFieldOptions" :key="data.value" :label="data.name"
-                    :value="data.value"/>
+                    :value="'sourceDabField,'+data.value"/>
                 </el-option-group>
                 <el-option-group :label="form.sourceTwoDabRelation" v-if="sourceTwoDabItem">
                   <el-option v-for="data in sourceTwoDabFieldOptions" :key="data.value" :label="data.name"
-                    :value="data.value"/>
+                    :value="'sourceTwoDabField,'+data.value"/>
                 </el-option-group>
               </el-select>
             </el-form-item>
@@ -182,16 +194,16 @@
             <el-form-item label="数据源表关联字段" class="el-col-8" :rules="rules.dimensionRelation.relation.sourceDabField"
               :prop="'dimensionRelation.'+index+'.relation.'+index2+'.sourceDabField'">
               <el-select v-model="relation.sourceDabField" placeholder="请选择关联数据源表字段" no-data-text="请先选择数据源表"
-                style="width: 100%" :disabled="detailViem" @change="refresh()">
+                style="width: 100%" :disabled="detailViem" @change="sourceDabFieldChange">
                 <el-option v-for="data in sourceDabFieldOptions" :key="data.value" :label="data.name"
-                  :value="data.value"  v-if="!sourceTwoDabItem"/>
+                  :value="'sourceDabField,'+data.value"  v-if="!sourceTwoDabItem"/>
                 <el-option-group :label="form.sourceDabRelation" v-if="sourceTwoDabItem">
                   <el-option v-for="data in sourceDabFieldOptions" :key="data.value" :label="data.name"
-                    :value="data.value"/>
+                    :value="'sourceDabField,'+data.value"/>
                 </el-option-group>
                 <el-option-group :label="form.sourceTwoDabRelation" v-if="sourceTwoDabItem">
                   <el-option v-for="data in sourceTwoDabFieldOptions" :key="data.value" :label="data.name"
-                    :value="data.value"/>
+                    :value="'sourceTwoDabField,'+data.value"/>
                 </el-option-group>
               </el-select>
             </el-form-item>
@@ -297,11 +309,38 @@
             message: "数据源表不能为空",
             trigger: "blur"
           }],
+          sourceTwoDabRelation: [{
+            required: true,
+            message: "数据源表不能为空",
+            trigger: "blur"
+          }],
           dimensionDabRelation: [{
             required: true,
             message: "关联数据维表不能为空",
             trigger: "blur"
           }],
+          sourceRelation:{
+            sourceDabField:[{
+              required: true,
+              message: "源表(一)关联字段不能为空",
+              trigger: "blur"
+            }],
+            sourceTwoDabField:[{
+              required: true,
+              message: "源表(二)关联字段不能为空",
+              trigger: "blur"
+            }],
+            lowScope:[{
+              required: true,
+              message: "关联时间范围不能为空",
+              trigger: "blur"
+            },{ type: 'number', message: '关联时间范围必须为数字',trigger: "blur"}],
+            highScope:[{
+              required: true,
+              message: "关联时间范围不能为空",
+              trigger: "blur"
+            },{ type: 'number', message: '关联时间范围必须为数字',trigger: "blur"}]
+          },
           dimensionRelation: {
             dimensionName: [{
               required: true,
@@ -337,6 +376,9 @@
         if(newVal && this.form.sourceTwoDabRelation && this.form.sourceTwoDabRelation !== ""){
           this.sourceTwoDabRelationChange(this.form.sourceTwoDabRelation);
         }
+        if(!newVal){
+          this.sourceTwoDabFieldOptions = [];
+        }
       }
     },
     methods: {
@@ -367,8 +409,24 @@
         this.form.sourceTwoDabRelation = undefined;
         this.form.sourceRelation = {
           sourceDabField:"",
-          sourceTwoDabField:""
+          sourceTwoDabField:"",
+          lowScope:"",
+          highScope:""
         }
+        this.form.dimensionRelation.forEach((item)=>{
+          if(item.sourceDabField){
+            if(item.sourceTwoDabField){
+              item.sourceDabField = "";
+            }
+          }
+          else if(item.relation){
+            item.relation.forEach((item2)=>{
+              if(item2.sourceTwoDabField){
+                item2.sourceDabField = "";
+              }
+            })
+          }
+        })
       },
       // 数据维表字段添加行
       fieIdAddItem(index) {
@@ -395,6 +453,7 @@
         let that = this;
         if (value && value !== "") {
           // 不能选择两个相同的数据源表相关联
+          this.sourceTwoDataOptions = [];
           for(let i=0;i<this.sourceDataOptions.length;i++){
             if(this.sourceDataOptions[i].value !== value){
               this.sourceTwoDataOptions.push(this.sourceDataOptions[i])
@@ -509,6 +568,34 @@
           that.dimensionDabFieldOptions = [];
         }
       },
+      // 数据源表关联字段切换
+      sourceDabFieldChange(value) {
+        this.form.dimensionRelation.forEach((item)=>{
+          if(item.sourceDabField && item.sourceDabField === value){
+            if(value.split(",")[0] === "sourceDabField"){
+              item.sourceDabField = value.split(",")[1];
+            }
+            else if(value.split(",")[0] === "sourceTwoDabField"){
+              item.sourceDabField = value.split(",")[1];
+              item.sourceTwoDabField = value.split(",")[1];
+            }
+          }
+          else if(item.relation){
+            item.relation.forEach((item2)=>{
+               if(item2.sourceDabField === value){
+                 if(value.split(",")[0] === "sourceDabField"){
+                   item2.sourceDabField = value.split(",")[1];
+                 }
+                 else if(value.split(",")[0] === "sourceTwoDabField"){
+                   item2.sourceDabField = value.split(",")[1];
+                   item2.sourceTwoDabField = value.split(",")[1];
+                 }
+               }
+            })
+          }
+        })
+        this.refresh();
+      },
       // 查询数据维表
       getDimensionData() {
         let that = this;
@@ -569,6 +656,9 @@
       getList() {
         this.loading = true;
         listClassification(this.queryParams).then(response => {
+          response.rows.forEach(item=>{
+            item.sourceDab = item.sourceDabRelation + (item.sourceTwoDabRelation !== null && item.sourceTwoDabRelation !== "" ? "/" + item.sourceTwoDabRelation : "");
+          })
           this.classificationList = response.rows;
           this.total = response.total;
           this.loading = false;
@@ -596,7 +686,9 @@
           }],
           sourceRelation:{
             sourceDabField:"",
-            sourceTwoDabField:""
+            sourceTwoDabField:"",
+            lowScope:"",
+            highScope:""
           }
         };
         this.resetForm("form");
@@ -662,7 +754,6 @@
           this.form = response.data;
           this.form.dimensionRelation = JSON.parse(this.form.dimensionRelation);
           this.form.sourceRelation = JSON.parse(this.form.sourceRelation);
-          console.log(this.form.sourceTwoDabRelation)
           if(this.form.sourceTwoDabRelation && this.form.sourceTwoDabRelation !== ""){
             this.sourceTwoDabItem = true;
           }
@@ -688,6 +779,13 @@
         this.refresh();
         this.$refs["form"].validate(valid => {
           if (valid) {
+            if(this.form.sourceRelation && this.form.sourceRelation.lowScope !== "" && this.form.sourceRelation.highScope !== ""){
+              if(this.form.sourceRelation.lowScope > this.form.sourceRelation.highScope){
+                let temp = this.form.sourceRelation.lowScope;
+                this.form.sourceRelation.lowScope = this.form.sourceRelation.highScope;
+                this.form.sourceRelation.highScope = temp;
+              }
+            }
             if (this.form.variableClassificationId !== undefined) {
               updateClassification(this.form).then(response => {
                 if (response.code === 200) {
