@@ -288,7 +288,7 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
                 }
             }
         }
-        mapResult.put("resutltSql",sb.toString());
+        mapResult.put("resultSql",sb.toString());
         return mapResult;
     }
 
