@@ -125,13 +125,13 @@
 
           <el-form-item label="关联时间范围" class="el-col-24" v-if="sourceTwoDabItem" :rules="[{ required: true}]">
             <el-form-item class="el-col-11" :prop="sourceTwoDabItem ? 'sourceRelation.lowScope' : ''" v-if="sourceTwoDabItem">
-              <el-input type="number" :validate-event="true" v-model.number="form.sourceRelation.lowScope"></el-input>
+              <el-input type="number" :validate-event="true" :disabled="detailViem" v-model.number="form.sourceRelation.lowScope"></el-input>
             </el-form-item>
             <el-form-item class="el-col-2" v-if="sourceTwoDabItem">
               <el-col class="line" style="text-align: center;">-</el-col>
             </el-form-item>
             <el-form-item class="el-col-11" :prop="sourceTwoDabItem ? 'sourceRelation.highScope' : ''" v-if="sourceTwoDabItem">
-              <el-input type="number" validate-event="true" v-model.number="form.sourceRelation.highScope"></el-input>
+              <el-input type="number" validate-event="true" :disabled="detailViem" v-model.number="form.sourceRelation.highScope"></el-input>
             </el-form-item>
           </el-form-item>
 
@@ -182,18 +182,18 @@
           <!-- 不止一项，用div包裹起来 -->
           <div v-for="(relation, index2) in item.relation" :key="index2" class="el-col-24" v-show="item.relation">
 
-            <el-form-item label="数据维表关联字段" class="el-col-8" :rules="rules.dimensionRelation.relation.dimensionDabField"
+            <el-form-item label="数据维表关联字段" class="el-col-9" :rules="rules.dimensionRelation.relation.dimensionDabField"
               :prop="'dimensionRelation.'+index+'.relation.'+index2+'.dimensionDabField'">
-              <el-select v-model="relation.dimensionDabField" placeholder="请选择关联数据维表字段" no-data-text="请先选择数据维表"
+              <el-select v-model="relation.dimensionDabField" placeholder="请选择数据维表关联字段" no-data-text="请先选择数据维表"
                 style="width: 100%" :disabled="detailViem" @change="refresh()">
                 <el-option v-for="data in dimensionDabFieldOptions" :key="data.value" :label="data.name"
                   :value="data.value"/>
               </el-select>
             </el-form-item>
 
-            <el-form-item label="数据源表关联字段" class="el-col-8" :rules="rules.dimensionRelation.relation.sourceDabField"
+            <el-form-item label="数据源表关联字段" class="el-col-9" :rules="rules.dimensionRelation.relation.sourceDabField"
               :prop="'dimensionRelation.'+index+'.relation.'+index2+'.sourceDabField'">
-              <el-select v-model="relation.sourceDabField" placeholder="请选择关联数据源表字段" no-data-text="请先选择数据源表"
+              <el-select v-model="relation.sourceDabField" placeholder="请选择数据源表关联字段" no-data-text="请先选择数据源表"
                 style="width: 100%" :disabled="detailViem" @change="sourceDabFieldChange">
                 <el-option v-for="data in sourceDabFieldOptions" :key="data.value" :label="data.name"
                   :value="'sourceDabField,'+data.value"  v-if="!sourceTwoDabItem"/>
