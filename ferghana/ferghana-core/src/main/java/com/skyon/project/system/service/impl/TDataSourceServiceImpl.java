@@ -137,6 +137,7 @@ public class TDataSourceServiceImpl implements ITDataSourceService {
                     + "  'database-name' = '"+dataSource.getMyDatabase()+"',"
                     + "  'table-name' = '"+dataSource.getMyTableName()+"',"
                     + " 'debezium.snapshot.mode' = '"+scan+"'" // 不扫描全表
+                    + "  'server-time-zone'= 'Asia/Shanghai'"
                     + ")"
                     + "|" + join1;
 
