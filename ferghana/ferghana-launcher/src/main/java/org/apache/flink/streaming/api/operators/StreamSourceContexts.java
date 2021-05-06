@@ -30,7 +30,8 @@ import org.apache.flink.util.Preconditions;
 import java.util.concurrent.ScheduledFuture;
 
 /**
- * Source contexts for various stream time characteristics.
+ * @Change 重载了 getSourceContext(... ) 方法, 主要是为了添加参数 delayTime 吃参数
+ *  以及修改了 markAsTemporarilyIdle(...) 方法, 详情请看相应方法的说明
  */
 public class StreamSourceContexts {
 
@@ -83,6 +84,11 @@ public class StreamSourceContexts {
     }
 
 
+    /**
+     * @Add 方法重载，添加了delayTime此参数，相应的 ManualWatermarkContext 类，
+     * 也添加了相应的构造方法, 同时相应 WatermarkContext  类，也涉及到构造的添加，
+     * 参数的添加;
+     */
     public static <OUT> SourceFunction.SourceContext<OUT> getSourceContext(
             TimeCharacteristic timeCharacteristic,
             ProcessingTimeService processingTimeService,
@@ -343,6 +349,9 @@ public class StreamSourceContexts {
             this.reuse = new StreamRecord<>(null);
         }
 
+        /**
+         * @Add 新增构造方法
+         */
         private ManualWatermarkContext(
                 final Output<StreamRecord<T>> output,
                 final ProcessingTimeService timeService,
@@ -400,6 +409,7 @@ public class StreamSourceContexts {
         protected final Object checkpointLock;
         protected final StreamStatusMaintainer streamStatusMaintainer;
         protected final long idleTimeout;
+        /** Add 延迟触发时间*/
         protected final long delayTime;
 
         private ScheduledFuture<?> nextCheck;
@@ -439,6 +449,9 @@ public class StreamSourceContexts {
             scheduleNextIdleDetectionTask();
         }
 
+        /**
+         * @Add 新增构造方法
+         */
         public WatermarkContext(
                 final ProcessingTimeService timeService,
                 final Object checkpointLock,
@@ -505,6 +518,9 @@ public class StreamSourceContexts {
             }
         }
 
+        /**
+         * @Change 对 StreamStatus 类传入 delayTime  值;
+         */
         @Override
         public void markAsTemporarilyIdle() {
             synchronized (checkpointLock) {

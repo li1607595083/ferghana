@@ -80,13 +80,9 @@ import static org.apache.flink.util.Preconditions.checkArgument;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
- * Base class of all Flink Kafka Consumer data sources.
- * This implements the common behavior across all Kafka versions.
+ * @Change 添加了一个记录偏移量的状态(topic_partition_offset_state_copy)，用于从 SavePoint 中读取消费的偏移量记录，
+ * 相应的 initializeState(...) 方法和 snapshotState(...) 添加相应的初始化状态和对状态做快照;
  *
- * <p>The Kafka version specific behavior is defined mainly in the specific subclasses of the
- * {@link AbstractFetcher}.
- *
- * @param <T> The type of records produced by this data source
  */
 @Internal
 public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFunction<T> implements
@@ -191,6 +187,8 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 
     /** Accessor for state in the operator state backend. */
     private transient ListState<Tuple2<KafkaTopicPartition, Long>> unionOffsetStates;
+
+    /** 新增的状态 */
     private transient ListState<String> topic_partition_offset_state_copy;
 
     /** Discovery loop, executed in a separate thread. */
@@ -282,7 +280,7 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
      * Flink DataStream, if the parallel source subtask reads more than one partition.
      *
      * <p>Common watermark generation patterns can be found as static methods in the
-     * {@link WatermarkStrategy} class.
+     * {@link org.apache.flink.api.common.eventtime.WatermarkStrategy} class.
      *
      * @return The consumer object, to allow function chaining.
      */
@@ -891,6 +889,11 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
     //  Checkpoint and restore
     // ------------------------------------------------------------------------
 
+    /**
+     *
+     * @param context
+     * @throws Exception
+     */
     @Override
     public final void initializeState(FunctionInitializationContext context) throws Exception {
 

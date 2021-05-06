@@ -80,13 +80,21 @@ import java.util.stream.Stream;
  * elements, the source should still send a {@link Watermark#MAX_WATERMARK} instead of {@link StreamStatus#IDLE}.
  * Stream Status elements only serve as markers for temporary status.
  */
+
+/**
+ * @Change 主要了为了实现将 WaterMark 的超时时间作为 StreamStatus 一部分，发送到下游 StatusWatermarkValve；
+ */
 @Internal
 public final class StreamStatus extends StreamElement {
 
     public static final int IDLE_STATUS = -1;
     public static final int ACTIVE_STATUS = 0;
+    /** Add WaterMark 的超时时间 */
     public static long init_time_out = 0L;
 
+    /**
+     * @Add 给 init_time_out 赋值
+     */
     public static void set_init_time_out(long time_out){
         init_time_out = time_out;
     }
@@ -95,8 +103,12 @@ public final class StreamStatus extends StreamElement {
     public static final StreamStatus ACTIVE = new StreamStatus(ACTIVE_STATUS);
 
     public final int status;
+    /** Add WaterMark 的超时时间 */
     public final long TIME_OUT;
 
+    /**
+     * @Change 给 TIME_OUT 赋值
+     */
     public StreamStatus(int status) {
         if (status != IDLE_STATUS && status != ACTIVE_STATUS) {
             throw new IllegalArgumentException("Invalid status value for StreamStatus; " +

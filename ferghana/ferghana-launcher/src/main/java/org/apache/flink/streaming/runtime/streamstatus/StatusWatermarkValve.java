@@ -28,14 +28,13 @@ import static org.apache.flink.util.Preconditions.checkArgument;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
- * A {@code StatusWatermarkValve} embodies the logic of how {@link Watermark} and {@link StreamStatus} are propagated to
- * downstream outputs, given a set of one or multiple input channels that continuously receive them. Usages of this
- * class need to define the number of input channels that the valve needs to handle, as well as provide a implementation of
- * {@link DataOutput}, which is called by the valve only when it determines a new watermark or stream status can be propagated.
+ * @Change 添加了一个成员变量(time_out), inputStreamStatus(....) 给新增参数,
+ * findAndOutputMaxWatermarkAcrossAllChannels(...) 方法会使用此参数
  */
 @Internal
 public class StatusWatermarkValve {
 
+    /** Add 成员变量 */
     private long time_out;
     private final DataOutput output;
 
@@ -70,7 +69,6 @@ public class StatusWatermarkValve {
             channelStatuses[i].streamStatus = StreamStatus.ACTIVE;
             channelStatuses[i].isWatermarkAligned = true;
         }
-
         this.output = checkNotNull(output);
 
         this.lastOutputWatermark = Long.MIN_VALUE;
@@ -105,14 +103,11 @@ public class StatusWatermarkValve {
     }
 
     /**
-     * Feed a {@link StreamStatus} into the valve. This may trigger the valve to output either a new Stream Status,
-     * for which {@link DataOutput#emitStreamStatus(StreamStatus)} will be called, or a new Watermark,
-     * for which {@link DataOutput#emitWatermark(Watermark)} will be called.
-     *
-     * @param streamStatus the stream status to feed to the valve
-     * @param channelIndex the index of the channel that the fed stream status belongs to (index starting from 0)
+     * @Change 会根据 StreamStatus 来给变量 time_out 赋值
      */
     public void inputStreamStatus(StreamStatus streamStatus, int channelIndex) throws Exception {
+        // 触发发参数
+        this.time_out = streamStatus.TIME_OUT;
         // only account for stream status inputs that will result in a status change for the input channel
         if (streamStatus.isIdle() && channelStatuses[channelIndex].streamStatus.isActive()) {
             // handle active -> idle toggle for the input channel
@@ -131,7 +126,6 @@ public class StatusWatermarkValve {
                 // the min watermark as channels individually become IDLE, here we only need to perform the flush
                 // if the watermark of the last active channel that just became idle is the current min watermark.
                 if (channelStatuses[channelIndex].watermark == lastOutputWatermark) {
-                    this.time_out = streamStatus.TIME_OUT;
                     findAndOutputMaxWatermarkAcrossAllChannels();
                 }
 
@@ -187,7 +181,7 @@ public class StatusWatermarkValve {
         for (InputChannelStatus channelStatus : channelStatuses) {
             maxWatermark = Math.max(channelStatus.watermark, maxWatermark);
         }
-        if (maxWatermark >= lastOutputWatermark) {
+        if (maxWatermark >= lastOutputWatermark && maxWatermark > 0) {
             lastOutputWatermark = maxWatermark;
             output.emitWatermark(new Watermark(lastOutputWatermark + time_out));
         }

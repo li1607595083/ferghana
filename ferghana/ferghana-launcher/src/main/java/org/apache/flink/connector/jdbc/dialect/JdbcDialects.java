@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Default JDBC dialects.
+ * @Change 在 DIALECTS 数组中添加添加了一个 OracleSQLDialect() 类, 使用 Flink SQL 支持 Oracel  维表；
  */
 public final class JdbcDialects {
 

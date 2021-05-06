@@ -35,6 +35,7 @@ import org.apache.flink.table.runtime.generated.AggsHandleFunction;
 import org.apache.flink.table.runtime.generated.GeneratedAggsHandleFunction;
 import org.apache.flink.table.runtime.typeutils.RowDataTypeInfo;
 import org.apache.flink.table.types.logical.LogicalType;
+import org.apache.flink.types.parser.LongParser;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.Preconditions;
 import org.slf4j.Logger;
@@ -42,17 +43,8 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 /**
- * Process Function for RANGE clause event-time bounded OVER window.
- *
- * <p>E.g.:
- * SELECT rowtime, b, c,
- * min(c) OVER
- * (PARTITION BY b ORDER BY rowtime
- * RANGE BETWEEN INTERVAL '4' SECOND PRECEDING AND CURRENT ROW),
- * max(c) OVER
- * (PARTITION BY b ORDER BY rowtime
- * RANGE BETWEEN INTERVAL '4' SECOND PRECEDING AND CURRENT ROW)
- * FROM T.
+ * @Change 新增了成员变量 twoStreamJoinDelaySendTime，以及修改了此类的构造方法，open(...), processElement(...)
+ * , onTimer(...) 以及registerCleanupTimer(...) 方法 进行相应的修改；
  */
 public class RowTimeRangeBoundedPrecedingFunction<K> extends KeyedProcessFunction<K, RowData, RowData> {
     private static final long serialVersionUID = 1L;
@@ -66,6 +58,7 @@ public class RowTimeRangeBoundedPrecedingFunction<K> extends KeyedProcessFunctio
     private final int rowTimeIdx;
     private FastDateFormat instance;
     private final String type;
+    private long twoStreamJoinDelaySendTime = 0;
 
     private transient JoinedRowData output;
 
@@ -86,6 +79,9 @@ public class RowTimeRangeBoundedPrecedingFunction<K> extends KeyedProcessFunctio
 
     private transient AggsHandleFunction function;
 
+    /**
+     * @Change 增加了窗口统计方式
+     */
     public RowTimeRangeBoundedPrecedingFunction(
             GeneratedAggsHandleFunction genAggsHandler,
             LogicalType[] accTypes,
@@ -107,12 +103,19 @@ public class RowTimeRangeBoundedPrecedingFunction<K> extends KeyedProcessFunctio
             // 常规的统计时间
             default: this.type = "04";
                 this.precedingOffset = precedingOffset;
-            break;
+                break;
         }
     }
 
+    /**
+     * @Change 新增加了两部分, 1.如果是双流join的,那么计算触发时间会被延迟
+     *                          2.通过窗口计算类型，来创建相应的 FastDateFormat 实例
+     */
     @Override
     public void open(Configuration parameters) throws Exception {
+        //  如果是双流join，需要对注册时间延后，且延后触发时间放在taskName里面
+        ParameterTool globalJobParameters = (ParameterTool) getRuntimeContext().getExecutionConfig().getGlobalJobParameters();
+        this.twoStreamJoinDelaySendTime = Long.parseLong(globalJobParameters.getProperties().getProperty("TWO_STREAM_JOIN_DELAY_TIME", "0"));
         switch (type){
             // 以日为统计的窗口时间
             case "01": instance = FastDateFormat.getInstance("yyyy-MM-dd");break;
@@ -151,6 +154,9 @@ public class RowTimeRangeBoundedPrecedingFunction<K> extends KeyedProcessFunctio
         this.cleanupTsState = getRuntimeContext().getState(cleanupTsStateDescriptor);
     }
 
+    /**
+     * @Change 对触发计算时间进行延迟, 如果是非双流 JOIN 操作, 那么延迟触发时间就为0
+     */
     @Override
     public void processElement(
             RowData input,
@@ -174,12 +180,16 @@ public class RowTimeRangeBoundedPrecedingFunction<K> extends KeyedProcessFunctio
                 data.add(input);
                 inputState.put(triggeringTs, data);
                 // register event time timer
-                ctx.timerService().registerEventTimeTimer(triggeringTs);
+                // 增加延迟触发时间
+                ctx.timerService().registerEventTimeTimer(triggeringTs + twoStreamJoinDelaySendTime);
             }
             registerCleanupTimer(ctx, triggeringTs);
         }
     }
 
+    /**
+     * @Change 对清除过期转态时间进行延迟, 如果是非双流 JOIN 操作, 那么延迟触发时间就为0
+     */
     private void registerCleanupTimer(
             KeyedProcessFunction<K, RowData, RowData>.Context ctx,
             long timestamp) throws Exception {
@@ -191,16 +201,22 @@ public class RowTimeRangeBoundedPrecedingFunction<K> extends KeyedProcessFunctio
         if (curCleanupTimestamp == null || curCleanupTimestamp < minCleanupTimestamp) {
             // we don't delete existing timer since it may delete timer for data processing
             // TODO Use timer with namespace to distinguish timers
-            ctx.timerService().registerEventTimeTimer(maxCleanupTimestamp);
+            // 增加延迟触发时间
+            ctx.timerService().registerEventTimeTimer(maxCleanupTimestamp + twoStreamJoinDelaySendTime);
             cleanupTsState.update(maxCleanupTimestamp);
         }
     }
 
+    /**
+     * @Change 根据计算类型，确定计算范围
+     */
     @Override
     public void onTimer(
             long timestamp,
             KeyedProcessFunction<K, RowData, RowData>.OnTimerContext ctx,
             Collector<RowData> out) throws Exception {
+        // 恢复原本实际的时间, 避免影响计算
+        timestamp = timestamp - twoStreamJoinDelaySendTime;
         Long cleanupTimestamp = cleanupTsState.value();
         // if cleanupTsState has not been updated then it is safe to cleanup states
         if (cleanupTimestamp != null && cleanupTimestamp <= timestamp) {
@@ -211,7 +227,6 @@ public class RowTimeRangeBoundedPrecedingFunction<K> extends KeyedProcessFunctio
             function.cleanup();
             return;
         }
-
         // gets all window data from state for the calculation
         List<RowData> inputs = inputState.get(timestamp);
         if (null != inputs) {
@@ -230,16 +245,17 @@ public class RowTimeRangeBoundedPrecedingFunction<K> extends KeyedProcessFunctio
             List<Long> retractTsList = new ArrayList<Long>();
 
             // do retraction
+            // 根据计算类型类确定相应的计算范围
             Iterator<Long> dataTimestampIt = inputState.keys().iterator();
             switch (type){
                 case "01":
                     long startTimeDay = instance.parse(instance.format(timestamp - 8 * 60 * 60 * 1000)).getTime();
                     while (dataTimestampIt.hasNext()) {
-                    Long dataTs = dataTimestampIt.next();
-                    if (dataTs - 8 * 60 * 60 * 1000 < startTimeDay) {
-                        retraceData(retractTsList, dataTs);
-                    }
-                }break;
+                        Long dataTs = dataTimestampIt.next();
+                        if (dataTs - 8 * 60 * 60 * 1000 < startTimeDay) {
+                            retraceData(retractTsList, dataTs);
+                        }
+                    }break;
                 case "03":
                     long startTimeMonth = instance.parse(instance.format(timestamp - 8 * 60 * 60 * 100)).getTime();
                     while (dataTimestampIt.hasNext()) {
@@ -269,7 +285,7 @@ public class RowTimeRangeBoundedPrecedingFunction<K> extends KeyedProcessFunctio
                         if (offset > precedingOffset) {
                             retraceData(retractTsList, dataTs);
                         }
-                }break;
+                    }break;
             }
 
 
