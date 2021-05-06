@@ -52,7 +52,7 @@ public class MianAppProcesTest {
         // Flink table 运行环境
         StreamTableEnvironment dbTableEnv = FlinkUtils.dbTableEnv(dbEnv);
         // 设置状态的最小空闲时间和最大的空闲时间
-        dbTableEnv.getConfig().setIdleStateRetentionTime(Time.hours(12), Time.hours(24));
+        dbTableEnv.getConfig().setIdleStateRetentionTime(Time.hours(0), Time.hours(0));
         // 注册条件函数
         AppRegisFunction.of().registerFunction(dbTableEnv, properties);
         // 创建一个AppIndexOperation实例
