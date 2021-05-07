@@ -392,4 +392,16 @@ public class StoreUtils {
         fieldStr = fieldStrInit.substring(0, fieldStrInit.length() - 1).trim();
     }
 
+    public Map<String, String> getField(String fieldAndName,String sym) {
+        String[] fieldAndNames = fieldAndName.replaceAll("'", "").split(",");
+        Map<String, String> results = new HashMap<>();
+        for (String fields : fieldAndNames) {
+            String[] result = fields.split(sym,2);
+            if (!result[0].startsWith("PRIMARY")) {//PRIMARY KEY是标识主键
+                results.put(result[0].trim(), result[1].trim());
+            }
+        }
+        return results;
+    }
+
 }

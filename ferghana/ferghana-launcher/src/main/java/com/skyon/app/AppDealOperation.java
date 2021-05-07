@@ -10,10 +10,14 @@ import com.skyon.type.TypeTrans;
 import com.skyon.utils.KafkaUtils;
 import com.skyon.utils.MySqlUtils;
 import com.skyon.utils.StoreUtils;
+import com.skyon.watermark.GeneratorWatermarkStrategy;
 import kafka.utils.ZkUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.eventtime.*;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
@@ -21,6 +25,7 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableSchema;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
+import org.apache.flink.table.expressions.Expression;
 import org.apache.flink.table.types.DataType;
 import org.apache.flink.types.Row;
 import org.apache.hadoop.hbase.TableName;
@@ -31,6 +36,8 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.*;
+
+import static org.apache.flink.table.api.Expressions.$;
 
 public class AppDealOperation {
 
@@ -43,6 +50,10 @@ public class AppDealOperation {
     public HashMap<String, String> indexfieldNameAndType;
     public String oracle_table = "";
     public HashSet<String> fieldSet;
+    public String source_tablename = "" ;
+    public Boolean esflag = false;
+    public long watermark = 0;
+
 
     public AppDealOperation() {}
 
@@ -68,6 +79,20 @@ public class AppDealOperation {
      */
     public void createDimTabl(StreamTableEnvironment dbTableEnv) throws Exception {
         String dimension = properties.getProperty("dimensionTable");
+        String joinSql = properties.getProperty("joinSql");
+        List<Map<String, String>> esFields = new ArrayList<>(); //需要返回的所有es字段，key是字段名称，value是字段类型
+        List<Map<String, String>> hosts = new ArrayList<>();//多个es的连接信息
+        List<Map<String, String>> namess = new ArrayList<>();//需要查询字段的相互匹配名称,key是源表字段名，value是匹配查询的es字段名
+        List<Map<Integer, String>> searchValues = new ArrayList<>(); //key 是源表字段名的下标 ，value是匹配查询的es字段名
+        List<String[]> returnnames = new ArrayList<>();//每个es需要拼接的所有字段
+        int esNum;//es维表的个数
+        int length = 0;//源表和es拼接后字段的个数
+        String esMiddle = source_tablename + "tmp_es" ;
+        String[] fieldNames = null;//源表的字段名称
+        DataType[] types = null;//源表的字段类型
+        String[] ess = null;//es和源表的关联关系
+        int z = 0;//第几个es 和源表的关联关系
+        int k = 0;//事件时间的下标
         if (dimension != null){
             int registerCount = 1;
             Object[] objects = JSON.parseArray(dimension).toArray();
@@ -82,9 +107,113 @@ public class AppDealOperation {
                     addDataToJdbc(dealDimensionTableSql, testDimdata);
                 } else if ("03".equals(testDimType)){
                     addDataHbase(dealDimensionTableSql, testDimdata);
+                } else if ("04".equals(testDimType) || "05".equals(testDimType)) {//04 指es_6.X;05 指es_7.X;
+                    z++;
+                    if (!esflag) {//当有多个es维表时，只需要处理一次
+                        //处理掉joinSql中关于es部分，以便可以和其它类型维表正确join
+                        String[] tests = joinSql.split("`");
+                        tests[2] = tests[2].replace(source_tablename, esMiddle);
+                        ess = tests[2].split(";");
+
+                        tests[2] = ess[0];
+                        String[] esnames = tests[1].split("_join_");
+                        esNum = ess.length - 1;
+                        for (int j = 0; j < esNum; j++) {//ess.length - 1 是因为ess[0]是join其它维表的句子
+                            String name = esnames[esnames.length - 1 - j];
+                            tests[2] = tests[2].replace("," + name + ".*", "");
+                            tests[1] = tests[1].replace("_join_" + name, "");
+                        }
+                        joinSql = tests[0] + "`" + tests[1] + "`" + tests[2];
+                        properties.setProperty("joinSql", joinSql);
+                        Table source = dbTableEnv.from(source_tablename);
+                        TableSchema schema = source.getSchema();
+                        fieldNames = schema.getFieldNames();
+                        types = schema.getFieldDataTypes();
+                        length = length + fieldNames.length;
+                    }
+                    esflag = true;
+                    StoreUtils esStore = StoreUtils.of(dimensionTableSql);
+                    Map<String, String> host = esStore.getField(esStore.metate.split("\\)")[0].replaceAll("'", ""), "=");
+                    hosts.add(host);
+                    Map<String, String> esField = esStore.getField(esStore.fieldStr.replaceAll("`", ""), " ");
+                    esFields.add(esField);
+
+                    length = length + esField.size();
+
+                    String[] fields = ess[z].split("and");
+                    Map<String, String> names = new HashMap<>();//需要查询字段的相互匹配名称,key是源表字段名，value是匹配查询的es字段名
+                    for (int i = 0; i < fields.length; i++) {
+                        String[] keyValue = fields[i].split("=");
+                        names.put(keyValue[0].trim(), keyValue[1].trim());
+                    }
+                    namess.add(names);
+
                 }
-                dbTableEnv.executeSql(dealDimensionTableSql);
+                if (!"04".equals(testDimType)) {
+                    dbTableEnv.executeSql(dealDimensionTableSql);
+                }
                 registerCount++;
+            }
+            if (esflag) { //执行es拼接
+                TypeInformation[] typesInfo = new TypeInformation[length];
+                Expression[] expressions = new Expression[length];
+
+                for (int n = 0; n < namess.size(); n++) {
+                    Map<String, String> names = namess.get(n);
+                    Map<Integer, String> searchValue = new HashMap<>();
+                    for (int i = 0; i < fieldNames.length; i++) {//将source中的字段放入
+                        if (names.containsKey(fieldNames[i])) {
+                            searchValue.put(i, names.get(fieldNames[i]));
+                        }
+                        if (fieldNames[i].equals("TRADE_TIME")) {
+                            expressions[i] = $(fieldNames[i]).rowtime();
+                            typesInfo[i] = Types.SQL_TIMESTAMP;
+                            k = i;
+                        } else {
+                            expressions[i] = $(fieldNames[i]);
+                            typesInfo[i] = TypeInformation.of(types[i].getConversionClass());
+                        }
+                    }
+                }
+
+                //处理要拼接的所有es字段
+                int i = 0, index = fieldNames.length;
+                String type = "" ;
+                for (Map<String, String> esField : esFields){
+                    for (Map.Entry<String, String> entry : esField.entrySet()) {
+                        if (i < esField.size()) {
+                            index += i;
+                            expressions[index] = $(entry.getKey());
+                            type = entry.getValue();
+                            if (type.contains("STRING")) {
+                                typesInfo[index] = Types.STRING;
+                            } else if (type.contains("DOUBLE")) {
+                                typesInfo[index] = Types.DOUBLE;
+                            } else if (type.contains("TIMESTAMP")) {
+                                typesInfo[index] = Types.SQL_TIMESTAMP;
+                            }
+                        }
+                        i++;
+                    }
+                    Set<String> returnfield = esField.keySet();
+                    String[] returnname = returnfield.toArray(new String[returnfield.size()]);
+                    returnnames.add(returnname);
+                }
+
+                Table source = dbTableEnv.from(source_tablename);
+                RowTypeInfo rowTypeInfo = new RowTypeInfo(typesInfo);
+                DataStream<Row> ds = dbTableEnv.toAppendStream(source, Row.class)//将table转化为append流
+//                        .map(new FunMapESjoin(host, searchValue, returnname, k))
+//                        .returns(rowTypeInfo)
+                        .assignTimestampsAndWatermarks(new GeneratorWatermarkStrategy(k, watermark));//关联es数据
+
+                dbTableEnv.createTemporaryView(esMiddle, ds, expressions);// register the DataStream as View "tablename" with fields  expressions
+
+
+                Table table = dbTableEnv.from(esMiddle);
+                TableSchema sch = table.getSchema();
+                String[] fields1 = sch.getFieldNames();
+                DataType[] type1 = sch.getFieldDataTypes();
             }
         }
     }
@@ -304,6 +433,7 @@ public class AppDealOperation {
         globaParm.put("delayTime", watermarkDelayTime + "");
         globaParm.put("idleTimeout", properties.getProperty("idleTimeout", -1 +""));
         String sourceTableSqlSet = properties.getProperty("sourceTableSql").trim();
+        source_tablename = sourceTableSqlSet.split(" ", 3)[2].split("\\(", 2)[0].replaceAll("`", "");
         String[] spl_source = sourceTableSqlSet.split(";");
         for (int i = 0; i < spl_source.length; i++) {
             String sourceTableSql = spl_source[i];
