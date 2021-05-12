@@ -6,6 +6,7 @@ import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.connector.jdbc.JdbcConnectionOptions;
 import org.apache.flink.connector.jdbc.JdbcExecutionOptions;
 import org.apache.flink.connector.jdbc.JdbcSink;
+import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -25,11 +26,12 @@ public class MainAppOverAndOracle {
 
         System.setProperty("oracle.jdbc.J2EE13Compliant", "true");
         StreamExecutionEnvironment dbEnv = FlinkUtils.dbEnv();
+        dbEnv.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 //        dbEnv.setParallelism(1);
         StreamTableEnvironment dbTableEnv = FlinkUtils.dbTableEnv(dbEnv);
         Map<String, String> stringLongHashMap = new HashMap<>();
-        stringLongHashMap.put("waterMark", 5000 + "");
-        stringLongHashMap.put("oracle_table","FLINK_ORACLE_TEST_001");
+//        stringLongHashMap.put("waterMark", 5000 + "");
+//        stringLongHashMap.put("oracle_table","FLINK_ORACLE_TEST_001");
         dbEnv.getConfig().setGlobalJobParameters(ParameterTool.fromMap(stringLongHashMap));
 //        dbTableEnv.executeSql("CREATE TABLE `EP_OPENACCT_FLOW_TABLE`(`TRADE_ID` STRING,`TRADE_AMOUNT` DOUBLE,`TRAN_TIME` TIMESTAMP,proctime AS PROCTIME(),WATERMARK FOR `TRAN_TIME` as TRAN_TIME - INTERVAL '0' SECOND) WITH ('connector' = 'kafka-0.11' ,'topic' = 'EP_OPENACCT_FLOW_TOPIC','properties.bootstrap.servers' = 'spark01:9092','properties.group.id' = 'test1','scan.startup.mode' = 'latest-offset','format' = 'json')");
 //        Table table = dbTableEnv.sqlQuery("SELECT TRADE_ID, TRADE_AMOUNT, TRAN_TIME FROM EP_OPENACCT_FLOW_TABLE");
@@ -53,21 +55,52 @@ public class MainAppOverAndOracle {
 //                        .withUsername("SCOTT")
 //                        .withPassword("tiger")
 //                        .build()));
-        dbTableEnv.executeSql("CREATE TABLE `EP_OPENACCT_FLOW_TABLE`("
+        //{"TRADE_ID":"001","TRAN_TIME":"2021-04-25 10:30:01.123"}
+        dbTableEnv.executeSql("CREATE TABLE `main_oracle`("
                 + "`TRADE_ID` STRING,"
                 + "`TRAN_TIME` TIMESTAMP,"
                 + "proctime AS PROCTIME(),"
                 + "WATERMARK FOR `TRAN_TIME` as TRAN_TIME - INTERVAL '0' SECOND"
                 + ") WITH ("
                 + "'connector' = 'kafka-0.11' ,"
-                + "'topic' = 'EP_OPENACCT_FLOW_TOPIC',"
+                + "'topic' = 'main_oracle',"
                 + "'properties.bootstrap.servers' = 'master:9092',"
                 + "'properties.group.id' = 'test6',"
-                + "'scan.startup.mode' = 'earliest-offset',"
+                + "'scan.startup.mode' = 'latest-offset',"
                 + "'format' = 'json')");
 
-        Table table = dbTableEnv.sqlQuery("SELECT * FROM EP_OPENACCT_FLOW_TABLE");
-        dbTableEnv.toAppendStream(table, Row.class).print();
+        dbTableEnv.executeSql("CREATE TABLE MyUserTable ("
+                + "TRADE_ID VARCHAR(25),"
+                + "AMS INT,"
+                + "PRIMARY KEY (TRADE_ID) NOT ENFORCED"
+                + ") WITH ("
+                + "'connector' = 'jdbc',"
+                + "'url' = 'jdbc:mysql://master:3306/test',"
+                + "'table-name' = 'ferghana',"
+                + "'password' = 'Ferghana@1234'"
+                + ")");
+
+//        dbTableEnv.executeSql("CREATE TABLE oracle_dim ("
+//                + "TRADE_ID STRING,"
+//                + "TRADE_AMOUNT DECIMAL(6,2),"
+//                + "TRADE_DATE TIMESTAMP,"
+//                + "PRIMARY KEY (TRADE_ID) NOT ENFORCED "
+//                + ") WITH ("
+//                + "'connector' = 'jdbc',"
+//                + "'url' = 'jdbc:oracle:thin:@192.168.30.72:1521:ORCL',"
+//                + "'table-name' = 'FLINK_ORACLE_TEST_001',"
+//                + "'username' = 'SCOTT',"
+//                + "'password' = 'tiger',"
+//                + "'driver' = 'oracle.jdbc.driver.OracleDriver')");
+
+//        String sql_join =   "SELECT ep.TRADE_ID, my.TRADE_AMOUNT "
+//                + "FROM  main_oracle AS ep "
+//                + "LEFT JOIN oracle_dim FOR SYSTEM_TIME AS OF ep.proctime AS my "
+//                + "ON ep.TRADE_ID = my.TRADE_ID";
+        String sql_join = "SELECT  TRADE_ID, COUNT(TRADE_ID) OVER(PARTITION BY TRADE_ID ORDER BY TRAN_TIME RANGE BETWEEN INTERVAL '30' MINUTE preceding AND CURRENT ROW) AS AMS FROM main_oracle";
+
+        Table table = dbTableEnv.sqlQuery(sql_join);
+        dbTableEnv.toAppendStream(table, Row.class, sql_join).print();
 
 //        dbTableEnv.executeSql("CREATE TABLE MyOracleTable ("
 //                + "TRADE_ID STRING,"

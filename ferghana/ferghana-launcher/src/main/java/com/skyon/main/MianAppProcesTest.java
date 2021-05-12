@@ -4,13 +4,18 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.skyon.app.AppDealOperation;
 import com.skyon.app.AppRegisFunction;
+import com.skyon.function.FunMapCdcAddType;
+import com.skyon.function.FunMapCdcConcatNameAndValue;
 import com.skyon.function.FunMapJsonForPars;
 import com.skyon.sink.KafkaSink;
 import com.skyon.sink.StoreSink;
+import com.skyon.type.TypeTrans;
 import com.skyon.utils.FlinkUtils;
 import com.skyon.utils.KafkaUtils;
+import com.sun.scenario.effect.impl.sw.sse.SSEBlend_SRC_OUTPeer;
 import kafka.utils.ZkUtils;
 import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.time.Time;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -20,12 +25,18 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.Table;
+import org.apache.flink.table.api.TableResult;
+import org.apache.flink.table.api.TableSchema;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.table.expressions.Expression;
+import org.apache.flink.table.types.DataType;
 import org.apache.flink.types.Row;
 import java.io.IOException;
 import java.util.*;
 import static org.apache.flink.table.api.Expressions.$;
+import static org.apache.flink.table.api.Expressions.map;
+import static org.apache.flink.table.api.Expressions.randInteger;
+
 
 public class MianAppProcesTest {
 
@@ -40,36 +51,63 @@ public class MianAppProcesTest {
         properties.put("kafkaProducersPoolSize", parallelism+"");
         // Flink table 运行环境
         StreamTableEnvironment dbTableEnv = FlinkUtils.dbTableEnv(dbEnv);
+        // 设置状态的最小空闲时间和最大的空闲时间
+        dbTableEnv.getConfig().setIdleStateRetentionTime(Time.hours(0), Time.hours(0));
         // 注册条件函数
         AppRegisFunction.of().registerFunction(dbTableEnv, properties);
         // 创建一个AppIndexOperation实例
         AppDealOperation appOneStreamOver = AppDealOperation.of(properties);
-        // 创建数据原表，sourceTableSql为创建Kafka数据原表语句
+        // 创建数据原表，以及双流join注册成新的表，sourceTableSql为创建Kafka数据原表语句
         appOneStreamOver.createSource(dbTableEnv, dbEnv);
         // 执行数据维维表创建语句
         appOneStreamOver.createDimTabl(dbTableEnv);
         // 指定数据原表与维表拼接语句，使用的是left join, 并将查询结果组成成一张表
         soureAndDimConcat(properties, dbTableEnv, appOneStreamOver);
-        // 将衍生SQL与基础SQL,以及原始字段SQL语句,进行拼接返回,如果存在衍生SQL,需要对衍生SQL进行表注册,以及通过测流输出获取key和waterMark
-        String deSqlSet = getSqlSet(properties, dbTableEnv, appOneStreamOver);
-        // 将衍生SQL和基础SQL,以及数据源字段sql合并成一个流
-        int couns_where = 0;
-        HashMap<Integer, Boolean> isWhere = new HashMap<>();
-        for (String s : deSqlSet.split(";")) {
-            if (s.toUpperCase().contains("\\s+WHERE\\s+")){
-                couns_where += 1;
-                isWhere.put(couns_where, true);
+        // 用于计算部分
+        if (!appOneStreamOver.checkComputerSql()){
+            // 将衍生SQL与基础SQL,以及原始字段SQL语句,进行拼接返回,如果存在衍生SQL,需要对衍生SQL进行表注册,以及通过测流输出获取key和waterMark
+            String deSqlSet = getSqlSet(properties, dbTableEnv, appOneStreamOver);
+            // 将衍生SQL和基础SQL,以及数据源字段sql合并成一个流
+            int couns_where = 0;
+            HashMap<Integer, Boolean> isWhere = new HashMap<>();
+            for (String s : deSqlSet.split(";")) {
+                if (s.toUpperCase().contains("\\s+WHERE\\s+")){
+                    couns_where += 1;
+                    isWhere.put(couns_where, true);
+                }
             }
+            DataStream<Tuple2<String, String>> sqlQueryAndUnion = appOneStreamOver.indexUnion(dbTableEnv,  deSqlSet, "deSqlSet", isWhere);
+            // 将计算结果值进行拼接
+            SingleOutputStreamOperator<String> singleDeVarSplic = appOneStreamOver.mergerIndicators(sqlQueryAndUnion, Integer.parseInt(properties.getProperty("fieldOutNum")), "keyed-uid", appOneStreamOver.fieldSet);
+            // 创建测试使用的topic, 用于存储计算结果，以便前端读取
+            testMOde(properties, dbTableEnv, appOneStreamOver, singleDeVarSplic);
+            // 非测试模式
+            runMode(properties, dbTableEnv, appOneStreamOver, singleDeVarSplic);
+        } else {
+            cdcMySqlAsyncResult(properties, dbTableEnv, appOneStreamOver);
         }
-        DataStream<Tuple2<String, String>> sqlQueryAndUnion = appOneStreamOver.indexUnion(dbTableEnv,  deSqlSet, "deSqlSet", isWhere);
-        // 将计算结果值进行拼接
-        SingleOutputStreamOperator<String> singleDeVarSplic = appOneStreamOver.mergerIndicators(sqlQueryAndUnion, Integer.parseInt(properties.getProperty("fieldOutNum")), "keyed-uid", appOneStreamOver.fieldSet);
-        // 创建测试使用的topic, 用于存储计算结果，以便前端读取
-        testMOde(properties, dbTableEnv, appOneStreamOver, singleDeVarSplic);
-        // 非测试模式
-        runMode(properties, dbTableEnv, appOneStreamOver, singleDeVarSplic);
         // 程序执行
         dbEnv.execute(properties.getProperty("variablePackEn", "test"));
+    }
+
+    private static void cdcMySqlAsyncResult(Properties properties, StreamTableEnvironment dbTableEnv, AppDealOperation appOneStreamOver) throws Exception {
+        String cdcSyncSql = "SELECT * FROM " + appOneStreamOver.middle_table;
+        String sinkSql = properties.getProperty("sinkSql");
+        if ("01".equals(properties.getProperty("runMode"))){
+            if (sinkSql == null){
+                Table table = dbTableEnv.sqlQuery(cdcSyncSql);
+                List<String> arrFieldName = Arrays.asList(table.getSchema().getFieldNames());
+                SingleOutputStreamOperator<String> result = dbTableEnv.toRetractStream(table, Row.class)
+                        .map(value -> value.f1)
+                        .map(FunMapCdcConcatNameAndValue.of(arrFieldName));
+                result.addSink(KafkaSink.untransaction(properties.getProperty("testTopicName"), properties.getProperty("testBrokeList")));
+            } else {
+                sink(dbTableEnv, properties, new HashMap<>(),true);
+            }
+
+        }   else if ("02".equals(properties.getProperty("runMode"))){
+            sink(dbTableEnv, properties, new HashMap<>(),false);
+        }
     }
 
 
@@ -99,6 +137,7 @@ public class MianAppProcesTest {
                 singleOutputStreamOperator.addSink(KafkaSink.untransaction(testTopicName, properties.getProperty("testBrokeList")));
             } else {
                 SingleOutputStreamOperator<String> resultDeal = singleDeVarSplic.map(new testMapOuput());
+                resultDeal.print("myql_cdc\t");
                 resultDeal.addSink(KafkaSink.untransaction(testTopicName, properties.getProperty("testBrokeList")));
             }
 
@@ -198,7 +237,8 @@ public class MianAppProcesTest {
                     prefix = sp_1[0];
                     sufix = sp_1[1];
                 }
-                prefix = prefix + ", " + "COUNT(" + properties.getProperty("sourcePrimaryKey") + ")" + " OVER(PARTITION BY "+ properties.getProperty("sourcePrimaryKey") +" ORDER BY " + event_time_field + " RANGE BETWEEN INTERVAL '5' SECOND preceding AND CURRENT ROW) AS tof123445fot ";
+                //PARTITION BY "+ properties.getProperty("sourcePrimaryKey") +"
+                prefix = prefix + ", " + "COUNT(" + properties.getProperty("sourcePrimaryKey") + ")" + " OVER( ORDER BY " + event_time_field + " RANGE BETWEEN INTERVAL '1' SECOND preceding AND CURRENT ROW) AS tof123445fot ";
                 originalVariableSql = prefix + " FROM " + sufix;
             }
             deSqlSet = deSqlSet + originalVariableSql + ";";
@@ -231,6 +271,7 @@ public class MianAppProcesTest {
                 registerMidTable(dbTableEnv, singleDeVarSplic,appOneStreamOver, split[2], false);
             }
         }
+
         return deSqlSet;
     }
 
@@ -242,14 +283,24 @@ public class MianAppProcesTest {
      */
     private static void registerMidTable(StreamTableEnvironment dbTableEnv, DataStream<String> singleDeVarSplic, AppDealOperation appOneStreamOver, String tableName, Boolean flag) {
         LinkedHashMap<String, String> singleFieldTypeHashMap = appOneStreamOver.singleFieldTypeHashMap;
-        TableSchema tableSchema = new TableSchema(singleFieldTypeHashMap).invoke();
+        registerTable(dbTableEnv, singleDeVarSplic, tableName, flag, singleFieldTypeHashMap, null);
+    }
+
+    public static void registerTable(StreamTableEnvironment dbTableEnv, DataStream<String> singleDeVarSplic, String tableName, Boolean flag, LinkedHashMap<String, String> singleFieldTypeHashMap, String timeStampFiled) {
+        TableSchema tableSchema = new TableSchema(singleFieldTypeHashMap, timeStampFiled).invoke();
         Expression[] expressions = tableSchema.getExpressions();
         String sch = tableSchema.getSch();
         RowTypeInfo rowTypeInfo = tableSchema.getRowTypeInfo();
-        SingleOutputStreamOperator<Row> mapSingleOutputStreamOperator = singleDeVarSplic.map(new FunMapJsonForPars(singleFieldTypeHashMap)).returns(rowTypeInfo);
+        SingleOutputStreamOperator<Row> mapSingleOutputStreamOperator = singleDeVarSplic.map(FunMapJsonForPars.of(singleFieldTypeHashMap, timeStampFiled)).returns(rowTypeInfo);
         if (!flag){
             dbTableEnv.createTemporaryView(tableName + "_sky", mapSingleOutputStreamOperator, expressions);
-            Table table = dbTableEnv.sqlQuery("SELECT " + sch + " FROM " + tableName + "_sky");
+            String sqlTrans  = null;
+            if (timeStampFiled  == null){
+                sqlTrans = "SELECT " + sch  + " FROM " + tableName + "_sky";
+            } else {
+                sqlTrans =  "SELECT " + sch + ", "  + timeStampFiled  + " FROM " + tableName + "_sky";
+            }
+            Table table = dbTableEnv.sqlQuery(sqlTrans);
             dbTableEnv.createTemporaryView("`" + tableName + "`", table);
         } else {
             dbTableEnv.createTemporaryView("`" + tableName + "`", mapSingleOutputStreamOperator, expressions);
@@ -261,9 +312,11 @@ public class MianAppProcesTest {
         private Expression[] expressions;
         private String sch;
         private RowTypeInfo rowTypeInfo;
+        private String timeStampFiled;
 
-        public TableSchema(LinkedHashMap<String, String> singleFieldTypeHashMap) {
+        public TableSchema(LinkedHashMap<String, String> singleFieldTypeHashMap, String timeStampFiled) {
             this.singleFieldTypeHashMap = singleFieldTypeHashMap;
+            this.timeStampFiled = timeStampFiled;
         }
 
         public Expression[] getExpressions() {
@@ -290,9 +343,14 @@ public class MianAppProcesTest {
                 String name = next.getKey();
                 String type = next.getValue();
                 nameArr[i] = "`" + name + "`";
-                typeArr[i] = Types.STRING;
-                expressions[i] = $(name);
-                sch = sch + "CAST(" + name + " AS " +  type + ") AS " + name + ", ";
+                if (timeStampFiled == null || !name.equals(timeStampFiled)){
+                    typeArr[i] = Types.STRING;
+                    expressions[i] = $(name);
+                    sch = sch + "CAST(" + name + " AS " +  type + ") AS " + name + ", ";
+                } else {
+                    typeArr[i] = Types.SQL_TIMESTAMP;
+                    expressions[i] = $(name).rowtime();
+                }
                 i++;
             }
             sch  = sch.trim();

@@ -23,6 +23,15 @@ public class FlinkUtils {
      */
     public static StreamExecutionEnvironment dbEnv(Properties properties) {
         StreamExecutionEnvironment env = dbEnv();
+            if (!properties.getProperty("watermark").split("[|]")[0].equals("proctime")) {
+                // 指定时间类型为处理时间
+                env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+            } else {
+                // 指定时间为事件时间
+                env.setStreamTimeCharacteristic(TimeCharacteristic.ProcessingTime);
+            }
+
+        env.getConfig().setAutoWatermarkInterval(50);
         // "01"为测模式,设置并行度为1
         if ("01".equals(properties.getProperty("runMode"))){
             env.setParallelism(1);
@@ -57,9 +66,6 @@ public class FlinkUtils {
      */
     public static StreamExecutionEnvironment dbEnv() {
         StreamExecutionEnvironment executionEnvironment = StreamExecutionEnvironment.getExecutionEnvironment();
-        // 指定时间类型为事件时间
-        executionEnvironment.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
-        executionEnvironment.getConfig().setAutoWatermarkInterval(50);
         return executionEnvironment;
     }
 

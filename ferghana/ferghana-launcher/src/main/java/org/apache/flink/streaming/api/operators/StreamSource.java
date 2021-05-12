@@ -35,10 +35,7 @@ import org.apache.flink.streaming.runtime.tasks.ProcessingTimeService;
 import java.util.concurrent.ScheduledFuture;
 
 /**
- * {@link StreamOperator} for streaming sources.
- *
- * @param <OUT> Type of the output elements
- * @param <SRC> Type of the source function of this stream source operator
+ * @Change 详细说明请看  run(...) 方法，其中对添加行进行了的说明
  */
 @Internal
 public class StreamSource<OUT, SRC extends SourceFunction<OUT>> extends AbstractUdfStreamOperator<OUT, SRC> {
@@ -57,12 +54,16 @@ public class StreamSource<OUT, SRC extends SourceFunction<OUT>> extends Abstract
         this.chainingStrategy = ChainingStrategy.HEAD;
     }
 
+    /**
+     * @Change 相应的改变，请看代码注释 //....
+     */
     public void run(final Object lockingObject,
                     final StreamStatusMaintainer streamStatusMaintainer,
                     final OperatorChain<?, ?> operatorChain) throws Exception {
 
         run(lockingObject, streamStatusMaintainer, output, operatorChain);
     }
+
 
     public void run(final Object lockingObject,
                     final StreamStatusMaintainer streamStatusMaintainer,
@@ -88,15 +89,15 @@ public class StreamSource<OUT, SRC extends SourceFunction<OUT>> extends Abstract
 
         final long watermarkInterval = getRuntimeContext().getExecutionConfig().getAutoWatermarkInterval();
 
-        // 全局参数传入
-        // 下面是以API的形式,添加数据源检查机制
-        // .<Tuple2<Long, String>>forBoundedOutOfOrderness(Duration.ofSeconds(20))
-        // .withIdleness(Duration.ofMinutes(1));
+        // 获取参数类(ParameterTool)
         ParameterTool parameterTool = (ParameterTool) getRuntimeContext().getExecutionConfig().getGlobalJobParameters();
+        // idleTimeout: 表示如果数据源没有新的记录，那么将触发发出新的WaterMark，其中 -1 表示不开启此机制
         long idleTimeout = Long.parseLong(parameterTool.get("idleTimeout", -1 + ""));
+        // delayTime: WaterMark的延迟触发时间，当数据源的没有产生新的记录时,
+        // 那么新产生的WaterMarkd也就是最大的时间戳(lastOutputWatermark + idleTimeout)
         String delayTime = parameterTool.get("delayTime");
 
-        if(delayTime == null){
+        if(delayTime == null && Long.parseLong(delayTime) > 0){
             this.ctx = StreamSourceContexts.getSourceContext(
                     timeCharacteristic,
                     getProcessingTimeService(),
@@ -106,16 +107,17 @@ public class StreamSource<OUT, SRC extends SourceFunction<OUT>> extends Abstract
                     watermarkInterval,
                     idleTimeout);
         } else {
+            //调用了 StreamSourceContexts 重载方法 getSourceContext(...)，主要是为了传入 delayTime 此参数值
             this.ctx = StreamSourceContexts.getSourceContext(
-                     timeCharacteristic,
-                     getProcessingTimeService(),
-                     lockingObject,
-                     streamStatusMaintainer,
-                     collector,
-                     watermarkInterval,
-                     idleTimeout,
-                     delayTime);
-                }
+                    timeCharacteristic,
+                    getProcessingTimeService(),
+                    lockingObject,
+                    streamStatusMaintainer,
+                    collector,
+                    watermarkInterval,
+                    idleTimeout,
+                    delayTime);
+        }
 
 
         try {

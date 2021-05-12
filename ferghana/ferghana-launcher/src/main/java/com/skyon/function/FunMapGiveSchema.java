@@ -41,7 +41,7 @@ public class FunMapGiveSchema extends ProcessFunction<Row, Tuple2<String, String
         for (String fieldName : fieldNames) {
             field_values = sp[cn];
             if (primary_key.equals(fieldName)){
-                key = fieldName + ":"  + field_values;
+                key = fieldName + ":"  + field_values.split("\t")[0];
             } else {
                 hashMap.put(fieldName, field_values);
             }

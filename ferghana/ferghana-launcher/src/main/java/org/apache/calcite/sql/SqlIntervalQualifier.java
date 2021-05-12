@@ -22,6 +22,10 @@ import org.apache.calcite.util.Litmus;
 import org.apache.calcite.util.Static;
 import org.apache.calcite.util.Util;
 
+/**
+ * @Change  为了实现当日/周/月的 OVER() 窗口计算，对本类中的 isLeadFieldInRange(...) 这个方法进行的了更改,
+ * 详细请看对应的方法说明;
+ */
 public class SqlIntervalQualifier extends SqlNode {
     private static final BigDecimal ZERO;
     private static final BigDecimal THOUSAND;
@@ -201,6 +205,11 @@ public class SqlIntervalQualifier extends SqlNode {
         return unsignedValue;
     }
 
+    /**
+     * @Change 添加了一个条件判断，允许窗口大小为(777/888/9999, 单位: 分钟)的 OVER 窗口，
+     * 默认情况下窗口的大小(数字)不能操作100, 其中(777/888/999, 分别代表，当日/周/月的表示)，
+     * 主要是在有界的 OVER() 窗口实现类的里面, 会通过窗口的大小来确定计算的范围；
+     */
     private boolean isLeadFieldInRange(RelDataTypeSystem typeSystem, BigDecimal value, TimeUnit unit) {
         assert value.compareTo(ZERO) >= 0;
         int startPrecision = this.getStartPrecision(typeSystem);

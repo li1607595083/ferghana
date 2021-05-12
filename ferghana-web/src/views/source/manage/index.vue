@@ -130,7 +130,7 @@
 
     <!-- 添加或修改数据源表对话框 -->
     <el-dialog :title="title" :visible.sync="open" width="1100px" :close-on-click-modal="false">
-      <el-form ref="form" :model="form" :rules="rules" label-width="130px">
+      <el-form ref="form" :model="form" :rules="rules" label-width="130px" class="el-col-24">
         <el-form-item label="数据源中文名" prop="dataSourceName" class="el-col-12">
           <el-input v-model="form.dataSourceName" placeholder="请输入数据源中文名" :disabled="detailViem"/>
         </el-form-item>
@@ -144,6 +144,7 @@
             clearable
             style="width: 100%"
             :disabled="detailViem"
+            @change="connectorTypeChange"
           >
             <el-option
               v-for="dict in connectorTypeOptions"
@@ -156,29 +157,65 @@
         <el-form-item label="数据来源" prop="dataSource" class="el-col-12">
           <el-input v-model="form.dataSource" placeholder="请输入数据来源" :disabled="detailViem"/>
         </el-form-item>
-        <el-form-item label="topic名" prop="topicName" class="el-col-12">
-          <el-input v-model="form.topicName" placeholder="请输入topic名" :disabled="detailViem"/>
-        </el-form-item>
-        <el-form-item label="消费组" prop="consumerGroup" class="el-col-12">
-          <el-input v-model="form.consumerGroup" placeholder="请输入消费组" :disabled="detailViem"/>
-        </el-form-item>
-        <el-form-item label="消费模式" prop="consumerMode" class="el-col-12">
-          <el-select v-model="form.consumerMode" placeholder="请选择消费模式" clearable style="width: 100%"
-                     :disabled="detailViem">
-            <el-option v-for="dict in consumerModeOptions" :key="dict.dictValue" :label="dict.dictLabel"
-                       :value="dict.dictValue"/>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="zookeeper地址" prop="zookeeperAddress" class="el-col-12">
-          <el-input
-            v-model="form.zookeeperAddress"
-            placeholder="master:2181,slave:2181"
-            :disabled="detailViem"
-          />
-        </el-form-item>
-        <el-form-item label="kafka地址" prop="kafkaAddress" class="el-col-12">
-          <el-input v-model="form.kafkaAddress" placeholder="master:9092,slave:9092" :disabled="detailViem"/>
-        </el-form-item>
+        <div v-show="connShow">
+          <el-form-item label="topic名" prop="topicName" class="el-col-12">
+            <el-input v-model="form.topicName" placeholder="请输入topic名" :disabled="detailViem"/>
+          </el-form-item>
+          <el-form-item label="消费组" prop="consumerGroup" class="el-col-12">
+            <el-input v-model="form.consumerGroup" placeholder="请输入消费组" :disabled="detailViem"/>
+          </el-form-item>
+          <el-form-item label="消费模式" prop="consumerMode" class="el-col-12">
+            <el-select v-model="form.consumerMode" placeholder="请选择消费模式" clearable style="width: 100%"
+                       :disabled="detailViem">
+              <el-option v-for="dict in consumerModeOptions" :key="dict.dictValue" :label="dict.dictLabel"
+                         :value="dict.dictValue"/>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="zookeeper地址" prop="zookeeperAddress" class="el-col-12">
+            <el-input
+              v-model="form.zookeeperAddress"
+              placeholder="master:2181,slave:2181"
+              :disabled="detailViem"
+            />
+          </el-form-item>
+          <el-form-item label="kafka地址" prop="kafkaAddress" class="el-col-12">
+            <el-input v-model="form.kafkaAddress" placeholder="master:9092,slave:9092" :disabled="detailViem"/>
+          </el-form-item>
+        </div>
+        <div v-show="!connShow" class="el-col-24">
+          <el-form-item label="URL地址" prop="myAddress" class="el-col-12">
+            <el-input v-model="form.myAddress" placeholder="请输入URL地址" :disabled="detailViem"/>
+          </el-form-item>
+            <el-form-item label="端口" prop="port" class="el-col-12">
+            <el-input v-model="form.port" placeholder="请输入端口号" :disabled="detailViem"/>
+          </el-form-item>
+          <el-form-item label="用户名" prop="userName" class="el-col-12">
+            <el-input v-model="form.userName" placeholder="请输入用户名" :disabled="detailViem"/>
+          </el-form-item>
+          <el-form-item label="密码" prop="password" class="el-col-12">
+            <el-input v-model="form.password" placeholder="请输入密码" :disabled="detailViem"/>
+          </el-form-item>
+          <el-form-item label="数据库" prop="myDatabase" class="el-col-12">
+            <el-input v-model="form.myDatabase" placeholder="请输入数据库" :disabled="detailViem"/>
+          </el-form-item>
+          <el-form-item label="表名" prop="myTableName" class="el-col-12">
+            <el-input v-model="form.myTableName" placeholder="请输入表名" :disabled="detailViem"/>
+          </el-form-item>
+          <el-form-item label="是否全表扫描" prop="scanAll" class="el-col-12">
+            <el-radio-group v-model="form.scanAll" :disabled="detailViem">
+              <el-radio label="1">是</el-radio>
+              <el-radio label="0">否</el-radio>
+            </el-radio-group>
+          </el-form-item>
+          <el-form-item label="数据操作" prop="handleData" class="el-col-12">
+            <el-checkbox-group v-model="form.handleData" :disabled="detailViem">
+              <el-checkbox label="I">insert</el-checkbox>
+              <el-checkbox label="U">update</el-checkbox>
+              <el-checkbox label="D">delete</el-checkbox>
+            </el-checkbox-group>
+          </el-form-item>
+        </div>
+
         <el-form-item label="描述" prop="description" class="el-col-12">
           <el-input v-model="form.description" placeholder="请输入描述" :disabled="detailViem"/>
         </el-form-item>
@@ -232,10 +269,11 @@
           </el-form-item>
         </div>
       </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitForm" v-show="showSubmitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
-      </div>
+
+        <div slot="footer" class="dialog-footer">
+          <el-button type="primary" @click="submitForm" v-show="showSubmitForm">确 定</el-button>
+          <el-button @click="cancel">取 消</el-button>
+        </div>
     </el-dialog>
   </div>
 </template>
@@ -261,6 +299,7 @@
         ids: [],
         // 非单个禁用
         single: true,
+        scanAll: undefined,
         // 非多个禁用
         multiple: true,
         // 总条数
@@ -287,6 +326,7 @@
         // 控制标签是否可修改
         detailViem: false,
         updateViem: false,
+        connShow: true,
         // 控制【确认】按钮是否显示
         showSubmitForm: true,
         // 查询参数
@@ -344,6 +384,30 @@
           kafkaAddress: [
             {required: true, message: "kafka地址不能为空", trigger: "blur"}
           ],
+          myAddress: [
+            {required: true, message: "URL地址不能为空", trigger: "blur"}
+          ],
+          port: [
+            {required: true, message: "端口不能为空", trigger: "blur"}
+          ],
+          userName: [
+            {required: true, message: "用户名不能为空", trigger: "blur"}
+          ],
+          password: [
+            {required: true, message: "密码不能为空", trigger: "blur"}
+          ],
+          myDatabase: [
+            {required: true, message: "数据库不能为空", trigger: "blur"}
+          ],
+          myTableName: [
+            {required: true, message: "表名不能为空", trigger: "blur"}
+          ],
+          scanAll: [
+            {required : true, message: "是否全表扫描必须选择", trigger: "blur"}
+          ],
+          handleData: [
+            {required : true, message: "数据操作必须选择", trigger: "blur"}
+          ],
           dynamicItem: {
             schemaDefine: [
               {required: true, message: "字段不能为空", trigger: "blur"},
@@ -375,6 +439,43 @@
       });
     },
     methods: {
+
+      connectorTypeChange(value){
+        // 控制显示kafka或mysql板块
+        this.connShow = value === '01';
+        //  控制kafka或mysql板块的必输项
+        if (value === '01') { // kafka
+          this.rules.topicName[0].required = true;
+          this.rules.topicName[0].validator = isLegitimateName;
+          this.rules.consumerGroup[0].required = true;
+          this.rules.consumerMode[0].required = true;
+          this.rules.kafkaAddress[0].required = true;
+          this.rules.zookeeperAddress[0].required = true;
+          this.rules.myAddress[0].required = false;
+          this.rules.port[0].required = false;
+          this.rules.userName[0].required = false;
+          this.rules.password[0].required = false;
+          this.rules.myDatabase[0].required = false;
+          this.rules.myTableName[0].required = false;
+          this.rules.scanAll[0].required = false;
+          this.rules.handleData[0].required = false;
+        } else if (value === '02'){
+          this.rules.topicName[0].required = false;
+          this.rules.topicName[0].validator = false;
+          this.rules.consumerGroup[0].required = false;
+          this.rules.consumerMode[0].required = false;
+          this.rules.kafkaAddress[0].required = false;
+          this.rules.zookeeperAddress[0].required = false;
+          this.rules.myAddress[0].required = true;
+          this.rules.port[0].required = true;
+          this.rules.userName[0].required = true;
+          this.rules.password[0].required = true;
+          this.rules.myDatabase[0].required = true;
+          this.rules.myTableName[0].required = true;
+          this.rules.scanAll[0].required = true;
+          this.rules.handleData[0].required = true;
+        }
+      },
 
       mouseOver(){
         console.log("==");
@@ -486,6 +587,7 @@
           schemaPrimaryKey: undefined,
           waterMarkName: undefined,
           waterMarkTime: undefined,
+          handleData: [],
           dynamicItem: [
             {
               schemaDefine: "",
@@ -496,6 +598,7 @@
           ]
         };
         this.resetForm("form");
+        this.connShow = true;
       },
       /** 搜索按钮操作 */
       handleQuery() {
@@ -533,7 +636,7 @@
           this.updateViem = true;
           this.showSubmitForm = true;
           this.title = "修改数据源";
-
+          this.connectorTypeChange(this.form.connectorType);
           this.$nextTick(function () {
             for (let i = 0; i < this.form.dynamicItem.length; i++) {
               if (this.form.dynamicItem[i].primaryKey !== "" && this.form.dynamicItem[i].primaryKey === this.form.schemaPrimaryKey) {
@@ -556,6 +659,7 @@
           this.updateViem = true;
           this.showSubmitForm = false;
           this.title = "查看数据源";
+          this.connectorTypeChange(this.form.connectorType);
           this.$nextTick(function () {
             for (let i = 0; i < this.form.dynamicItem.length; i++) {
               if (this.form.dynamicItem[i].primaryKey !== "" && this.form.dynamicItem[i].primaryKey === this.form.schemaPrimaryKey) {
@@ -570,6 +674,8 @@
       },
       /** 提交按钮 */
       submitForm: function () {
+        console.log("--submitForm");
+        console.log(this.form);
         this.$refs["form"].validate(valid => {
           if (valid) {
             if (this.form.dataSourceId !== undefined) {

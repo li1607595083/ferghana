@@ -45,7 +45,7 @@ public class FunMapValueAddTypeAadFieldName extends ProcessFunction<Row, Tuple2<
         for (String fieldName : fieldNames) {
             field_values = sp[cn];
             if (primary_key.equals(fieldName)){
-                key = fieldName + ":"  + field_values;
+                key = fieldName + ":"  + field_values.split("\t")[0];
             } else if (!fieldName.equals("tof123445fot")){
                 //字段名&字段类型&字段值
                 hashMap.put(fieldName, fieldName+"&"+ fieldTypeHashMap.get(fieldName) + "&" + field_values);

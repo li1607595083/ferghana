@@ -16,6 +16,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="consumerMode"    column="consumer_mode"    />
         <result property="zookeeperAddress"    column="zookeeper_address"    />
         <result property="kafkaAddress"    column="kafka_address"    />
+
+        <result property="myAddress"    column="my_Address"    />
+        <result property="port"    column="port"    />
+        <result property="userName"    column="user_Name"    />
+        <result property="password"    column="password"    />
+        <result property="myDatabase"    column="my_Database"    />
+        <result property="myTableName"    column="my_TableName"    />
+        <result property="scanAll"    column="scan_All"    />
+        <result property="handleData"    column="handle_Data"    />
+
+
         <result property="description"    column="description"    />
         <result property="createTime"    column="create_time"    />
         <result property="modifyTime"    column="modify_time"    />
@@ -30,7 +41,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="selectTDataSourceVo">
         select data_source_id, data_source_name, data_source_type, connector_type, data_source, topic_name, table_name,
         consumer_group, consumer_mode, zookeeper_address, kafka_address, schema_define,data_base_type, description,create_table_sql,
-        schema_Primary_Key,water_mark_name,water_Mark_Time,
+        schema_Primary_Key,water_mark_name,water_Mark_Time,my_Address,port,user_Name,password,my_Database,my_TableName,scan_All,handle_Data,
         create_time, modify_time from t_data_source
     </sql>
 
@@ -91,6 +102,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="consumerMode != null  and consumerMode != ''">consumer_mode,</if>
             <if test="zookeeperAddress != null  and zookeeperAddress != ''">zookeeper_address,</if>
             <if test="kafkaAddress != null  and kafkaAddress != ''">kafka_address,</if>
+
+            <if test="myAddress != null  and myAddress != ''">my_Address,</if>
+            <if test="port != null  and port != ''">port,</if>
+            <if test="userName != null  and userName != ''">user_Name,</if>
+            <if test="password != null  and password != ''">password,</if>
+            <if test="myDatabase != null  and myDatabase != ''">my_Database,</if>
+            <if test="myTableName != null  and myTableName != ''">my_TableName,</if>
+            <if test="scanAll != null  and scanAll != ''">scan_All,</if>
+            <if test="handleData != null  and handleData != ''">handle_Data,</if>
+
             <if test="schemaDefine != null  and schemaDefine != ''">schema_define,</if>
             <if test="dataBaseType != null  and dataBaseType != ''">data_base_type,</if>
             <if test="description != null  and description != ''">description,</if>
@@ -112,6 +133,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="consumerMode != null  and consumerMode != ''">#{consumerMode},</if>
             <if test="zookeeperAddress != null  and zookeeperAddress != ''">#{zookeeperAddress},</if>
             <if test="kafkaAddress != null  and kafkaAddress != ''">#{kafkaAddress},</if>
+
+            <if test="myAddress != null  and myAddress != ''">#{myAddress},</if>
+            <if test="port != null  and port != ''">#{port},</if>
+            <if test="userName != null  and userName != ''">#{userName},</if>
+            <if test="password != null  and password != ''">#{password},</if>
+            <if test="myDatabase != null  and myDatabase != ''">#{myDatabase},</if>
+            <if test="myTableName != null  and myTableName != ''">#{myTableName},</if>
+            <if test="scanAll != null  and scanAll != ''">#{scanAll},</if>
+            <if test="handleData != null  and handleData != ''">#{handleData},</if>
+
+
             <if test="schemaDefine != null  and schemaDefine != ''">#{schemaDefine},</if>
             <if test="dataBaseType != null  and dataBaseType != ''">#{dataBaseType},</if>
             <if test="description != null  and description != ''">#{description},</if>
@@ -136,6 +168,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="consumerMode != null  and consumerMode != ''">consumer_mode = #{consumerMode},</if>
             <if test="zookeeperAddress != null  and zookeeperAddress != ''">zookeeper_address = #{zookeeperAddress},</if>
             <if test="kafkaAddress != null  and kafkaAddress != ''">kafka_address = #{kafkaAddress},</if>
+
+            <if test="myAddress != null  and myAddress != ''">my_Address = #{myAddress},</if>
+            <if test="port != null  and port != ''">port = #{port},</if>
+            <if test="userName != null  and userName != ''">user_Name = #{userName},</if>
+            <if test="password != null  and password != ''">password = #{password},</if>
+            <if test="myDatabase != null  and myDatabase != ''">my_Database = #{myDatabase},</if>
+            <if test="myTableName != null  and myTableName != ''">my_TableName = #{myTableName},</if>
+            <if test="scanAll != null  and scanAll != ''">scan_All = #{scanAll},</if>
+            <if test="handleData != null  and handleData != ''">handle_Data = #{handleData},</if>
+
+
             <if test="schemaDefine != null  and schemaDefine != ''">schema_define = #{schemaDefine},</if>
             <if test="dataBaseType != null  and dataBaseType != ''">data_base_type = #{dataBaseType},</if>
             <if test="description != null  and description != ''">description = #{description},</if>

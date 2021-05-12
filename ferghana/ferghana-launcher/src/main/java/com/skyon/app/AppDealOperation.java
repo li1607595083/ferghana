@@ -3,59 +3,41 @@ package com.skyon.app;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.skyon.bean.WaterMarkGeneratorCounuser;
 import com.skyon.function.*;
+import com.skyon.main.MianAppProcesTest;
 import com.skyon.type.TypeTrans;
 import com.skyon.utils.KafkaUtils;
 import com.skyon.utils.MySqlUtils;
 import com.skyon.utils.StoreUtils;
-import javafx.scene.control.Tab;
-import kafka.Kafka;
+import com.skyon.watermark.GeneratorWatermarkStrategy;
 import kafka.utils.ZkUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.eventtime.*;
-import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.api.common.functions.RichMapFunction;
-import org.apache.flink.api.common.state.MapState;
-import org.apache.flink.api.common.state.MapStateDescriptor;
-import org.apache.flink.api.common.state.ValueState;
-import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
-import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.tuple.Tuple3;
-import org.apache.flink.api.java.tuple.Tuple4;
-import org.apache.flink.api.java.tuple.Tuple5;
+import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.api.java.utils.ParameterTool;
-import org.apache.flink.configuration.Configuration;
-import org.apache.flink.streaming.api.datastream.BroadcastStream;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.ProcessFunction;
-import org.apache.flink.streaming.api.functions.co.BroadcastProcessFunction;
-import org.apache.flink.streaming.api.scala.OutputTag;
 import org.apache.flink.table.api.Table;
-import org.apache.flink.table.api.TableResult;
 import org.apache.flink.table.api.TableSchema;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
+import org.apache.flink.table.expressions.Expression;
 import org.apache.flink.table.types.DataType;
 import org.apache.flink.types.Row;
-import org.apache.flink.util.Collector;
-import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Put;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.Transaction;
-import scala.collection.mutable.HashMap$;
 
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
-import java.time.Duration;
 import java.util.*;
+
+import static org.apache.flink.table.api.Expressions.$;
 
 public class AppDealOperation {
 
@@ -68,6 +50,10 @@ public class AppDealOperation {
     public HashMap<String, String> indexfieldNameAndType;
     public String oracle_table = "";
     public HashSet<String> fieldSet;
+    public String source_tablename = "" ;
+    public Boolean esflag = false;
+    public long watermark = 0;
+
 
     public AppDealOperation() {}
 
@@ -93,6 +79,20 @@ public class AppDealOperation {
      */
     public void createDimTabl(StreamTableEnvironment dbTableEnv) throws Exception {
         String dimension = properties.getProperty("dimensionTable");
+        String joinSql = properties.getProperty("joinSql");
+        List<Map<String, String>> esFields = new ArrayList<>(); //需要返回的所有es字段，key是字段名称，value是字段类型
+        List<Map<String, String>> hosts = new ArrayList<>();//多个es的连接信息
+        List<Map<String, String>> namess = new ArrayList<>();//需要查询字段的相互匹配名称,key是源表字段名，value是匹配查询的es字段名
+        List<Map<Integer, String>> searchValues = new ArrayList<>(); //key 是源表字段名的下标 ，value是匹配查询的es字段名
+        List<String[]> returnnames = new ArrayList<>();//每个es需要拼接的所有字段
+        int esNum;//es维表的个数
+        int length = 0;//源表和es拼接后字段的个数
+        String esMiddle = source_tablename + "tmp_es" ;
+        String[] fieldNames = null;//源表的字段名称
+        DataType[] types = null;//源表的字段类型
+        String[] ess = null;//es和源表的关联关系
+        int z = 0;//第几个es 和源表的关联关系
+        int k = 0;//事件时间的下标
         if (dimension != null){
             int registerCount = 1;
             Object[] objects = JSON.parseArray(dimension).toArray();
@@ -107,9 +107,113 @@ public class AppDealOperation {
                     addDataToJdbc(dealDimensionTableSql, testDimdata);
                 } else if ("03".equals(testDimType)){
                     addDataHbase(dealDimensionTableSql, testDimdata);
+                } else if ("04".equals(testDimType) || "05".equals(testDimType)) {//04 指es_6.X;05 指es_7.X;
+                    z++;
+                    if (!esflag) {//当有多个es维表时，只需要处理一次
+                        //处理掉joinSql中关于es部分，以便可以和其它类型维表正确join
+                        String[] tests = joinSql.split("`");
+                        tests[2] = tests[2].replace(source_tablename, esMiddle);
+                        ess = tests[2].split(";");
+
+                        tests[2] = ess[0];
+                        String[] esnames = tests[1].split("_join_");
+                        esNum = ess.length - 1;
+                        for (int j = 0; j < esNum; j++) {//ess.length - 1 是因为ess[0]是join其它维表的句子
+                            String name = esnames[esnames.length - 1 - j];
+                            tests[2] = tests[2].replace("," + name + ".*", "");
+                            tests[1] = tests[1].replace("_join_" + name, "");
+                        }
+                        joinSql = tests[0] + "`" + tests[1] + "`" + tests[2];
+                        properties.setProperty("joinSql", joinSql);
+                        Table source = dbTableEnv.from(source_tablename);
+                        TableSchema schema = source.getSchema();
+                        fieldNames = schema.getFieldNames();
+                        types = schema.getFieldDataTypes();
+                        length = length + fieldNames.length;
+                    }
+                    esflag = true;
+                    StoreUtils esStore = StoreUtils.of(dimensionTableSql);
+                    Map<String, String> host = esStore.getField(esStore.metate.split("\\)")[0].replaceAll("'", ""), "=");
+                    hosts.add(host);
+                    Map<String, String> esField = esStore.getField(esStore.fieldStr.replaceAll("`", ""), " ");
+                    esFields.add(esField);
+
+                    length = length + esField.size();
+
+                    String[] fields = ess[z].split("and");
+                    Map<String, String> names = new HashMap<>();//需要查询字段的相互匹配名称,key是源表字段名，value是匹配查询的es字段名
+                    for (int i = 0; i < fields.length; i++) {
+                        String[] keyValue = fields[i].split("=");
+                        names.put(keyValue[0].trim(), keyValue[1].trim());
+                    }
+                    namess.add(names);
+
                 }
-                dbTableEnv.executeSql(dealDimensionTableSql);
+                if (!"04".equals(testDimType)) {
+                    dbTableEnv.executeSql(dealDimensionTableSql);
+                }
                 registerCount++;
+            }
+            if (esflag) { //执行es拼接
+                TypeInformation[] typesInfo = new TypeInformation[length];
+                Expression[] expressions = new Expression[length];
+
+                for (int n = 0; n < namess.size(); n++) {
+                    Map<String, String> names = namess.get(n);
+                    Map<Integer, String> searchValue = new HashMap<>();
+                    for (int i = 0; i < fieldNames.length; i++) {//将source中的字段放入
+                        if (names.containsKey(fieldNames[i])) {
+                            searchValue.put(i, names.get(fieldNames[i]));
+                        }
+                        if (fieldNames[i].equals("TRADE_TIME")) {
+                            expressions[i] = $(fieldNames[i]).rowtime();
+                            typesInfo[i] = Types.SQL_TIMESTAMP;
+                            k = i;
+                        } else {
+                            expressions[i] = $(fieldNames[i]);
+                            typesInfo[i] = TypeInformation.of(types[i].getConversionClass());
+                        }
+                    }
+                }
+
+                //处理要拼接的所有es字段
+                int i = 0, index = fieldNames.length;
+                String type = "" ;
+                for (Map<String, String> esField : esFields){
+                    for (Map.Entry<String, String> entry : esField.entrySet()) {
+                        if (i < esField.size()) {
+                            index += i;
+                            expressions[index] = $(entry.getKey());
+                            type = entry.getValue();
+                            if (type.contains("STRING")) {
+                                typesInfo[index] = Types.STRING;
+                            } else if (type.contains("DOUBLE")) {
+                                typesInfo[index] = Types.DOUBLE;
+                            } else if (type.contains("TIMESTAMP")) {
+                                typesInfo[index] = Types.SQL_TIMESTAMP;
+                            }
+                        }
+                        i++;
+                    }
+                    Set<String> returnfield = esField.keySet();
+                    String[] returnname = returnfield.toArray(new String[returnfield.size()]);
+                    returnnames.add(returnname);
+                }
+
+                Table source = dbTableEnv.from(source_tablename);
+                RowTypeInfo rowTypeInfo = new RowTypeInfo(typesInfo);
+                DataStream<Row> ds = dbTableEnv.toAppendStream(source, Row.class)//将table转化为append流
+//                        .map(new FunMapESjoin(host, searchValue, returnname, k))
+//                        .returns(rowTypeInfo)
+                        .assignTimestampsAndWatermarks(new GeneratorWatermarkStrategy(k, watermark));//关联es数据
+
+                dbTableEnv.createTemporaryView(esMiddle, ds, expressions);// register the DataStream as View "tablename" with fields  expressions
+
+
+                Table table = dbTableEnv.from(esMiddle);
+                TableSchema sch = table.getSchema();
+                String[] fields1 = sch.getFieldNames();
+                DataType[] type1 = sch.getFieldDataTypes();
             }
         }
     }
@@ -296,12 +400,15 @@ public class AppDealOperation {
                 .replaceFirst("=", "").split("','", 2)[0].replaceAll("'", "").trim();
     }
 
-    private void inputTestSourceData(String topic, String brokeList){
-        String testSourcedata = properties.getProperty("testSourcedata");
-        JSONArray jsonArray = JSON.parseArray(testSourcedata);
-        Object[] dataArr = jsonArray.toArray();
-        createTopic(topic, properties.getProperty("testZK"));
-        KafkaUtils.kafkaProducer(topic, dataArr, brokeList);
+    private void inputTestSourceData(String topic, String brokeList, Integer testDataIndex){
+        String[] split_testSourcedata = properties.getProperty("testSourcedata").split(";");
+        for (int i1 = 0; i1 < split_testSourcedata.length; i1++) {
+            String testSourcedata = split_testSourcedata[testDataIndex];
+            JSONArray jsonArray = JSON.parseArray(testSourcedata);
+            Object[] dataArr = jsonArray.toArray();
+            createTopic(topic, properties.getProperty("testZK"));
+            KafkaUtils.kafkaProducer(topic, dataArr, brokeList);
+        }
     }
 
     private void createTopic(String  topic, String zkAddAndPort){
@@ -316,41 +423,150 @@ public class AppDealOperation {
      * @param dbTableEnv
      */
     public void createSource(StreamTableEnvironment dbTableEnv, StreamExecutionEnvironment env) throws Exception {
-        String sourceTableSql = properties.getProperty("sourceTableSql").trim();
-        String interval = sourceTableSql.toUpperCase().split("INTERVAL", 2)[1].trim().split("\\s+", 2)[0];
-        sourceTableSql = sourceTableSql.substring(0, sourceTableSql.length() - 1) + "," + "'json.ignore-parse-errors' = '"+ properties.getProperty("json_ignore_parse_errors") + "'" + ")";
         Map<String, String> globaParm = new HashMap<>();
-        globaParm.put("idleTimeout", 5*1000+"");
-        globaParm.put("delayTime", Long.parseLong(interval.replaceAll("'", ""))*1000+"");
-        env.getConfig().setGlobalJobParameters(ParameterTool.fromMap(globaParm));
-        if ("02".equals(properties.getProperty("runMode"))){
-            if (properties.getProperty("savepointPath") != null){
-                Connection connection = MySqlUtils.getConnection(properties.getProperty("savepointUrl"), properties.getProperty("testUserName"), properties.getProperty("testPassWord"), properties.getProperty("testDriver"));
-                Statement statement = connection.createStatement();
-                ResultSet resultSet = statement.executeQuery("SELECT offset FROM t_offset_record WHERE savepointpath = '" + properties.getProperty("savepointPath") + "'");
-                while (resultSet.next()){
-                    String offset = resultSet.getString(1);
-                    String scanMode = getSingMeta(sourceTableSql, "scan.startup.mode");
-                    sourceTableSql.replace("'" + scanMode + "'", "'specific-offsets'");
-                    sourceTableSql = sourceTableSql.substring(0, sourceTableSql.length() - 1)
-                            + ",'scan.startup.specific-offsets' = '" + offset.toLowerCase() +"')";
+        Boolean flag_cdc_mysql = false;
+        String registerTableName = null;
+        String watermarkFieldAndDealyTime = properties.get("watermark").toString();
+        String[] sp_2 = watermarkFieldAndDealyTime.split("[|]");
+        String waterMarkFiled = sp_2[0];
+        Long watermarkDelayTime = Long.parseLong(sp_2[1]) * 1000;
+        globaParm.put("delayTime", watermarkDelayTime + "");
+        globaParm.put("idleTimeout", properties.getProperty("idleTimeout", -1 +""));
+        String sourceTableSqlSet = properties.getProperty("sourceTableSql").trim();
+        source_tablename = sourceTableSqlSet.split(" ", 3)[2].split("\\(", 2)[0].replaceAll("`", "");
+        String[] spl_source = sourceTableSqlSet.split(";");
+        for (int i = 0; i < spl_source.length; i++) {
+            String sourceTableSql = spl_source[i];
+            if (sourceTableSql.contains("|")){
+                String[] sp = sourceTableSql.split("[|]");
+                sourceTableSql = sp[0];
+                if (getSingMeta(sourceTableSql,"connector").equals("mysql-cdc")){
+                    flag_cdc_mysql = true;
                 }
-                MySqlUtils.closeConnection(connection);
+                globaParm.put("CDC_TYPE", sp[1]);
+                registerTableName = sourceTableSql.split("\\(", 2)[0].split("\\s+")[2].replaceAll("`","");
+                sourceTableSql = sourceTableSql.replaceFirst(registerTableName, "cdc_" + registerTableName);
+            }else {
+                sourceTableSql = sourceTableSql.substring(0, sourceTableSql.length() - 1) + "," + "'json.ignore-parse-errors' = '"+ properties.getProperty("json_ignore_parse_errors") + "'" + ")";
             }
-            dbTableEnv.executeSql(sourceTableSql);
-        } else if ("01".equals(properties.getProperty("runMode"))){
-            String topic =  getSingMeta(sourceTableSql, "topic");
-            String test_topic = "source_" + properties.getProperty("testTopicName");
-            String testBrokeList = properties.getProperty("testBrokeList");
-            inputTestSourceData(test_topic, testBrokeList);
-            String scanMode = getSingMeta(sourceTableSql, "scan.startup.mode");
-            String brokerList = getSingMeta(sourceTableSql,  "properties.bootstrap.servers");
-            String testSourceTableSql = sourceTableSql
-                    .replace("'" + topic + "'", "'" + test_topic +"'")
-                    .replace("'" + scanMode + "'", "'earliest-offset'")
-                    .replace("'" + brokerList + "'", "'" + testBrokeList +"'");
-            dbTableEnv.executeSql(testSourceTableSql);
+
+            if ("02".equals(properties.getProperty("runMode"))){
+                if (properties.getProperty("savepointPath") != null && !sourceTableSql.contains("|")){
+                    String topic =  getSingMeta(sourceTableSql, "topic");
+                    Connection connection = MySqlUtils.getConnection(properties.getProperty("savepointUrl"), properties.getProperty("testUserName"), properties.getProperty("testPassWord"), properties.getProperty("testDriver"));
+                    Statement statement = connection.createStatement();
+                    ResultSet resultSet = statement.executeQuery("SELECT offset FROM t_offset_record WHERE savepointpath = '" + properties.getProperty("savepointPath") + "_" + topic + "'");
+                    while (resultSet.next()){
+                        String offset = resultSet.getString(1);
+                        String scanMode = getSingMeta(sourceTableSql, "scan.startup.mode");
+                        sourceTableSql.replace("'" + scanMode + "'", "'specific-offsets'");
+                        sourceTableSql = sourceTableSql.substring(0, sourceTableSql.length() - 1)
+                                + ",'scan.startup.specific-offsets' = '" + offset.toLowerCase() +"')";
+                    }
+                    MySqlUtils.closeConnection(connection);
+                }
+                dbTableEnv.executeSql(sourceTableSql);
+            } else if ("01".equals(properties.getProperty("runMode"))){
+                String testSourceTableSql = null;
+                if (getSingMeta(sourceTableSql, "connector").startsWith("kafka")){
+                    String topic =  getSingMeta(sourceTableSql, "topic");
+                    String test_topic = "source_" + properties.getProperty("testTopicName") + i;
+                    String testBrokeList = properties.getProperty("testBrokeList");
+                    // 插入测试数据
+                    inputTestSourceData(test_topic, testBrokeList, i);
+                    String scanMode = getSingMeta(sourceTableSql, "scan.startup.mode");
+                    String brokerList = getSingMeta(sourceTableSql,  "properties.bootstrap.servers");
+                    testSourceTableSql = sourceTableSql
+                            .replace("'" + topic + "'", "'" + test_topic +"'")
+                            .replace("'" + scanMode + "'", "'earliest-offset'")
+                            .replace("'" + brokerList + "'", "'" + testBrokeList +"'");
+                } else if (getSingMeta(sourceTableSql, "connector").split("[|]")[0].equals("mysql-cdc")){
+                        String hostname = getSingMeta(sourceTableSql, "hostname");
+                        String port = getSingMeta(sourceTableSql, "port");
+                        String username = getSingMeta(sourceTableSql, "username");
+                        String password = getSingMeta(sourceTableSql, "password");
+                        String database = getSingMeta(sourceTableSql, "database-name");
+                        String table = getSingMeta(sourceTableSql, "table-name");
+                        String test_table_name =  "source_" + properties.getProperty("testTopicName") + i;
+                        testSourceTableSql = sourceTableSql.replace("'" + hostname + "'", "'" + properties.getProperty("testCdcMysqlHostname") + "'")
+                                .replace("'" + port + "'",    "'" + properties.getProperty("testCdcMysqlPort") + "'")
+                                .replace("'" +username + "'", "'" + properties.getProperty("testCdcMysqlUsername")  + "'")
+                                .replace("'" +password + "'", "'" + properties.getProperty("testCdcMysqlPassword") + "'")
+                                .replace("'" +database + "'", "'" + properties.getProperty("testCdcMysqlDatabase") + "'")
+                                .replace("'" +table + "'",    "'" + test_table_name + "'");
+                    String[] fieldAndMeate = testSourceTableSql.replaceFirst("with", "WITH").split("WITH");
+                    String fieldName = fieldAndMeate[0].trim();
+                    String createTableStr = fieldName.substring(0, fieldName.length() - 1) + ", " + "PRIMARY KEY (" + properties.getProperty("sourcePrimaryKey") + ") NOT ENFORCED" + ")"
+                            + " WITH ("
+                            + "'url'" + "=" + "'" + properties.getProperty("testCdcMysqlUrl") + "',"
+                            + "'table-name'" + "=" + "'" + test_table_name + "',"
+                            + "'driver'" + "=" + "'" + properties.getProperty("testCdcMysqlDriver") + "',"
+                            + "'username'" + "=" + "'" + properties.getProperty("testCdcMysqlUsername") + "',"
+                            + "'password'" + "=" + "'" + properties.getProperty("testCdcMysqlPassword") + "')";
+                    StoreUtils.of(createTableStr).createSqlTable("mysql");
+                }
+                dbTableEnv.executeSql(testSourceTableSql);
+             }
         }
+
+        if (properties.getProperty("twoStreamJoinSqls") != null){
+            // join的sql语句|注册表名(左右表名以下划线拼接_)|[-3,5](左边必须小于右边,数值必须带有单位符号)
+            String twoStreamJoinSqls = properties.getProperty("twoStreamJoinSqls");
+            String[] split = twoStreamJoinSqls.split("[|]");
+            String[] leftAndRight = split[2].replaceFirst("\\[", "")
+                    .replaceFirst("]", "")
+                    .split(",", 2);
+            int left = Integer.parseInt(leftAndRight[0].trim());
+            int right = Integer.parseInt(leftAndRight[1].trim());
+            // leftRelativeSize + (leftRelativeSize + rightRelativeSize) / 2 + 1
+            int delayTime = ((-left * 1000 + (-left * 1000 + right * 1000) / 2 + 1)+ 1000);
+            globaParm.put("TWO_STREAM_JOIN_DELAY_TIME", delayTime + "");
+            Table table = dbTableEnv.sqlQuery(split[0]);
+            dbTableEnv.createTemporaryView(split[1], table);
+        }
+        if (flag_cdc_mysql){
+            String cdcMysqlQuerySql = "SELECT  * FROM " + "cdc_" + registerTableName;
+            LinkedHashMap<String, String> fieldNamdType = new LinkedHashMap<>();
+            ArrayList<String> fieldNameArr = new ArrayList<>();
+            Table cdcTable = dbTableEnv.sqlQuery(cdcMysqlQuerySql);
+            TableSchema schema = cdcTable.getSchema();
+            String[] fieldNames = schema.getFieldNames();
+            for (String fieldName : fieldNames) {
+                Optional<DataType> fieldDataType = schema.getFieldDataType(fieldName);
+                String fieldType = TypeTrans.getType(fieldDataType.get().toString());
+                fieldNamdType.put(fieldName, fieldType);
+                fieldNameArr.add(fieldName);
+            }
+            fieldNamdType.put("CDC_OP", "STRING");
+            SingleOutputStreamOperator<Tuple2<Long, String>> data_deal = dbTableEnv.toRetractStream(cdcTable, Row.class)
+                    .map(FunMapCdcAddType.of(fieldNameArr, waterMarkFiled))
+                    .filter(value -> value != null);
+            if (!checkComputerSql()){
+            SingleOutputStreamOperator<String> assignWaterMarkAndTimeStamp;
+                if (!waterMarkFiled.equals("proctime")){
+                assignWaterMarkAndTimeStamp = data_deal
+                        .assignTimestampsAndWatermarks(WatermarkStrategy
+                        .forGenerator((WatermarkStrategy<Tuple2<Long, String>>) context -> new WaterMarkGeneratorCounuser(watermarkDelayTime))
+                        .withTimestampAssigner((event, timestamp) -> event.f0))
+                        .map(value -> value.f1);
+            } else {
+                assignWaterMarkAndTimeStamp = data_deal.assignTimestampsAndWatermarks(WatermarkStrategy
+                        .forGenerator((WatermarkStrategy<Tuple2<Long, String>>) context -> new WaterMarkGeneratorCounuser(watermarkDelayTime))
+                        .withTimestampAssigner((event, timestamp) -> timestamp))
+                        .map(value -> value.f1);
+                }
+                MianAppProcesTest.registerTable(dbTableEnv, assignWaterMarkAndTimeStamp, registerTableName, false,fieldNamdType, waterMarkFiled);
+            } else {
+                MianAppProcesTest.registerTable(dbTableEnv, data_deal.map(value -> value.f1), middle_table, false,fieldNamdType, null);
+                // 是不是为CDC_SYNC同步
+                properties.setProperty("CDC_SYNC", "TRUE");
+            }
+        }
+        env.getConfig().setGlobalJobParameters(ParameterTool.fromMap(globaParm));
+    }
+
+    public boolean checkComputerSql() {
+        return properties.getProperty("originalVariableSql") == null && properties.getProperty("variableSqls") == null && properties.getProperty("deVariableSqls") == null;
     }
 
     /**
@@ -433,6 +649,7 @@ public class AppDealOperation {
             } else {
                 arr_db.add(dbTableEnv.toAppendStream(table, Row.class, uid)
                         .process(FunMapValueAddTypeAadFieldName.of(fieldNames, singleFieldTypeHashMap,properties.getProperty("sourcePrimaryKey"))));
+                counts +=1;
             }
             if (isWhere.get(counts) == null){
                 for (String fieldName : fieldNames) {
@@ -472,7 +689,7 @@ public class AppDealOperation {
                 singleFieldTypeHashMap.put(fieldName, TypeTrans.getType(fieldDataType.get().toString()));
             }
             if (counts == 0){
-                db_init = dbTableEnv.toAppendStream(table, Row.class, uid)
+                db_init = dbTableEnv.toAppendStream(table, Row.class)
                         .process(FunMapGiveSchema.of(fieldNames,properties.getProperty("sourcePrimaryKey")));
                 counts += 1;
             } else {

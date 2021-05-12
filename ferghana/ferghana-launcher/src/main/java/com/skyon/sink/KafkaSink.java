@@ -3,7 +3,6 @@ package com.skyon.sink;
 import com.skyon.serialize.StringKeyedSerializationSchema;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer011;
-import org.apache.flink.streaming.connectors.kafka.internal.FlinkKafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 
 import java.util.Optional;

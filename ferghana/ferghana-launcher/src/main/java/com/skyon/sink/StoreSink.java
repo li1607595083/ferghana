@@ -102,7 +102,9 @@ public class StoreSink {
                     count++;
                 }
             }
-            fieldType = indexfieldNameAndType.getOrDefault(fieldName, fieldType);
+            if (fieldType.equals("STRING")){
+                fieldType = indexfieldNameAndType.getOrDefault(fieldName, fieldType);
+            }
             resultTable = resultTable + fieldName + " " + fieldType  + ",";
             nt.put(fieldName, fieldType);
         }
@@ -254,7 +256,11 @@ public class StoreSink {
         }
         KafkaUtils.clostZkUtils(zkUtils);
         if ("02".equals(properties.getProperty("runMode"))){
-            stringDataStream.addSink(KafkaSink.transaction(properties.getProperty("kafkaTopic"), properties.getProperty("kafkaAddress"), properties.getProperty("kafkaProducersPoolSize")));
+            if ("TRUE".equals(properties.getProperty("CDC_SYNC"))){
+                stringDataStream.addSink(KafkaSink.untransaction(properties.getProperty("kafkaTopic"), properties.getProperty("kafkaAddress")));
+            } else {
+                stringDataStream.addSink(KafkaSink.transaction(properties.getProperty("kafkaTopic"), properties.getProperty("kafkaAddress"), properties.getProperty("kafkaProducersPoolSize")));
+            }
         } else if ("01".equals(properties.getProperty("runMode"))){
             stringDataStream.addSink(KafkaSink.untransaction(properties.getProperty("kafkaTopic"), properties.getProperty("testBrokeList")));
         }

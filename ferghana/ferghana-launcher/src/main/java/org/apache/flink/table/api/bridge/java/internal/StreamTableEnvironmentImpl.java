@@ -71,10 +71,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * The implementation for a Java {@link StreamTableEnvironment}. This enables conversions from/to
- * {@link DataStream}.
- *
- * <p>It binds to a given {@link StreamExecutionEnvironment}.
+ * @Change 为了实现重载的 toAppendStream(...)， 从而从重载相应的所依赖的相应方法
  */
 @Internal
 public final class StreamTableEnvironmentImpl extends TableEnvironmentImpl implements StreamTableEnvironment {
@@ -283,6 +280,9 @@ public final class StreamTableEnvironmentImpl extends TableEnvironmentImpl imple
         return toAppendStream(table, typeInfo);
     }
 
+    /**
+     * @Add 新增重载方法
+     */
     @Override
     public <T> DataStream<T> toAppendStream(Table table, Class<T> clazz, String querySql) {
         TypeInformation<T> typeInfo = extractTypeInformation(table, clazz);
@@ -299,6 +299,10 @@ public final class StreamTableEnvironmentImpl extends TableEnvironmentImpl imple
         return toDataStream(table, modifyOperation);
     }
 
+
+    /**
+     * @Add 新增重载方法
+     */
     public <T> DataStream<T> toAppendStream(Table table, TypeInformation<T> typeInfo, String querySql) {
         OutputConversionModifyOperation modifyOperation = new OutputConversionModifyOperation(
                 table.getQueryOperation(),
@@ -349,17 +353,22 @@ public final class StreamTableEnvironmentImpl extends TableEnvironmentImpl imple
         return new DataStream<>(executionEnvironment, transformation);
     }
 
+    /**
+     * @Add 新增重载方法，设置UID
+     */
     private <T> DataStream<T> toDataStream(Table table, OutputConversionModifyOperation modifyOperation, String querySql) {
         List<Transformation<?>> transformations = planner.translate(Collections.singletonList(modifyOperation));
         Transformation<T> transformation = getTransformation(table, transformations);
         int count = 0;
+        int sourceCounts = 0;
         for (Transformation<?> transitivePredecessor : transformation.getTransitivePredecessors()) {
             if (transitivePredecessor.getUid() == null){
                 String operatorName = transitivePredecessor.getName();
                 if (operatorName.startsWith("TableSourceScan")){
-                    transitivePredecessor.setUid("TableSourceScan" + "-" + querySql);
+                    transitivePredecessor.setUid("TableSourceScan" + "-" + sourceCounts + "-" + querySql);
+                    sourceCounts += 1;
                 }else {
-                    transitivePredecessor.setUid(count + count*count + "-" + querySql);
+                    transitivePredecessor.setUid(count + "-" +  count*count + "-" + querySql);
                 }
                 count++;
             }

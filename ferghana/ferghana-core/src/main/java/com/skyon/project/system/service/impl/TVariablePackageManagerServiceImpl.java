@@ -562,7 +562,7 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
         }
 
         //waterMark
-        mapParam.put("waterMark", map.get("waterMarkTime"));
+        mapParam.put("waterMark", map.get("waterMarkName") +"|"+map.get("waterMarkTime"));
 
         // 有维表时
         JSONArray dimensionRelation = JSON.parseArray(map.get("dimensionRelation").toString());

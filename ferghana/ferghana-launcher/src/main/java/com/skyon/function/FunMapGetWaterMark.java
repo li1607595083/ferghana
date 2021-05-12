@@ -14,7 +14,6 @@ import org.apache.flink.streaming.api.TimerService;
 import org.apache.flink.streaming.api.checkpoint.CheckpointedFunction;
 import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.util.Collector;
-import org.apache.hadoop.yarn.webapp.hamlet.Hamlet;
 
 public class FunMapGetWaterMark extends ProcessFunction<Tuple4<String, String, Long, String>, Tuple5<String,String, Long, String, String>> implements CheckpointedFunction {
 

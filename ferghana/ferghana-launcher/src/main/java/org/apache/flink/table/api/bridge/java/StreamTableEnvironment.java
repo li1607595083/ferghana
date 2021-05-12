@@ -38,22 +38,7 @@ import org.apache.flink.table.functions.TableFunction;
 import org.apache.flink.table.functions.UserDefinedFunction;
 
 /**
- * This table environment is the entry point and central context for creating Table and SQL
- * API programs that integrate with the Java-specific {@link DataStream} API.
- *
- * <p>It is unified for bounded and unbounded data processing.
- *
- * <p>A stream table environment is responsible for:
- * <ul>
- *     <li>Convert a {@link DataStream} into {@link Table} and vice-versa.</li>
- *     <li>Connecting to external systems.</li>
- *     <li>Registering and retrieving {@link Table}s and other meta objects from a catalog.</li>
- *     <li>Executing SQL statements.</li>
- *     <li>Offering further configuration options.</li>
- * </ul>
- *
- * <p>Note: If you don't intend to use the {@link DataStream} API, {@link TableEnvironment} is meant
- * for pure table programs.
+ * @Change 对 toAppendStream(....) 方法进行了重载
  */
 @PublicEvolving
 public interface StreamTableEnvironment extends TableEnvironment {
@@ -539,6 +524,11 @@ public interface StreamTableEnvironment extends TableEnvironment {
      */
     <T> DataStream<T> toAppendStream(Table table, Class<T> clazz);
 
+    /**
+     *
+     * @param querySql 此字符串用于设置 UID
+     * @return
+     */
     <T> DataStream<T> toAppendStream(Table table, Class<T> clazz, String querySql);
     /**
      * Converts the given {@link Table} into an append {@link DataStream} of a specified type.

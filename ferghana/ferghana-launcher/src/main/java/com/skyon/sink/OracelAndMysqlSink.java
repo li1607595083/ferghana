@@ -22,7 +22,7 @@ public class OracelAndMysqlSink {
         }
         switch (jdbcType){
             case "mysql":
-                return JdbcSink.sink(
+                return org.apache.flink.connector.jdbc.JdbcSink.sink(
                     insertsql,
                     (ps, x) -> {
                         HashMap hashMap = JSON.parseObject(x, HashMap.class);
@@ -46,7 +46,7 @@ public class OracelAndMysqlSink {
                             .withPassword(properties.getProperty(properties.getProperty("runMode").equals("02") ?"jdbcUserPwd" : "testPassWord"))
                             .build());
                 default:
-                return JdbcSink.sink(
+                return org.apache.flink.connector.jdbc.JdbcSink.sink(
                         insertsql,
                         (ps, x) -> {
                             HashMap hashMap = JSON.parseObject(x, HashMap.class);

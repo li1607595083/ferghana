@@ -116,6 +116,7 @@ public class TypeTrans {
                     if (columnNum != 0) ps.setDate(index + columnNum, java.sql.Date.valueOf(values));
                     break;
                 case "TIMESTAMP":
+                    values = values.replaceAll("T", " ");
                     ps.setTimestamp(index, Timestamp.valueOf(values));
                     if (columnNum != 0) ps.setTimestamp(index + columnNum, Timestamp.valueOf(values));
                     break;
@@ -192,6 +193,7 @@ public class TypeTrans {
                     ps.setDate(index + columnNum, java.sql.Date.valueOf(values));
                     break;
                 case "TIMESTAMP":
+                    values = values.replaceFirst("T", " ");
                     ps.setTimestamp(index, Timestamp.valueOf(values));
                     ps.setTimestamp(index + columnNum, Timestamp.valueOf(values));
                     break;

@@ -5,6 +5,7 @@ import com.skyon.framework.aspectj.lang.annotation.Excel.Type;
 import com.skyon.framework.web.domain.BaseEntity;
 import org.springframework.data.annotation.Transient;
 
+import java.util.Arrays;
 import java.util.Date;
 
 /**
@@ -84,6 +85,24 @@ public class TDataSource extends BaseEntity {
     @Excel(name = "kafka地址")
     private String kafkaAddress;
 
+    private String myAddress; // URL地址
+
+    private String port; // 端口
+
+    private String userName; // 用户名
+
+    private String password; // 密码
+
+    private String myDatabase; // 数据库
+
+    private String myTableName; // 表名
+
+    private String scanAll; // 是否全表扫描
+
+    private Object handleData; // 数据操作
+
+
+
     /**
      * schema
      */
@@ -127,6 +146,70 @@ public class TDataSource extends BaseEntity {
      */
     @Excel(name = "修改时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss", type = Type.EXPORT)
     private Date modifyTime;
+
+    public String getMyAddress() {
+        return myAddress;
+    }
+
+    public void setMyAddress(String myAddress) {
+        this.myAddress = myAddress;
+    }
+
+    public String getPort() {
+        return port;
+    }
+
+    public void setPort(String port) {
+        this.port = port;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getMyDatabase() {
+        return myDatabase;
+    }
+
+    public void setMyDatabase(String myDatabase) {
+        this.myDatabase = myDatabase;
+    }
+
+    public String getMyTableName() {
+        return myTableName;
+    }
+
+    public void setMyTableName(String myTableName) {
+        this.myTableName = myTableName;
+    }
+
+    public String getScanAll() {
+        return scanAll;
+    }
+
+    public void setScanAll(String scanAll) {
+        this.scanAll = scanAll;
+    }
+
+    public Object getHandleData() {
+        return handleData;
+    }
+
+    public void setHandleData(Object handleData) {
+        this.handleData = handleData;
+    }
 
     public String getCreateTableSql() {
         return createTableSql;
@@ -302,9 +385,22 @@ public class TDataSource extends BaseEntity {
                 ", consumerMode='" + consumerMode + '\'' +
                 ", zookeeperAddress='" + zookeeperAddress + '\'' +
                 ", kafkaAddress='" + kafkaAddress + '\'' +
-                ", schema='" + schemaDefine + '\'' +
+                ", myAddress='" + myAddress + '\'' +
+                ", port='" + port + '\'' +
+                ", userName='" + userName + '\'' +
+                ", password='" + password + '\'' +
+                ", myDatabase='" + myDatabase + '\'' +
+                ", myTableName='" + myTableName + '\'' +
+                ", scanAll='" + scanAll + '\'' +
+                ", handleData='" + handleData + '\'' +
+                ", schemaDefine='" + schemaDefine + '\'' +
+                ", schemaPrimaryKey='" + schemaPrimaryKey + '\'' +
+                ", waterMarkName='" + waterMarkName + '\'' +
+                ", waterMarkTime='" + waterMarkTime + '\'' +
+                ", dataBaseType='" + dataBaseType + '\'' +
                 ", description='" + description + '\'' +
-                ", createTime=" + getCreateTime() +
+                ", createTableSql='" + createTableSql + '\'' +
+                ", dynamicItem=" + Arrays.toString(dynamicItem) +
                 ", modifyTime=" + modifyTime +
                 '}';
     }
