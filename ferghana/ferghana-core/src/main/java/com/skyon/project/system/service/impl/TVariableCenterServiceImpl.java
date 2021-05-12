@@ -715,10 +715,10 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
         mapParam.put("testTopicName", millis);
         // 有维表时
         JSONArray dimensionRelation = JSON.parseArray(map.get("dimensionRelation").toString());
-        JSONObject sourceRelation = JSON.parseObject(map.get("sourceRelation").toString());
         // 如果有两个数据源表，sourceTableSql用分号隔开，新增sourceTableSql参数
-        if(StringUtils.isNotEmpty(map.get("createTableSql").toString()) && StringUtils.isNotNull(map.get("createTableSql").toString())){
+        if(map.containsKey("sourceTwoDabRelation") && StringUtils.isNotEmpty(map.get("sourceTwoDabRelation").toString()) && StringUtils.isNotNull(map.get("sourceTwoDabRelation").toString())){
             mapParam.put("sourceTableSql", map.get("createTableSql")+";"+map.get("createTableTwoSql"));
+            JSONObject sourceRelation = JSON.parseObject(map.get("sourceRelation").toString());
             parseTwoStreamJoinSQl(mapParam,map, sourceRelation);
         }
         else{

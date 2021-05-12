@@ -188,7 +188,6 @@ public class TVariablePackageManagerController extends BaseController {
         logService.insertTVariablePackageOperateLog(log);
         System.out.println("-------------------------1");
         //根据变量分类-数据源表-主键
-
         Map mapParam = tVariablePackageManagerService.getKeyByVariableId(pk.getVariableClassification());
         LOG.info("----1："+mapParam.toString());
         LOG.info("----2----");

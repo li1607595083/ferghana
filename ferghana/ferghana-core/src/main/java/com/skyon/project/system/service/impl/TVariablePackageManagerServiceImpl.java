@@ -415,19 +415,40 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
         return null;
     }
 
+    // 双数据源表时拼接 twoStreamJoinSqls 参数
+    public Map parseTwoStreamJoinSQl(Map mapParam,Map map,JSONObject sourceRelation){
+        Object sourceDabRelation = map.get("sourceDabRelation");
+        Object sourceTwoDabRelation = map.get("sourceTwoDabRelation");
+        String sql = "SELECT * FROM " + sourceDabRelation + " LEFT JOIN " + sourceTwoDabRelation + " ON " + sourceDabRelation + "." +
+                sourceRelation.getString("sourceDabField") + " = " + sourceTwoDabRelation + "." + sourceRelation.getString("sourceTwoDabField")
+                + " AND " + sourceDabRelation + "." + map.get("waterMarkName");
+        int lowScope = Integer.parseInt(sourceRelation.getString("lowScope"));
+        int highScope = Integer.parseInt(sourceRelation.getString("highScope"));
+        sql = sql + " BETWEEN " + sourceTwoDabRelation + "." + map.get("waterMarkTwoName") + (lowScope >= 0 ? " + " : " - ") + "INTERVAL '" + Math.abs(lowScope) + "' SECOND";
+        sql = sql + " AND " + sourceTwoDabRelation + "." + map.get("waterMarkTwoName") + (highScope >= 0 ? " + " : " - ") + "INTERVAL '" + Math.abs(highScope) + "' SECOND";
+        mapParam.put("twoStreamJoinSqls",sql+"|"+map.get("tableName")+"_"+map.get("tableTwoName")+"|["+lowScope+","+highScope+"]");
+        return mapParam;
+    }
+
     @Override
     public String variableTest(TVariablePackageManager pk, Map map, List<TVariableCenter> variableListByIds, String runFlag, String millis) {
         Map mapParam = new HashMap();
         mapParam.put("runMode", "01");
         mapParam.put("kafkaZK", "master:2181"); // 数据源表的zk地址
         mapParam.put("testTopicName", millis); //
-        mapParam.put("sourceTableSql", map.get("createTableSql"));
         // 有维表时
         JSONArray dimensionRelation = JSON.parseArray(map.get("dimensionRelation").toString());
+        // 如果有两个数据源表，sourceTableSql用分号隔开，新增sourceTableSql参数
+        if(map.containsKey("sourceTwoDabRelation") && StringUtils.isNotEmpty(map.get("sourceTwoDabRelation").toString()) && StringUtils.isNotNull(map.get("sourceTwoDabRelation").toString())){
+            mapParam.put("sourceTableSql", map.get("createTableSql")+";"+map.get("createTableTwoSql"));
+            JSONObject sourceRelation = JSON.parseObject(map.get("sourceRelation").toString());
+            parseTwoStreamJoinSQl(mapParam,map, sourceRelation);
+        }
+        else{
+            mapParam.put("sourceTableSql", map.get("createTableSql"));
+        }
         ArrayList testDimdata = (ArrayList) pk.getTestDimdata();
         tVariableCenterService.parseJoinSQl(mapParam, dimensionRelation, map, testDimdata);
-
-
         // 拼接条件运行sql
         StringBuilder sb2 = new StringBuilder();
         StringBuilder sb3 = new StringBuilder();
@@ -467,7 +488,6 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
         // 输出参数sql
         mapParam.put("sinkSql",map1.get("resutltSql"));
 
-
         mapParam.put("fieldOutNum", (int)map1.get("outVariableNum") + 1 + num);
         mapParam.put("sourcePrimaryKey", map.get("schemaPrimaryKey").toString());
         ArrayList sourceTableValue = (ArrayList) pk.getSourceTableValue();
@@ -477,7 +497,6 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
                 Map mapNew = new HashMap();
                 Map o = (Map) sourceTableValue.get(i);
                 Set<String> strings = o.keySet();
-
                 Set<Map.Entry<String, String>> entryseSet = o.entrySet();
                 for (Map.Entry<String, String> entry : entryseSet) {
                     if (entry.getKey().indexOf("-") > 0) {
@@ -530,7 +549,18 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
         //变量包名字、SQL（以分号拼接）、字段个数、主键名称、运行or测试、资源配置情况（以分号拼接）并发数、taskmanager内存、jobmanager内存
         mapParam.put("variablePackEn", pkManager.getVariablePackEn());
         // SQL
-        mapParam.put("sourceTableSql", map.get("createTableSql"));
+//        mapParam.put("sourceTableSql", map.get("createTableSql"));
+
+        // 如果有两个数据源表，sourceTableSql用分号隔开，新增sourceTableSql参数
+        if(map.containsKey("sourceTwoDabRelation") && StringUtils.isNotEmpty(map.get("sourceTwoDabRelation").toString()) && StringUtils.isNotNull(map.get("sourceTwoDabRelation").toString())){
+            mapParam.put("sourceTableSql", map.get("createTableSql")+";"+map.get("createTableTwoSql"));
+            JSONObject sourceRelation = JSON.parseObject(map.get("sourceRelation").toString());
+            parseTwoStreamJoinSQl(mapParam,map, sourceRelation);
+        }
+        else{
+            mapParam.put("sourceTableSql", map.get("createTableSql"));
+        }
+
         //waterMark
         mapParam.put("waterMark", map.get("waterMarkTime"));
 

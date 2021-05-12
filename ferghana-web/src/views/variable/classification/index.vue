@@ -68,7 +68,7 @@
         <div class="el-col-24">
           <!-- 第一个数据源表 -->
           <el-form-item :label="(sourceTwoDabItem ? '数据源表(一)' : '数据源表')" prop="sourceDabRelation" class="el-col-20">
-            <el-select v-model="form.sourceDabRelation" placeholder="请选择数据源表" @change="sourceDabRelationChange" clearable
+            <el-select v-model="form.sourceDabRelation" placeholder="请选择数据源表" @change="sourceDabRelationChange"
               style="width: 100%" :disabled="detailViem">
               <el-option v-for="data in sourceDataOptions" :key="data.value" :label="data.name" :value="data.value" />
             </el-select>
@@ -88,7 +88,7 @@
 
           <!-- 第二个数据源表 -->
           <el-form-item label="数据源表(二)" :prop="sourceTwoDabItem ? 'sourceTwoDabRelation' : ''" class="el-col-20" v-if="sourceTwoDabItem">
-            <el-select v-model="form.sourceTwoDabRelation" placeholder="请选择数据源表" @change="sourceTwoDabRelationChange" no-data-text="请先选择数据源表(一)" clearable
+            <el-select v-model="form.sourceTwoDabRelation" placeholder="请选择数据源表" @change="sourceTwoDabRelationChange" no-data-text="请先选择数据源表(一)"
               style="width: 100%" :disabled="detailViem">
               <el-option v-for="data in sourceTwoDataOptions" :key="data.value" :label="data.name" :value="data.value" />
             </el-select>
@@ -109,7 +109,7 @@
           <!-- 数据源表关联字段 -->
           <el-form-item label="源表(一)关联字段" :prop="sourceTwoDabItem ? 'sourceRelation.sourceDabField' : ''" class="el-col-12" v-if="sourceTwoDabItem">
             <el-select v-model="form.sourceRelation.sourceDabField" placeholder="请选择源表(一)关联字段" @change="refresh"
-              clearable style="width: 100%" :disabled="detailViem" no-data-text="请先选择源表(一)">
+              style="width: 100%" :disabled="detailViem" no-data-text="请先选择源表(一)">
               <el-option v-for="dict in sourceDabFieldOptions" :key="dict.value" :label="dict.label"
                 :value="dict.value" />
             </el-select>
@@ -139,17 +139,17 @@
 
         <div v-for="(item, index) in form.dimensionRelation" :key="index">
           <div class="el-col-24">
-            <el-form-item label="关联数据维表" class="el-col-10" :rules="rules.dimensionRelation.dimensionName"
+            <el-form-item label="关联数据维表" class="el-col-10" :rules="(item.sourceDabField == '' && item.dimensionName == '' ? rules.dimensionRelation.dimensionName : rules.dimensionRelationNotNull.dimensionName)"
               :prop="'dimensionRelation.'+index+'.dimensionName'">
               <el-select v-model="item.dimensionName" placeholder="请选择关联数据维表" @change="dimensionDabRelationChange"
-                clearable style="width: 100%" :disabled="detailViem" :id="'label' + index">
+                style="width: 100%" :disabled="detailViem" :id="'label' + index">
                 <el-option v-for="dict in dimensionRelationOptions" :key="dict.value" :label="dict.label"
                   :value="dict.value+','+dict.connectorType+','+index" />
               </el-select>
             </el-form-item>
 
             <el-form-item label="数据源表关联字段" class="el-col-10" v-show="!judgeEs(item.relation)"
-              :rules="(!judgeEs(item.relation) ? rules.dimensionRelation.sourceDabField : 'null')" :prop="'dimensionRelation.'+index+'.sourceDabField'">
+              :rules="judgeEs(item.relation) ? 'null' : (item.sourceDabField == '' && item.dimensionName == '' ? rules.dimensionRelation.sourceDabField : rules.dimensionRelationNotNull.sourceDabField)" :prop="'dimensionRelation.'+index+'.sourceDabField'">
               <el-select v-model="item.sourceDabField" placeholder="请选择关联数据源表字段"
                 @change="sourceDabFieldChange" no-data-text="请先选择数据源表" style="width: 100%"
                 :disabled="detailViem">
@@ -182,7 +182,7 @@
           <!-- 不止一项，用div包裹起来 -->
           <div v-for="(relation, index2) in item.relation" :key="index2" class="el-col-24" v-show="item.relation">
 
-            <el-form-item label="数据维表关联字段" class="el-col-9" :rules="rules.dimensionRelation.relation.dimensionDabField"
+            <el-form-item label="数据维表关联字段" class="el-col-9" :rules="(item.dimensionName == '' ? rules.dimensionRelation.relation.dimensionDabField : rules.dimensionRelationNotNull.relation.dimensionDabField)"
               :prop="'dimensionRelation.'+index+'.relation.'+index2+'.dimensionDabField'">
               <el-select v-model="relation.dimensionDabField" placeholder="请选择数据维表关联字段" no-data-text="请先选择数据维表"
                 style="width: 100%" :disabled="detailViem" @change="refresh()">
@@ -191,7 +191,7 @@
               </el-select>
             </el-form-item>
 
-            <el-form-item label="数据源表关联字段" class="el-col-9" :rules="rules.dimensionRelation.relation.sourceDabField"
+            <el-form-item label="数据源表关联字段" class="el-col-9" :rules="(item.dimensionName == '' ? rules.dimensionRelation.relation.sourceDabField : rules.dimensionRelationNotNull.relation.sourceDabField)"
               :prop="'dimensionRelation.'+index+'.relation.'+index2+'.sourceDabField'">
               <el-select v-model="relation.sourceDabField" placeholder="请选择数据源表关联字段" no-data-text="请先选择数据源表"
                 style="width: 100%" :disabled="detailViem" @change="sourceDabFieldChange">
@@ -342,6 +342,30 @@
             },{ type: 'number', message: '关联时间范围必须为数字',trigger: "blur"}]
           },
           dimensionRelation: {
+            dimensionName: [{
+              required: false,
+              message: "数据维表不能为空",
+              trigger: "blur"
+            }],
+            sourceDabField: [{
+              required: false,
+              message: "数据源表关联字段不能为空",
+              trigger: "blur"
+            }],
+            relation: {
+              sourceDabField: [{
+                required: false,
+                message: "数据源表关联字段不能为空",
+                trigger: "blur"
+              }],
+              dimensionDabField: [{
+                required: false,
+                message: "数据维表关联字段不能为空",
+                trigger: "blur"
+              }]
+            }
+          },
+          dimensionRelationNotNull: {
             dimensionName: [{
               required: true,
               message: "数据维表不能为空",
@@ -619,6 +643,7 @@
               });
             }
           }
+          that.$forceUpdate();
         }).catch(resp => {
           console.log('获取数据源表请求失败：' + resp.status + ',' + resp.statusText);
         });
@@ -753,6 +778,12 @@
         getClassification(variableClassificationId).then(response => {
           this.form = response.data;
           this.form.dimensionRelation = JSON.parse(this.form.dimensionRelation);
+          if(this.form.dimensionRelation.length === 0){
+            this.form.dimensionRelation.push({
+              dimensionName: "",
+              sourceDabField: "",
+            });
+          }
           this.form.sourceRelation = JSON.parse(this.form.sourceRelation);
           if(this.form.sourceTwoDabRelation && this.form.sourceTwoDabRelation !== ""){
             this.sourceTwoDabItem = true;
@@ -775,10 +806,17 @@
       },
       /** 提交按钮 */
       submitForm: function() {
-        console.log(this.form)
         this.refresh();
         this.$refs["form"].validate(valid => {
           if (valid) {
+            // 删除空白数据维表行
+            let temp = this.form.dimensionRelation;
+            for(let i=temp.length-1;i>=0;i--){
+              if(temp[i].dimensionName === "" || temp[i].sourceDabField === ""){
+                this.$delete(temp,i)
+              }
+            }
+            this.form.dimensionRelation = temp;
             if(this.form.sourceRelation && this.form.sourceRelation.lowScope !== "" && this.form.sourceRelation.highScope !== ""){
               if(this.form.sourceRelation.lowScope > this.form.sourceRelation.highScope){
                 let temp = this.form.sourceRelation.lowScope;
