@@ -60,6 +60,8 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
 
     @Autowired
     private ITDataResultSourceService resultSourceService;
+    @Autowired
+    private TDataResultSourceMapper resultSourceMapper;
 
     @Autowired
     private ITVariablePackageManagerService tVariablePackageManagerService;
@@ -103,11 +105,20 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
     public int insertTVariablePackageManager(Map map, TVariablePackageManager pkManager, String runFlag) {
         pkManager.setCreateTime(DateUtils.getNowDate());
         pkManager.setRuningState("0"); // 初始化都是0 停止
-        Map map1 = setResultTableSql(pkManager, runFlag, "");
-        pkManager.setResultTableSql(map1.get("resultSql").toString());
-        pkManager.setVariableId(JSON.toJSONString(pkManager.getVariableId()));
+
+        if (pkManager.getVariablePackType().equals("03")) { // oraclecdc
+            pkManager.setResultTableSql(editOraclecdcSql(map, pkManager));
+            pkManager.setVariableId(null);
+        } else if (pkManager.getVariablePackType().equals("02")) { // mysqlcdc
+            pkManager.setResultTableSql("");
+        } else if (pkManager.getVariablePackType().equals("01")) { // 一般变量包
+            Map map1 = setResultTableSql(pkManager, runFlag, "");
+            pkManager.setResultTableSql(map1.get("resultSql").toString());
+            pkManager.setVariableId(JSON.toJSONString(pkManager.getVariableId()));
+            pkManager.setOriginalVariableSql(joinOriginalVariableSql(map, pkManager));
+        }
+
         pkManager.setVarDir(System.currentTimeMillis() + "");
-        pkManager.setOriginalVariableSql(joinOriginalVariableSql(map, pkManager));
         ArrayList array = (ArrayList) pkManager.getOriginalVariable();
         if (array != null && array.size() > 0) {
             pkManager.setOriginalVariable(JSON.toJSONString(pkManager.getOriginalVariable()));
@@ -115,6 +126,56 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
             pkManager.setOriginalVariable("");
         }
         return tVariablePackageManagerMapper.insertTVariablePackageManager(pkManager);
+    }
+
+    private String editOraclecdcSql(Map map, TVariablePackageManager pkManager) {
+        // 原始变量 只有字段名 没有类型
+        ArrayList originalVariableArr = (ArrayList) pkManager.getOriginalVariable();
+        // 添加类型
+        JSONArray schemaDefine = JSON.parseArray((String) map.get("schemaDefine"));
+        for (int i = 0; i < originalVariableArr.size(); i++) {
+            Object o = originalVariableArr.get(i);
+            for (int j = 0; j < schemaDefine.size(); j++) {
+                Map o1 = (Map) schemaDefine.get(j);
+                if (o.equals(pkManager.getSourceTableName()+"."+o1.get("schemaDefine"))){
+                    originalVariableArr.set(i,o1.get("schemaDefine") + ":" + o1.get("dataBaseType"));
+                    break;
+                }
+
+            }
+        }
+        String joinSchema = StringUtils.join(originalVariableArr, ",");
+        //
+
+
+        // 拼接writer
+        TDataResultSource resultSource =resultSourceMapper.selectTDataResultSourceByName(pkManager.getResultTable());
+
+
+        Map producerSettings = new HashMap();
+        producerSettings.put("bootstrap.servers",resultSource.getKafkaAddress());
+
+        Map parameter = new HashMap();
+        parameter.put("timezone", "UTC");
+        parameter.put("topic", resultSource.getTopicName());
+        parameter.put("producerSettings", producerSettings);
+
+        Map writer = new HashMap();
+        writer.put("parameter",parameter);
+        writer.put("name","kafkawriter");
+
+
+        Object createTableSql = map.get("createTableSql");
+        JSONObject jsonObject = JSON.parseObject((String) createTableSql);
+        JSONObject job = (JSONObject) jsonObject.get("job");
+        job.put("schema", joinSchema);
+        JSONArray content = (JSONArray) job.get("content");
+        for (int i = 0; i < content.size(); i++) {
+            JSONObject o = (JSONObject) content.get(i);
+            o.put("writer", writer);
+        }
+
+        return JSON.toJSONString(jsonObject);
     }
 
     public int updatePackageVersion(TVariablePackageManager tVariablePackageManager) {
@@ -194,7 +255,7 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
         List<TVariableCenter> l = new ArrayList();
         for (String s : stringArray) {
             for (TVariableCenter tVariableCenter : list) {
-                if (s.equals(tVariableCenter.getVariableNameEn())){
+                if (s.equals(tVariableCenter.getVariableNameEn())) {
                     l.add(tVariableCenter);
                     break;
                 }
@@ -223,7 +284,7 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
         }
         listTmp.removeAll(listDmo);
 
-        mapResult.put("outVariableNum",listTmp.size());
+        mapResult.put("outVariableNum", listTmp.size());
 
 
         String ssss = "";
@@ -288,7 +349,7 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
                 }
             }
         }
-        mapResult.put("resultSql",sb.toString());
+        mapResult.put("resultSql", sb.toString());
         return mapResult;
     }
 
@@ -436,6 +497,9 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
         mapParam.put("runMode", "01");
         mapParam.put("kafkaZK", "master:2181"); // 数据源表的zk地址
         mapParam.put("testTopicName", millis); //
+        mapParam.put("sourceTableSql", map.get("createTableSql"));
+        mapParam.put("waterMark", map.get("waterMarkName") + "|" + map.get("waterMarkTime"));
+
         // 有维表时
         JSONArray dimensionRelation = JSON.parseArray(map.get("dimensionRelation").toString());
         // 如果有两个数据源表，sourceTableSql用分号隔开，新增sourceTableSql参数
@@ -486,9 +550,10 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
         Map map1 = setResultTableSql(pk, runFlag, millis);
 
         // 输出参数sql
-        mapParam.put("sinkSql",map1.get("resutltSql"));
+        mapParam.put("sinkSql", map1.get("resutltSql"));
 
-        mapParam.put("fieldOutNum", (int)map1.get("outVariableNum") + 1 + num);
+
+        mapParam.put("fieldOutNum", (int) map1.get("outVariableNum") + 1 + num);
         mapParam.put("sourcePrimaryKey", map.get("schemaPrimaryKey").toString());
         ArrayList sourceTableValue = (ArrayList) pk.getSourceTableValue();
         if (sourceTableValue != null && sourceTableValue.size() > 0) {
@@ -562,7 +627,7 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
         }
 
         //waterMark
-        mapParam.put("waterMark", map.get("waterMarkName") +"|"+map.get("waterMarkTime"));
+        mapParam.put("waterMark", map.get("waterMarkName") + "|" + map.get("waterMarkTime"));
 
         // 有维表时
         JSONArray dimensionRelation = JSON.parseArray(map.get("dimensionRelation").toString());
@@ -619,15 +684,15 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
                                         JSONArray r = JSONArray.parseArray(relation);
                                         mapTmp.put("dimensionTableSql", table.getEsCreateSql());
                                         mapTmp.put("testDimType", table.getConnectorType());
-                                        if(!"".equals(es)){
+                                        if (!"".equals(es)) {
                                             es = es + ";";
                                         }
-                                        for(int k=0;k<r.size();k++){
+                                        for (int k = 0; k < r.size(); k++) {
                                             JSONObject a = (JSONObject) r.get(k);
                                             String dimensionDabField = a.get("dimensionDabField").toString();
                                             String sourceDabField = a.get("sourceDabField").toString();
-                                            es = es  + sourceDabField + " = " + dimensionName + "." + dimensionDabField;
-                                            if(k < r.size() - 1){
+                                            es = es + sourceDabField + " = " + dimensionName + "." + dimensionDabField;
+                                            if (k < r.size() - 1) {
                                                 es = es + " AND ";
                                             }
                                         }
@@ -641,14 +706,12 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
                     StringBuilder sb = new StringBuilder();
                     // 新表 create TABLE xxxxx as select s.*,t.* from blackList s left join jdbc2 t on s.id = t.id；
                     String dimensionNameJOIN = s.substring(0, s.length() - 6);
-                    if("".equals(m)){
+                    if ("".equals(m)) {
                         sb.append(es);
-                    }
-                    else if("".equals(es)){
+                    } else if ("".equals(es)) {
                         sb.append("create table `" + map.get("tableName") + "_join_" + dimensionNameJOIN
                                 + "` (select s.*," + t.substring(0, t.length() - 1) + " from " + map.get("tableName") + " s " + m + ")");
-                    }
-                    else if(!"".equals(m) && !"".equals(es)){
+                    } else if (!"".equals(m) && !"".equals(es)) {
                         sb.append("create table `" + map.get("tableName") + "_join_" + dimensionNameJOIN
                                 + "` (select s.*," + t.substring(0, t.length() - 1) + " from " + map.get("tableName") + " s " + m + ");" + es);
                     }

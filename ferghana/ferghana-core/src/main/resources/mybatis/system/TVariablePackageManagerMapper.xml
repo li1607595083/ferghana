@@ -8,6 +8,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="variablePackId"    column="variable_pack_id"    />
         <result property="variablePackName"    column="variable_pack_name"    />
         <result property="variablePackEn"    column="variable_pack_en"    />
+        <result property="variablePackType"    column="variable_pack_type"    />
         <result property="versionNum"    column="version_num"    />
         <result property="versionShow"    column="version_show"    />
         <result property="runingState"    column="runing_state"    />
@@ -40,7 +41,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="selectTVariablePackageManagerVo">
         select variable_pack_id, variable_pack_name, variable_pack_en, runing_state,select_Variable_Note_form,var_Dir,concurrency,job_Memory,task_Memory,
          variable_classification, s.description, variable_id, create_table_sql, runing_sql,application_id,job_id,s.result_table,s.result_table_sql,var_Dir,
-         original_Variable,original_Variable_Sql,version_num,version_show,create_By,start_Param_Base,save_Point_Dir,
+         original_Variable,original_Variable_Sql,version_num,version_show,create_By,start_Param_Base,save_Point_Dir,variable_pack_type,
          s.create_time, s.modify_time,d.variable_classification_name from t_variable_package_manager s
          left join t_variable_classification d on s.variable_classification = d.variable_classification_id
     </sql>
@@ -82,6 +83,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="variablePackName != null  and variablePackName != ''">variable_pack_name,</if>
             <if test="variablePackEn != null  and variablePackEn != ''">variable_pack_en,</if>
+            <if test="variablePackType != null  and variablePackType != ''">variable_pack_type,</if>
             <if test="runingState != null  and runingState != ''">runing_state,</if>
             <if test="versionNum != null  and versionNum != ''">version_num,</if>
             <if test="versionShow != null  and versionShow != ''">version_show,</if>
@@ -104,6 +106,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="variablePackName != null  and variablePackName != ''">#{variablePackName},</if>
             <if test="variablePackEn != null  and variablePackEn != ''">#{variablePackEn},</if>
+            <if test="variablePackType != null  and variablePackType != ''">#{variablePackType},</if>
             <if test="runingState != null  and runingState != ''">#{runingState},</if>
             <if test="versionNum != null  and versionNum != ''">#{versionNum},</if>
             <if test="versionShow != null  and versionShow != ''">#{versionShow},</if>

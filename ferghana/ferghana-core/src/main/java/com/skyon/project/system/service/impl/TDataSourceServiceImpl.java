@@ -13,6 +13,7 @@ import com.skyon.project.system.service.ITDataSourceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.swing.text.TabableView;
 import java.lang.reflect.Array;
 import java.util.*;
 
@@ -52,15 +53,15 @@ public class TDataSourceServiceImpl implements ITDataSourceService {
                     TDatasourceField tDatasourceField = tDatasourceFields.get(i);
                     String fieldName = tDatasourceField.getFieldName();
                     if (schemaDefine.equals(fieldName)) {
-                        o.put("isUsed",tDatasourceField.getIsUsed());
-                        o.put("fieldId",tDatasourceField.getId());
+                        o.put("isUsed", tDatasourceField.getIsUsed());
+                        o.put("fieldId", tDatasourceField.getId());
                         break;
                     }
                 }
             }
         }
         tDataSource.setDynamicItem(array.toArray());
-        if (tDataSource.getHandleData()!=null){
+        if (tDataSource.getHandleData() != null) {
             tDataSource.setHandleData(JSON.parseArray(tDataSource.getHandleData().toString()));
         }
 
@@ -95,18 +96,18 @@ public class TDataSourceServiceImpl implements ITDataSourceService {
     public int insertTDataSource(TDataSource tDataSource) {
         tranSchemaJson(tDataSource);
         tDataSource.setCreateTableSql(joinCreateTableSql(tDataSource));
-        if (tDataSource.getConnectorType().equals("02")){
-            tDataSource.setHandleData(JSON.toJSONString(tDataSource.getHandleData()));
-        }
+//        if (tDataSource.getConnectorType().equals("02")){
+        tDataSource.setHandleData(JSON.toJSONString(tDataSource.getHandleData()));
+//        }
         return tDataSourceMapper.insertTDataSource(tDataSource);
     }
 
     // 拼接建表sql
     private String joinCreateTableSql(TDataSource dataSource) {
         String sqlString = "";
-        String sourceTableSchema = schemaTransform(dataSource.getConnectorType(),dataSource.getSchemaDefine());
+        String sourceTableSchema = schemaTransform(dataSource.getConnectorType(), dataSource.getSchemaDefine());
         //01代表kafka连接器
-        if ("01".equals(dataSource.getConnectorType())) {
+        if ("01".equals(dataSource.getConnectorType())) { // kafka
             String consumerMode;
             String topicName;
             if ("01".equals(dataSource.getConsumerMode())) {
@@ -125,23 +126,55 @@ public class TDataSourceServiceImpl implements ITDataSourceService {
                     + topicName + "','properties.bootstrap.servers' = '" + dataSource.getKafkaAddress()
                     + "','properties.group.id' = '" + dataSource.getConsumerGroup()
                     + "','scan.startup.mode' = '" + consumerMode + "','format' = 'json')";
-        } else if ("02".equals(dataSource.getConnectorType())){
-            String scan = dataSource.getScanAll().equals("01") ? "initial" : "schema_only";
-            ArrayList handleData = (ArrayList)dataSource.getHandleData();
+        } else if ("02".equals(dataSource.getConnectorType())) { // mysql-cdc
+            String scan = dataSource.getScanAll().equals("1") ? "initial" : "schema_only";
+            ArrayList handleData = (ArrayList) dataSource.getHandleData();
             String join1 = StringUtils.join(handleData, ",");
-            sqlString = "CREATE TABLE orders ("+sourceTableSchema + ") WITH ('connector' = 'mysql-cdc',"
-                    + "  'hostname' = '"+dataSource.getMyAddress()+"',"
-                    + "  'port' = '"+dataSource.getPort()+"',"
-                    + "  'username' = '"+dataSource.getUserName()+"',"
-                    + "  'password' = '"+dataSource.getPassword()+"',"
-                    + "  'database-name' = '"+dataSource.getMyDatabase()+"',"
-                    + "  'table-name' = '"+dataSource.getMyTableName()+"',"
-                    + " 'debezium.snapshot.mode' = '"+scan+"'" // 不扫描全表
+            sqlString = "CREATE TABLE orders (" + sourceTableSchema + ") WITH ('connector' = 'mysql-cdc',"
+                    + "  'hostname' = '" + dataSource.getMyAddress() + "',"
+                    + "  'port' = '" + dataSource.getPort() + "',"
+                    + "  'username' = '" + dataSource.getUserName() + "',"
+                    + "  'password' = '" + dataSource.getPassword() + "',"
+                    + "  'database-name' = '" + dataSource.getMyDatabase() + "',"
+                    + "  'table-name' = '" + dataSource.getMyTableName() + "',"
+                    + " 'debezium.snapshot.mode' = '" + scan + "'" // 不扫描全表
                     + "  'server-time-zone'= 'Asia/Shanghai'"
                     + ")"
                     + "|" + join1;
 
 
+        } else if ("03".equals(dataSource.getConnectorType())) { // oracle-cdc
+            String readPosition = dataSource.getScanAll().equals("1") ? "all" : "current";
+            Map map = new HashMap();
+            map.put("jdbcUrl", dataSource.getMyAddress());
+            map.put("username", dataSource.getUserName());
+            map.put("password", dataSource.getPassword());
+            String[] tableArray = dataSource.getMyTableName().split(";");
+            for (int i = 0; i < tableArray.length; i++) {
+                tableArray[i] = dataSource.getUserName() + "." + tableArray[i];
+            }
+            map.put("table", tableArray);
+            ArrayList handleData = (ArrayList) dataSource.getHandleData();
+            String join1 = StringUtils.join(handleData, ",");
+            map.put("cat", join1);
+            map.put("readPosition", readPosition);
+
+            Map parameter = new HashMap();
+            parameter.put("parameter", map);
+            parameter.put("name", "oraclelogminerreader");
+
+            Map reader = new HashMap();
+            reader.put("reader", parameter);
+
+            List li = new ArrayList();
+            Map content = new HashMap();
+            li.add(reader);
+            content.put("content", li);
+
+            Map job = new HashMap();
+            job.put("job", content);
+
+            sqlString = JSON.toJSONString(job);
         }
         return sqlString;
     }
@@ -157,16 +190,15 @@ public class TDataSourceServiceImpl implements ITDataSourceService {
                 Object dataBaseType = o.get("dataBaseType");
                 sb.append("`" + schemaDefine1 + "` " + dataBaseType + ",");
             }
-        }else if ("02".equals(type)){
+        } else if ("02".equals(type) || "03".equals(type)) { // mysql-cdc 或者 oracle-cdc
             for (int i = 0; i < array.size(); i++) {
                 JSONObject o = (JSONObject) array.get(i);
                 Object schemaDefine1 = o.get("schemaDefine");
                 Object dataBaseType = o.get("dataBaseType");
-                sb.append( schemaDefine1 + " " + dataBaseType + ",");
+                sb.append(schemaDefine1 + " " + dataBaseType + ",");
             }
         }
         return sb.substring(0, sb.length() - 1);
-
 
 
     }
@@ -181,9 +213,9 @@ public class TDataSourceServiceImpl implements ITDataSourceService {
     public int updateTDataSource(TDataSource tDataSource) {
         tranSchemaJson(tDataSource);
         tDataSource.setCreateTableSql(joinCreateTableSql(tDataSource));
-        if (tDataSource.getConnectorType().equals("02")){
-            tDataSource.setHandleData(JSON.toJSONString(tDataSource.getHandleData()));
-        }
+//        if (tDataSource.getConnectorType().equals("02")){
+        tDataSource.setHandleData(JSON.toJSONString(tDataSource.getHandleData()));
+//        }
         tDataSource.setModifyTime(new Date());
         return tDataSourceMapper.updateTDataSource(tDataSource);
     }
@@ -230,7 +262,7 @@ public class TDataSourceServiceImpl implements ITDataSourceService {
 
     // 根据id查集合
     @Override
-    public List<TDataSource> selectTDataSourceListByIds(Long[] ids){
+    public List<TDataSource> selectTDataSourceListByIds(Long[] ids) {
         return tDataSourceMapper.selectTDataSourceListByIds(ids);
     }
 }

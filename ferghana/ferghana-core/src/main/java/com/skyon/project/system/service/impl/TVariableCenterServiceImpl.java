@@ -462,7 +462,7 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
         String s = "";
         if ("sum(distinct())".equals(statisticsCountModel)) {
             s = " sum(distinct(" + variableFactor + ")) ";
-        }if ("count(distinct())".equals(statisticsCountModel)) {
+        }else if ("count(distinct())".equals(statisticsCountModel)) {
             s = " count(distinct(" + variableFactor + ")) ";
         } else {
             s = statisticsCountModel + "(" + variableFactor + ") ";
@@ -713,6 +713,8 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
         Map mapParam = new HashMap();
         mapParam.put("runMode", "01");
         mapParam.put("testTopicName", millis);
+        //
+        mapParam.put("waterMark", map.get("waterMarkName") + "|" + map.get("waterMarkTime"));
         // 有维表时
         JSONArray dimensionRelation = JSON.parseArray(map.get("dimensionRelation").toString());
         // 如果有两个数据源表，sourceTableSql用分号隔开，新增sourceTableSql参数

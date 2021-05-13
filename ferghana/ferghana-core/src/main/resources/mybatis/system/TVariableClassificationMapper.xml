@@ -15,7 +15,9 @@
         <result property="description"    column="description"    />
         <result property="createTime"    column="create_time"    />
         <result property="modifyTime"    column="modify_time"    />
+<!--        关联字段 -->
         <result property="schemaDefine"    column="schema_define"    />
+        <result property="connectorType"    column="connector_type"    />
     </resultMap>
 
     <resultMap id="schemaPrimaryKey" type="java.util.Map">
@@ -39,14 +41,17 @@
 
     <sql id="selectTVariableClassificationVo">
         select variable_classification_id, variable_classification_name, source_dab_relation, source_two_dab_relation, source_dab_field,dimension_relation,source_relation,
-               d.description, d.create_time, d.modify_time,t.schema_define
+               d.description, d.create_time, d.modify_time,t.schema_define,t.connector_type
         from t_variable_classification d
                  left join t_data_source t on d.source_dab_relation = t.table_name
     </sql>
 
     <sql id="selectSchemaPrimaryKey">
-        SELECT d.schema_primary_key,t.schema_primary_key as schema_two_primary_key,d.create_table_sql,t.create_table_sql as create_table_two_sql,d.table_name,t.table_name as table_two_name,
-               s.source_dab_field,s.dimension_relation,s.source_dab_relation,s.source_two_dab_relation,s.source_relation,d.water_mark_time,t.water_mark_time as water_mark_two_time,d.water_mark_name,t.water_mark_name as water_mark_two_name FROM ( t_variable_classification s LEFT JOIN t_data_source d ON s.source_dab_relation = d.table_name )
+        SELECT d.schema_primary_key,t.schema_primary_key as schema_two_primary_key,d.create_table_sql,
+        t.create_table_sql as create_table_two_sql,d.table_name,t.table_name as table_two_name,d.schema_define as schemaDefine,
+               s.source_dab_field,s.dimension_relation,s.source_dab_relation,s.source_two_dab_relation,
+               s.source_relation,d.water_mark_time,t.water_mark_time as water_mark_two_time,d.water_mark_name,
+               t.water_mark_name as water_mark_two_name FROM ( t_variable_classification s LEFT JOIN t_data_source d ON s.source_dab_relation = d.table_name )
                    LEFT JOIN t_data_source t ON s.source_two_dab_relation = t.table_name
     </sql>
 

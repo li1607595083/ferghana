@@ -186,8 +186,8 @@
           <el-form-item label="URL地址" prop="myAddress" class="el-col-12">
             <el-input v-model="form.myAddress" placeholder="请输入URL地址" :disabled="detailViem"/>
           </el-form-item>
-            <el-form-item label="端口" prop="port" class="el-col-12">
-            <el-input v-model="form.port" placeholder="请输入端口号" :disabled="detailViem"/>
+          <el-form-item label="端口" prop="port" class="el-col-12" v-show="mysqlPropertyShow">
+            <el-input v-model="form.port" placeholder="请输入端口号"  :disabled="detailViem"/>
           </el-form-item>
           <el-form-item label="用户名" prop="userName" class="el-col-12">
             <el-input v-model="form.userName" placeholder="请输入用户名" :disabled="detailViem"/>
@@ -195,7 +195,7 @@
           <el-form-item label="密码" prop="password" class="el-col-12">
             <el-input v-model="form.password" placeholder="请输入密码" :disabled="detailViem"/>
           </el-form-item>
-          <el-form-item label="数据库" prop="myDatabase" class="el-col-12">
+          <el-form-item label="数据库" prop="myDatabase" class="el-col-12" v-show="mysqlPropertyShow">
             <el-input v-model="form.myDatabase" placeholder="请输入数据库" :disabled="detailViem"/>
           </el-form-item>
           <el-form-item label="表名" prop="myTableName" class="el-col-12">
@@ -318,6 +318,8 @@
         consumerModeOptions: [],
         // 数据类型
         sysDataBaseTypes: [],
+        // mysql-Port展示字段
+        mysqlPropertyShow:false,
 
         // dynamicItem: [{
         //   schemaDefine:"",
@@ -441,6 +443,8 @@
     methods: {
 
       connectorTypeChange(value){
+        console.log("---connectorTypeChange");
+        console.log(value);
         // 控制显示kafka或mysql板块
         this.connShow = value === '01';
         //  控制kafka或mysql板块的必输项
@@ -460,6 +464,7 @@
           this.rules.scanAll[0].required = false;
           this.rules.handleData[0].required = false;
         } else if (value === '02'){
+          this.mysqlPropertyShow = true;
           this.rules.topicName[0].required = false;
           this.rules.topicName[0].validator = false;
           this.rules.consumerGroup[0].required = false;
@@ -471,6 +476,22 @@
           this.rules.userName[0].required = true;
           this.rules.password[0].required = true;
           this.rules.myDatabase[0].required = true;
+          this.rules.myTableName[0].required = true;
+          this.rules.scanAll[0].required = true;
+          this.rules.handleData[0].required = true;
+        } else if (value === '03'){
+          this.mysqlPropertyShow = false;
+          this.rules.topicName[0].required = false;
+          this.rules.topicName[0].validator = false;
+          this.rules.consumerGroup[0].required = false;
+          this.rules.consumerMode[0].required = false;
+          this.rules.kafkaAddress[0].required = false;
+          this.rules.zookeeperAddress[0].required = false;
+          this.rules.myAddress[0].required = true;
+          this.rules.port[0].required = false;
+          this.rules.userName[0].required = true;
+          this.rules.password[0].required = true;
+          this.rules.myDatabase[0].required = false;
           this.rules.myTableName[0].required = true;
           this.rules.scanAll[0].required = true;
           this.rules.handleData[0].required = true;

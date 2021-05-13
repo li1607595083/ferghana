@@ -92,7 +92,8 @@
           <el-select v-model="form.variableClassification" placeholder="请选择变量类型" @change="variableClassificationChange"
             clearable style="width: 100%" :disabled="UnAllowedUpdate">
             <el-option v-for="data in variableClassificationOptions" :key="data.value" :label="data.name"
-              :value="data.value" :sourceTableName="data.sourceTableName" :dimensionRelation="data.dimensionRelation" />
+              :value="data.value" :sourceTableName="data.sourceTableName" :dimensionRelation="data.dimensionRelation"
+                       :connectorType="data.connectorType"/>
           </el-select>
         </el-form-item>
         <el-form-item label="数据结果表:" prop="resultTable" class="el-col-12">
@@ -101,7 +102,7 @@
             <el-option v-for="data in resultTableOptions" :key="data.value" :label="data.name" :value="data.value" />
           </el-select>
         </el-form-item>
-        <el-form-item label="加工变量" class="el-col-24" prop="variableId">
+        <el-form-item label="加工变量" class="el-col-24" prop="variableId" v-show="variableIdShow">
           <treeselect v-model="form.variableId" :options="variableCenter" :multiple="true" id="variableId"
             @select="variableCenterSelect" @deselect="variableCenterDeSelect" :disableBranchNodes="true"
             :showCount="true" :clearable="false" placeholder="请选择加工变量" :disabled="detailViem" />
@@ -367,6 +368,8 @@
         versionNumShow: false,
         //
         packageRow: undefined,
+        // 加工变量展示
+        variableIdShow:true,
 
         //tabs标签页的初始页
         activeName: 'first',
@@ -1189,6 +1192,7 @@
               name: resp.data.rows[i].variableClassificationName,
               sourceTableName: resp.data.rows[i].sourceDabRelation,
               dimensionRelation: resp.data.rows[i].dimensionRelation,
+              connectorType: resp.data.rows[i].connectorType,
             });
           }
         }).catch(resp => {
@@ -1203,8 +1207,19 @@
         console.log("--2");
         console.log(value);
         console.log(this.variableClassificationOptions);
+
         this.variableClassificationOptions.map((data, i) => {
           if (data.value === value) {
+            // 如果数据源表是oracle-cdc
+            this.variableIdShow = true;
+            this.rules.variableId[0].required = true;
+            if (data.connectorType === "03") {
+              console.log("-----03---------------------");
+              // 变量分类字段不展示
+              this.variableIdShow = false;
+              this.rules.variableId[0].required = false;
+              this.form.variablePackType = "03";
+            }
             this.sourceDataChange(data.sourceTableName);
             this.getDimensionRelationFild(data.dimensionRelation);
             // 数据源表赋值

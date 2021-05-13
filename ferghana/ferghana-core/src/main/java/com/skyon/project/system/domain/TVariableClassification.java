@@ -57,6 +57,7 @@ public class TVariableClassification extends BaseEntity
 
     //    private String dimensionName;
     private String schemaDefine;
+    private String connectorType;
 //    private String connectorType;
 //    private String dimensionJdbcSchemaDefine;
 //    private String hbaseSchemaDefine;
@@ -64,6 +65,14 @@ public class TVariableClassification extends BaseEntity
 
     // ----------------------页面参数------------------------------
     private List selfDefineDimensionField;
+
+    public String getConnectorType() {
+        return connectorType;
+    }
+
+    public void setConnectorType(String connectorType) {
+        this.connectorType = connectorType;
+    }
 
     public String getSchemaDefine() {
         return schemaDefine;

@@ -1154,6 +1154,8 @@
               if (this.form.connectorType === "05") {
                 this.form.schemaDefine = JSON.stringify(this.form.esDynamicItem);
               }
+              console.log("---sss");
+              console.log(this.form);
               updateDimension(this.form).then(response => {
                 if (response.code === 200) {
                   this.msgSuccess("修改成功");

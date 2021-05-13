@@ -69,6 +69,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where data_result_source_id = #{dataResultSourceId}
     </select>
 
+    <select id="selectTDataResultSourceByName" parameterType="string" resultMap="TDataResultSourceResult">
+        <include refid="selectTDataResultSourceVo"/>
+        where table_name = #{tableName}
+    </select>
+
     <insert id="insertTDataResultSource" parameterType="TDataResultSource" useGeneratedKeys="true" keyProperty="dataResultSourceId">
         insert into t_data_result_source
         <trim prefix="(" suffix=")" suffixOverrides=",">
