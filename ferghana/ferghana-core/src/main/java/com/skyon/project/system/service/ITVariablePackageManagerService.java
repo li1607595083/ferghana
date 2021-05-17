@@ -81,6 +81,11 @@ public interface ITVariablePackageManagerService {
 
     public String[] joinPath(Map map, TVariablePackageManager pkManager, List<TVariableCenter> variableListByIds);
 
+
+    public String[] joinOraclePath(TVariablePackageManager pkManager);
+
+
+
     // 获取结果
     public List getTestResult(Object jobId);
 

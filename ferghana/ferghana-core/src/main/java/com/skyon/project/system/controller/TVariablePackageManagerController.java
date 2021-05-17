@@ -244,18 +244,26 @@ public class TVariablePackageManagerController extends BaseController {
         logService.insertTVariablePackageOperateLog(log);
         //变量包名字、SQL（以分号拼接）、字段个数、主键名称、运行or测试、资源配置情况（以分号拼接）并发数、taskmanager内存、jobmanager内存
 
-        //根据变量分类-数据源表-主键
+        String[] pathArray = null;
         LOG.info("-----------package start------------");
-        Map map = tVariablePackageManagerService.getKeyByVariableId(pkManager.getVariableClassification());
-        // sql 拼接 ： 建表sql + 变量运行sql ; 中间用分号连接;  用变量id用查对应的sql
-        LOG.info("-----------1111111111111------------");
+        LOG.info("-----------packType------------" + pkManager.getVariablePackType());
 
-        List<TVariableCenter> variableListByIds = tVariablePackageManagerService.getVariableListByIds(pkManager.getVariableId());
-        LOG.info("-----------222222222222------------");
+        if ("01".equals(pkManager.getVariablePackType())){
+            //根据变量分类-数据源表-主键
+            Map map = tVariablePackageManagerService.getKeyByVariableId(pkManager.getVariableClassification());
+            // sql 拼接 ： 建表sql + 变量运行sql ; 中间用分号连接;  用变量id用查对应的sql
+            LOG.info("-----------1111111111111------------");
 
-        String[] pathArray = tVariablePackageManagerService.joinPath(map, pkManager, variableListByIds);
-        LOG.info("-----------pathArray1------------" + pathArray[1]);
-        LOG.info("-----------pathArray2------------" + pathArray[2]);
+            List<TVariableCenter> variableListByIds = tVariablePackageManagerService.getVariableListByIds(pkManager.getVariableId());
+            LOG.info("-----------222222222222------------");
+
+            pathArray = tVariablePackageManagerService.joinPath(map, pkManager, variableListByIds);
+            LOG.info("-----------pathArray1------------" + pathArray[1]);
+            LOG.info("-----------pathArray2------------" + pathArray[2]);
+        } else if ("03".equals(pkManager.getVariablePackType())){ // oracle-cdc
+            pathArray = tVariablePackageManagerService.joinOraclePath(pkManager);
+        }
+
 
         Map mapResult = tVariablePackageManagerService.exe(pathArray);
         LOG.info("--------------33333333333333---------------");

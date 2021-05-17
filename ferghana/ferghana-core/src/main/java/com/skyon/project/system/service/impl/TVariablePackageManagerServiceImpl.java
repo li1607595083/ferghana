@@ -800,6 +800,20 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
                 base64(JSONObject.toJSONString(mapParam)) + " " + source + " " + points};
     }
 
+    @Override
+    public String[] joinOraclePath(TVariablePackageManager pkManager){
+        Map mapParam = new HashMap();
+        mapParam.put("sinkSql", pkManager.getResultTableSql());
+        // 启动资源配置
+        String source = sourceConfiguration(pkManager);
+        // point 的配置
+        String points = joinPoints(pkManager);
+
+        LOG.info("----参数:" + JSONObject.toJSONString(mapParam));
+        return new String[]{"sh", PropertiesUtil.getPro(PACKAGETESTPATH) + PropertiesUtil.getPro(PACKAGETESTNAME),
+                base64(JSONObject.toJSONString(mapParam)) + " " + source + " " + points};
+    }
+
     private String joinPoints(TVariablePackageManager pkManager) {
         String result = PropertiesUtil.getPro(PACKAGESTARTJOBID);
         if (pkManager.getJobId() != null) {
