@@ -21,6 +21,7 @@ import lombok.extern.log4j.Log4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.skyon.project.system.service.ITVariablePackageManagerService;
+import scala.annotation.meta.field;
 
 import static org.apache.flink.optimizer.Optimizer.LOG;
 
@@ -110,7 +111,8 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
             pkManager.setResultTableSql(editOraclecdcSql(map, pkManager));
             pkManager.setVariableId(null);
         } else if (pkManager.getVariablePackType().equals("02")) { // mysqlcdc
-            pkManager.setResultTableSql("");
+            pkManager.setResultTableSql(setMysqlResultSql(pkManager));
+            pkManager.setVariableId(null);
         } else if (pkManager.getVariablePackType().equals("01")) { // 一般变量包
             Map map1 = setResultTableSql(pkManager, runFlag, "");
             pkManager.setResultTableSql(map1.get("resultSql").toString());
@@ -233,6 +235,28 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
         return sb.toString();
     }
 
+
+    private String setMysqlResultSql(TVariablePackageManager pkManager){
+        // INSERT INTO topic_13(SELECT * FROM tmp_variablePackEn)
+        StringBuffer sb = new StringBuffer();
+        sb.append("INSERT INTO ").append(pkManager.getResultTable()).append("(SELECT ");
+
+        // 若有原始变量，把原始变量加进去
+        ArrayList array = (ArrayList) pkManager.getOriginalVariable();
+        if (array != null && array.size() > 0) {
+            // 拼接字段
+            String[] fieldArr = new String[array.size()];
+            for (int i = 0; i < array.size(); i++) {
+                String o = array.get(i).toString();
+                String[] split = o.split("\\.");
+                fieldArr[i] = split[1];
+            }
+            sb.append(StringUtils.join(fieldArr,","));
+        }
+        sb.append(" FROM tmp_").append(pkManager.getResultTable());
+
+        return sb.toString();
+    }
 
     // 结果表sql赋值
     private Map setResultTableSql(TVariablePackageManager pkManager, String runFlag, String millis) {
@@ -605,6 +629,59 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
             }
         }
         return JSON.toJSONString(mapParam).replaceAll(map.get("tableName") + "\\.", "");
+    }
+
+    @Override
+    public String[] joinMysqlPath(Map map, TVariablePackageManager pkManager) {
+        Map mapParam = new HashMap();
+        //变量包名字、SQL（以分号拼接）、字段个数、主键名称、运行or测试、资源配置情况（以分号拼接）并发数、taskmanager内存、jobmanager内存
+        mapParam.put("variablePackEn", pkManager.getVariablePackEn());
+
+        mapParam.put("sourceTableSql", map.get("createTableSql"));
+
+        //waterMark
+        mapParam.put("waterMark", map.get("waterMarkName") + "|" + map.get("waterMarkTime"));
+
+        // 输出类型
+        mapParam.put("connectorType", "01");
+
+        // 运行参数 测试
+        mapParam.put("runMode", "02");
+
+        // 数据源表主键
+        mapParam.put("sourcePrimaryKey", map.get("schemaPrimaryKey").toString());
+
+        // 输出参数sql
+        mapParam.put("sinkSql", pkManager.getResultTableSql());
+
+        // 数据结果表的参数
+        TDataResultSource resultSource = resultSourceService.selectTDataResultSourceByTableName(pkManager.getResultTable());
+        if (resultSource != null) {
+            mapParam.put("connectorType", resultSource.getConnectorType());
+            if ("01".equals(resultSource.getConnectorType())) {
+                mapParam.put("kafkaTopic", resultSource.getTopicName());
+                mapParam.put("kafkaZK", resultSource.getZookeeperAddress());
+                mapParam.put("kafkaAddress", resultSource.getKafkaAddress());
+            } else if ("02".equals(resultSource.getConnectorType())) {
+                mapParam.put("jdbcURL", resultSource.getJdbcUrlAddress());
+                mapParam.put("jdbcDrive", resultSource.getJdbcDrive());
+                mapParam.put("jdbcUserName", resultSource.getJdbcUserName());
+                mapParam.put("jdbcUserPwd", resultSource.getJdbcUserPwd());
+            } else if ("03".equals(resultSource.getConnectorType())) {
+                mapParam.put("hbaseZK", resultSource.getHbaseZKAddress());
+            } else if ("04".equals(resultSource.getConnectorType())) {
+                mapParam.put("esAddress", resultSource.getEsAddress());
+            }
+        }
+
+        // 启动资源配置
+        String source = sourceConfiguration(pkManager);
+        // point 的配置
+        String points = joinPoints(pkManager);
+
+        LOG.info("----参数:" + JSONObject.toJSONString(mapParam));
+        return new String[]{"sh", PropertiesUtil.getPro(PACKAGETESTPATH) + PropertiesUtil.getPro(PACKAGETESTNAME),
+                base64(JSONObject.toJSONString(mapParam)) + " " + source + " " + points};
     }
 
     @Override

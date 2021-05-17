@@ -252,21 +252,31 @@ public class TVariablePackageManagerController extends BaseController {
             //根据变量分类-数据源表-主键
             Map map = tVariablePackageManagerService.getKeyByVariableId(pkManager.getVariableClassification());
             // sql 拼接 ： 建表sql + 变量运行sql ; 中间用分号连接;  用变量id用查对应的sql
-            LOG.info("-----------1111111111111------------");
 
             List<TVariableCenter> variableListByIds = tVariablePackageManagerService.getVariableListByIds(pkManager.getVariableId());
-            LOG.info("-----------222222222222------------");
 
             pathArray = tVariablePackageManagerService.joinPath(map, pkManager, variableListByIds);
-            LOG.info("-----------pathArray1------------" + pathArray[1]);
-            LOG.info("-----------pathArray2------------" + pathArray[2]);
+
+            LOG.info("-------normal----pathArray1------------" + pathArray[1]);
+            LOG.info("-------normal----pathArray2------------" + pathArray[2]);
+        } else if ("02".equals(pkManager.getVariablePackType())){ // mysql-cdc
+            //根据变量分类-数据源表-主键
+            Map map = tVariablePackageManagerService.getKeyByVariableId(pkManager.getVariableClassification());
+
+            // 拼接运行参数
+            pathArray = tVariablePackageManagerService.joinMysqlPath(map, pkManager);
+            LOG.info("-------mysql-cdc----pathArray1------------" + pathArray[1]);
+            LOG.info("-------mysql-cdc----pathArray2------------" + pathArray[2]);
         } else if ("03".equals(pkManager.getVariablePackType())){ // oracle-cdc
+            // 拼接运行参数
             pathArray = tVariablePackageManagerService.joinOraclePath(pkManager);
+            LOG.info("-------oracle-cdc----pathArray1------------" + pathArray[1]);
+            LOG.info("-------oracle-cdc----pathArray2------------" + pathArray[2]);
         }
 
 
         Map mapResult = tVariablePackageManagerService.exe(pathArray);
-        LOG.info("--------------33333333333333---------------");
+        LOG.info("--------------mapResult---------------");
 
         int i = 0;
         Object jobId = mapResult.get("jobId");
