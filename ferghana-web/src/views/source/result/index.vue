@@ -164,9 +164,6 @@
           </el-select>
         </el-form-item>
         <div v-show="kafkaDiv">
-          <el-form-item label="topic名" prop="topicName" class="el-col-12">
-            <el-input v-model="form.topicName" placeholder="请输入topic名" :disabled="detailViem"/>
-          </el-form-item>
           <el-form-item label="zookeeper地址" prop="zookeeperAddress" class="el-col-12">
             <el-input v-model="form.zookeeperAddress" placeholder="master:2181,slave:2181" :disabled="detailViem"/>
           </el-form-item>
@@ -268,7 +265,6 @@
           dataSourceType: undefined,
           connectorType: undefined,
           dataSource: undefined,
-          topicName: undefined,
           tableName: undefined,
           consumerGroup: undefined,
           consumerMode: undefined,
@@ -295,9 +291,6 @@
           ],
           dataSource: [
             {required: true, message: "数据来源不能为空", trigger: "blur"}
-          ],
-          topicName: [
-            {required: true, message: "topic名不能为空", trigger: "blur"}
           ],
           tableName: [
             {required: true, message: "结果表英文名不能为空", trigger: "blur"},
@@ -372,7 +365,6 @@
         this.jdbcItem = false;
         this.hbaseItem = false;
         this.esItem = false;
-        this.rules.topicName[0].required = true;
         this.rules.zookeeperAddress[0].required = true;
         this.rules.kafkaAddress[0].required = true;
         this.rules.jdbcUrlAddress[0].required = false;
@@ -387,7 +379,6 @@
         this.jdbcItem = true;
         this.hbaseItem = false;
         this.esItem = false;
-        this.rules.topicName[0].required = false;
         this.rules.zookeeperAddress[0].required = false;
         this.rules.kafkaAddress[0].required = false;
         this.rules.jdbcUrlAddress[0].required = true;
@@ -402,7 +393,6 @@
         this.jdbcItem = false;
         this.hbaseItem = true;
         this.esItem = false;
-        this.rules.topicName[0].required = false;
         this.rules.zookeeperAddress[0].required = false;
         this.rules.kafkaAddress[0].required = false;
         this.rules.jdbcUrlAddress[0].required = false;
@@ -417,7 +407,6 @@
         this.jdbcItem = false;
         this.hbaseItem = false;
         this.esItem = true;
-        this.rules.topicName[0].required = false;
         this.rules.zookeeperAddress[0].required = false;
         this.rules.kafkaAddress[0].required = false;
         this.rules.jdbcUrlAddress[0].required = false;
@@ -460,7 +449,6 @@
           dataSourceType: undefined,
           connectorType: undefined,
           dataSource: undefined,
-          topicName: undefined,
           tableName: undefined,
           consumerGroup: undefined,
           consumerMode: undefined,
