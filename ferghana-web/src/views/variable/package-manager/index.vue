@@ -7,15 +7,19 @@
           <el-input v-model="queryParams.variablePackName" placeholder="请输入变量包中文名" clearable size="small"
             @keyup.enter.native="handleQuery" />
         </el-form-item>
-        <el-form-item label="运行状态" prop="runingState">
+        <el-form-item label="变量包英文名" prop="variablePackEn">
+          <el-input v-model="queryParams.variablePackEn" placeholder="请输入英文名" clearable size="small"
+                    @keyup.enter.native="handleQuery" />
+        </el-form-item>
+        <el-form-item label="变量分类" label-width="70px" prop="variableClassification">
+          <el-input v-model="queryParams.variableClassification" placeholder="请输入变量分类" clearable size="small"
+                    @keyup.enter.native="handleQuery" />
+        </el-form-item>
+        <el-form-item label="运行状态" label-width="70px" prop="runingState">
           <el-select v-model="queryParams.runingState" placeholder="请选择运行状态" clearable size="small">
             <el-option v-for="dict in runingStateOptions" :key="dict.dictValue" :label="dict.dictLabel"
               :value="dict.dictValue" />
           </el-select>
-        </el-form-item>
-        <el-form-item label="变量分类" prop="variableClassification">
-          <el-input v-model="queryParams.variableClassification" placeholder="请输入变量分类" clearable size="small"
-            @keyup.enter.native="handleQuery" />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
@@ -38,11 +42,11 @@
         </el-col>
       </el-row>
 
-      <el-table v-loading="loading" :data="managerList" @selection-change="handleSelectionChange">
+      <el-table v-loading="loading" :data="managerList" @selection-change="handleSelectionChange" @row-dblclick="versionDetail">
         <el-table-column type="selection" width="55" align="center" />
-        <el-table-column label="变量包中文名" align="left" header-align="center" prop="variablePackName" />
-        <el-table-column label="变量包英文名" width="200" align="left" header-align="center" prop="variablePackEn" />
-        <el-table-column label="变量分类" width="250" align="center" prop="variableClassificationName" />
+        <el-table-column label="变量包中文名" align="left" prop="variablePackName" />
+        <el-table-column label="变量包英文名" width="200" align="left" prop="variablePackEn" />
+        <el-table-column label="变量分类" width="250" align="left" prop="variableClassificationName" />
         <el-table-column label="版本号" width="80" align="center" prop="versionNum" />
         <el-table-column label="运行状态" width="100" align="center" prop="runingState" :formatter="runingStateFormat">
           <template slot-scope="scope">
@@ -50,24 +54,16 @@
               @change="handleStatusChange(scope.row)" />
           </template>
         </el-table-column>
-        <el-table-column label="创建时间" align="center" prop="createTime" width="180">
+        <el-table-column label="新增人" align="center" width="130" prop="createBy"/>
+        <el-table-column label="修改人" align="center" width="130" prop="updateBy"/>
+        <el-table-column label="新增时间" align="center" prop="createTime" width="180">
           <template slot-scope="scope">
             <span>{{ parseTime(scope.row.createTime) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="修改时间" align="center" prop="modifyTime" width="180">
+        <el-table-column label="修改时间" align="center" prop="updateTime" width="180">
           <template slot-scope="scope">
-            <span>{{ parseTime(scope.row.modifyTime) }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="200" align="center" class-name="small-padding fixed-width">
-          <template slot-scope="scope">
-            <el-button size="mini" type="text" icon="el-icon-view" @click="versionDetail(scope.row)">详情
-            </el-button>
-            <el-button size="mini" type="text" icon="el-icon-edit" @click="handleUpdate(scope.row)">修改
-            </el-button>
-            <el-button size="mini" type="text" icon="el-icon-delete" @click="handleDelete(scope.row)">删除
-            </el-button>
+            <span>{{ parseTime(scope.row.updateTime) }}</span>
           </template>
         </el-table-column>
       </el-table>
@@ -127,7 +123,7 @@
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer" style="float: right">
-        <el-button type="primary" @click="testRun" :disabled="detailViem">测 试</el-button>
+        <el-button type="primary" @click="testRun" :disabled="detailViem" v-show="testButton">测 试</el-button>
         <el-button type="primary" @click="submitForm" :disabled="detailViem">确 定</el-button>
         <el-button @click="cancel">取 消</el-button>
       </div>
@@ -249,25 +245,20 @@
     <div v-show="detailDiv">
       <el-tabs v-model="versionTabName" type="card">
         <el-tab-pane label="版本历史" name="versionFirst">
-          <el-table v-loading="loading" :data="versionList">
+          <el-table v-loading="loading" :data="versionList" @row-dblclick="handleDetail">
             <el-table-column label="序号" width="55" align="center" type="index" />
             <el-table-column label="变量中文名" align="center" prop="variablePackName" />
             <el-table-column label="版本号" align="center" prop="versionNum" />
-            <el-table-column label="版本制定者" align="center" prop="createBy" />
-            <el-table-column label="创建时间" align="center" prop="createTime">
+            <el-table-column label="新增者"  align="center" prop="createBy"/>
+            <el-table-column label="修改者"  align="center" prop="updateBy"/>
+            <el-table-column label="新增时间" align="center" prop="createTime" >
               <template slot-scope="scope">
                 <span>{{ parseTime(scope.row.createTime) }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="修改时间" align="center" prop="modifyTime" width="180">
+            <el-table-column label="修改时间" align="center" prop="updateTime" width="180">
               <template slot-scope="scope">
-                <span>{{ parseTime(scope.row.modifyTime) }}</span>
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
-              <template slot-scope="scope">
-                <el-button size="mini" type="text" icon="el-icon-view" @click="handleDetail(scope.row)">详情
-                </el-button>
+                <span>{{ parseTime(scope.row.updateTime) }}</span>
               </template>
             </el-table-column>
           </el-table>
@@ -396,6 +387,8 @@
         concurrencyConfigure: "",
         taskMemoryConfigure: "",
         jobMemoryConfigure: "",
+        // 测试按钮show
+        testButton:true,
 
         // 资源配置单选框
         resourceForm: {
@@ -1213,12 +1206,13 @@
             // 如果数据源表是oracle-cdc
             this.variableIdShow = true;
             this.rules.variableId[0].required = true;
+            this.testButton = true;
             if (data.connectorType === "03") {
-              console.log("-----03---------------------");
-              // 变量分类字段不展示
-              this.variableIdShow = false;
-              this.rules.variableId[0].required = false;
+              this.cdcShow();
               this.form.variablePackType = "03";
+            } else if (data.connectorType === "02"){
+              this.cdcShow();
+              this.form.variablePackType = "02";
             }
             this.sourceDataChange(data.sourceTableName);
             this.getDimensionRelationFild(data.dimensionRelation);
@@ -1227,6 +1221,13 @@
             this.form.dimensionRelation = data.dimensionRelation;
           }
         });
+      },
+      // 变量分类为cdc时，下列字段影藏
+      cdcShow(){
+        // 变量分类字段不展示
+        this.variableIdShow = false;
+        this.rules.variableId[0].required = false;
+        this.testButton = false;
       },
 
       /** 查询变量包管理列表 */
@@ -1283,6 +1284,7 @@
         this.resultTableOptions = [];
         this.variableClassificationOptions = [];
         this.variableNum = 0;
+        this.testButton = true;
 
       },
       /** 搜索按钮操作 */

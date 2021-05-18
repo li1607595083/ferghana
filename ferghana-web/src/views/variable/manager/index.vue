@@ -11,7 +11,16 @@
             @keyup.enter.native="handleQuery"
           />
         </el-form-item>
-        <el-form-item label="变量分类" prop="variableName">
+        <el-form-item label="变量英文名" prop="variableNameEn">
+          <el-input
+            v-model="queryParams.variableNameEn"
+            placeholder="请输入英文名"
+            clearable
+            size="small"
+            @keyup.enter.native="handleQuery"
+          />
+        </el-form-item>
+        <el-form-item label="变量分类" prop="variableClassificationName">
           <el-select v-model="queryParams.variableClassificationName" placeholder="请选择变量类型" clearable size="small">
             <el-option
               v-for="dict in variableClassificationOptions"
@@ -30,15 +39,6 @@
               :value="dict.dictValue"
             />
           </el-select>
-        </el-form-item>
-        <el-form-item label="变量备注" prop="description">
-          <el-input
-            v-model="queryParams.description"
-            placeholder="请输入变量备注"
-            clearable
-            size="small"
-            @keyup.enter.native="handleQuery"
-          />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
@@ -78,46 +78,23 @@
         </el-col>
       </el-row>
 
-      <el-table v-loading="loading" :data="centerList" @selection-change="handleSelectionChange">
+      <el-table v-loading="loading" :data="centerList" @selection-change="handleSelectionChange" @row-dblclick="versionDetail">
         <el-table-column type="selection" width="55" align="left" />
-        <el-table-column label="变量中文名" align="left" header-align="center" prop="variableName"/>
-        <el-table-column label="变量英文名"  width="200" align="center" prop="variableNameEn"/>
-        <el-table-column label="变量分类"  width="200" align="center" prop="variableClassificationName"/>
+        <el-table-column label="变量中文名" align="left" header-align="left" prop="variableName"/>
+        <el-table-column label="变量英文名"  width="200" align="left" prop="variableNameEn"/>
+        <el-table-column label="变量分类"  width="200" align="left" prop="variableClassificationName"/>
         <el-table-column label="版本号" width="70" align="center" prop="versionNum"/>
         <el-table-column label="变量类型"  width="80" align="center" prop="variableType" :formatter="variableTypeFormat"/>
-        <el-table-column label="创建时间" width="170" align="center" prop="createTime" >
+        <el-table-column label="新增人" align="center" width="130" prop="createBy"/>
+        <el-table-column label="修改人" align="center" width="130" prop="updateBy"/>
+        <el-table-column label="新增时间" width="170" align="center" prop="createTime" >
           <template slot-scope="scope">
             <span>{{ parseTime(scope.row.createTime) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="修改时间" align="center" prop="modifyTime" width="160">
+        <el-table-column label="修改时间" align="center" prop="updateTime" width="170">
           <template slot-scope="scope">
-            <span>{{ parseTime(scope.row.modifyTime) }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="170" align="center" class-name="small-padding fixed-width">
-          <template slot-scope="scope">
-            <el-button
-              size="mini"
-              type="text"
-              icon="el-icon-view"
-              @click="versionDetail(scope.row)"
-            >详情
-            </el-button>
-            <el-button
-              size="mini"
-              type="text"
-              icon="el-icon-edit"
-              @click="handleUpdate(scope.row)"
-            >修改
-            </el-button>
-            <el-button
-              size="mini"
-              type="text"
-              icon="el-icon-delete"
-              @click="handleDelete(scope.row)"
-            >删除
-            </el-button>
+            <span>{{ parseTime(scope.row.updateTime) }}</span>
           </template>
         </el-table-column>
       </el-table>
@@ -923,32 +900,22 @@
 
     <!--    版本详情-->
     <div v-show="detailDiv">
-      <el-tabs v-model="versionTabName" type="card">
+      <el-tabs v-model="versionTabName" type="card" >
         <el-tab-pane label="版本历史" name="versionFirst">
-          <el-table v-loading="loading" :data="versionList">
+          <el-table v-loading="loading" :data="versionList" @row-dblclick="handleDetail">
             <el-table-column label="序号" width="55" align="center" type="index"/>
             <el-table-column label="变量中文名" align="center" prop="variableName"/>
             <el-table-column label="版本号" align="center" prop="versionNum"/>
-            <el-table-column label="版本制定者"  align="center" prop="createBy"/>
-            <el-table-column label="创建时间" align="center" prop="createTime" >
+            <el-table-column label="新增者"  align="center" prop="createBy"/>
+            <el-table-column label="修改者"  align="center" prop="updateBy"/>
+            <el-table-column label="新增时间" align="center" prop="createTime" >
               <template slot-scope="scope">
                 <span>{{ parseTime(scope.row.createTime) }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="修改时间" align="center" prop="modifyTime" width="180">
+            <el-table-column label="修改时间" align="center" prop="updateTime" width="180">
               <template slot-scope="scope">
-                <span>{{ parseTime(scope.row.modifyTime) }}</span>
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
-              <template slot-scope="scope">
-                <el-button
-                  size="mini"
-                  type="text"
-                  icon="el-icon-view"
-                  @click="handleDetail(scope.row)"
-                >详情
-                </el-button>
+                <span>{{ parseTime(scope.row.updateTime) }}</span>
               </template>
             </el-table-column>
           </el-table>
@@ -968,7 +935,7 @@
         </el-tab-pane>
       </el-tabs>
       <div style="float: right">
-        <el-button  type="primary" @click="cancel" style="margin-right: 100px">返  回</el-button>
+        <el-button  type="primary" @click="backButton" style="margin-right: 100px">返  回</el-button>
       </div>
     </div>
   </div>
@@ -1638,7 +1605,7 @@
       // 确认测试
       confirmTest() {
         // 先校验
-        
+
         console.log(this.form)
 
         this.$refs["form"].validate((valid) => {
@@ -3432,6 +3399,12 @@
       // 变量类型 01基础变量 02 派生变量字典翻译
       variableTypeFormat(row) {
         return this.selectDictLabel(this.variableTypeOptions, row.variableType);
+      },
+      // 返回按钮
+      backButton() {
+        this.addDiv = false;
+        this.layoutOne = true;
+        this.detailDiv = false;
       },
       // 取消按钮
       cancel() {

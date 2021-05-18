@@ -5,10 +5,6 @@
         <el-input v-model="queryParams.variableClassificationName" placeholder="请输入变量分类" clearable size="small"
           @keyup.enter.native="handleQuery" />
       </el-form-item>
-      <el-form-item label="关联数据源表" label-width="100px" prop="sourceDabRelation">
-        <el-input v-model="queryParams.sourceDabRelation" placeholder="请输入关联数据源表" clearable size="small"
-          @keyup.enter.native="handleQuery" />
-      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
         <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
@@ -24,31 +20,31 @@
         <el-button type="primary" icon="el-icon-edit" size="mini" :disabled="single" @click="handleUpdate">修改
         </el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          icon="el-icon-delete"
+          size="mini"
+          :disabled="multiple"
+          @click="handleDelete"
+        >删除
+        </el-button>
+      </el-col>
     </el-row>
 
-    <el-table v-loading="loading" :data="classificationList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="classificationList" @selection-change="handleSelectionChange" @row-dblclick="handleDetail">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="变量分类" align="center" prop="variableClassificationName" />
-      <el-table-column label="关联数据源表" align="center" prop="sourceDab" />
-      <el-table-column label="备注" align="center" prop="description" />
-      <el-table-column label="创建时间" align="center" prop="createTime" width="180">
+      <el-table-column label="变量分类名" align="left" prop="variableClassificationName" />
+      <el-table-column label="新增人" align="center"  prop="createBy"/>
+      <el-table-column label="修改人" align="center"  prop="updateBy"/>
+      <el-table-column label="新增时间" align="center" prop="createTime" >
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="修改时间" align="center" prop="modifyTime" width="180">
+      <el-table-column label="修改时间" align="center" prop="updateTime" >
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.modifyTime) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
-        <template slot-scope="scope">
-          <el-button size="mini" type="text" icon="el-icon-view" @click="handleDetail(scope.row)">详情
-          </el-button>
-          <el-button size="mini" type="text" icon="el-icon-edit" @click="handleUpdate(scope.row)">修改
-          </el-button>
-          <el-button size="mini" type="text" icon="el-icon-delete" @click="handleDelete(scope.row)">删除
-          </el-button>
+          <span>{{ parseTime(scope.row.updateTime) }}</span>
         </template>
       </el-table-column>
     </el-table>
@@ -703,7 +699,7 @@
           sourceTwoDabRelation: undefined,
           description: undefined,
           createTime: undefined,
-          modifyTime: undefined,
+          updateTime: undefined,
           sourceDabField: undefined,
           dimensionRelation: [{
             dimensionName: "",

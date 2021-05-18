@@ -19,14 +19,20 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="函数描述" prop="selfFunctionDesc">
-        <el-input
-          v-model="queryParams.selfFunctionDesc"
-          placeholder="请输入函数描述"
+      <el-form-item label="函数类型" prop="functionType">
+        <el-select
+          v-model="queryParams.functionType"
+          placeholder="请选择函数类型"
           clearable
           size="small"
-          @keyup.enter.native="handleQuery"
-        />
+        >
+          <el-option
+            v-for="dict in functionTypeOptions"
+            :key="dict.dictValue"
+            :label="dict.dictLabel"
+            :value="dict.dictValue"
+          />
+        </el-select>
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
@@ -66,45 +72,22 @@
       </el-col>
     </el-row>
 
-    <el-table v-loading="loading" :data="functionList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center"/>
-      <el-table-column label="函数中文名" align="center" prop="selfFunctionNameCn"/>
-      <el-table-column label="函数英文名" align="center" prop="functionName"/>
-      <el-table-column label="函数类型" align="center" prop="functionType" :formatter="functionTypeFormat"/>
-      <el-table-column label="函数描述" align="center" prop="selfFunctionDesc"/>
-      <el-table-column label="创建时间" align="center" prop="createTime" width="180">
+    <el-table v-loading="loading" :data="functionList" @selection-change="handleSelectionChange" @row-dblclick="handleDetail">
+      <el-table-column type="selection" width="30" align="center"/>
+      <el-table-column label="函数中文名" align="left" prop="selfFunctionNameCn"/>
+      <el-table-column label="函数英文名" align="left" prop="functionName"/>
+      <el-table-column label="函数类型" align="left" prop="functionType" :formatter="functionTypeFormat"/>
+      <el-table-column label="函数描述" align="left" prop="selfFunctionDesc"/>
+      <el-table-column label="新增人" align="center" width="130" prop="createBy"/>
+      <el-table-column label="修改人" align="center" width="130" prop="updateBy"/>
+      <el-table-column label="新增时间" align="center" prop="createTime" width="160">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="修改时间" align="center" prop="updateTime" width="180">
+      <el-table-column label="修改时间" align="center" prop="updateTime" width="160">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.updateTime) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
-        <template slot-scope="scope">
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-view"
-            @click="handleDetail(scope.row)"
-          >详情
-          </el-button>
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-edit"
-            @click="handleUpdate(scope.row)"
-          >修改
-          </el-button>
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-delete"
-            @click="handleDelete(scope.row)"
-          >删除
-          </el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -298,7 +281,8 @@
           selfFunctionNameCn: undefined,
           moduleType: undefined,
           functionName: undefined,
-          selfFunctionDesc: undefined
+          selfFunctionDesc: undefined,
+          functionType: undefined
         },
         // 表单参数
         form: {inputParam: undefined},

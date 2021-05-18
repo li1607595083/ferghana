@@ -1,23 +1,19 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" :inline="true" label-width="68px">
-      <el-form-item label="维度表名称" prop="dimensionNameZH" label-width="90px">
+    <el-form :model="queryParams" ref="queryForm" :inline="true" label-width="90px">
+      <el-form-item label="维表中文名" prop="dimensionNameZH" >
         <el-input v-model="queryParams.dimensionNameZH" placeholder="请输入维度表名称" clearable size="small"
           @keyup.enter.native="handleQuery" />
       </el-form-item>
-      <el-form-item label="维度表名" prop="dimensionName">
+      <el-form-item label="维表英文名" prop="dimensionName">
         <el-input v-model="queryParams.dimensionName" placeholder="请输入维度表名" clearable size="small"
           @keyup.enter.native="handleQuery" />
       </el-form-item>
-      <el-form-item label="连接器类型" prop="connectorType" label-width="90px">
+      <el-form-item label="连接器类型" prop="connectorType" >
         <el-select v-model="queryParams.connectorType" placeholder="请选择连接器类型" clearable size="small">
           <el-option v-for="dict in connectorTypeOptions" :key="dict.dictValue" :label="dict.dictLabel"
             :value="dict.dictValue" />
         </el-select>
-      </el-form-item>
-      <el-form-item label="描述" prop="description">
-        <el-input v-model="queryParams.description" placeholder="请输入描述" clearable size="small"
-          @keyup.enter.native="handleQuery" />
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
@@ -40,30 +36,21 @@
       </el-col>
     </el-row>
 
-    <el-table v-loading="loading" :data="tableList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" width="55" align="center" type="index" />
-      <el-table-column label="维表中文名" align="center" prop="dimensionNameZH" />
-      <el-table-column label="维表英文名" align="center" prop="dimensionName" />
-      <el-table-column label="连接器类型" align="center" prop="connectorType" :formatter="connectorTypeFormat" />
-      <el-table-column label="创建时间" align="center" prop="createTime" width="180">
+    <el-table v-loading="loading" :data="tableList" @selection-change="handleSelectionChange" @row-dblclick="handleDetail">
+      <el-table-column type="selection" width="30" align="center" />
+      <el-table-column label="维表中文名" align="left" prop="dimensionNameZH" />
+      <el-table-column label="维表英文名" align="left" prop="dimensionName" />
+      <el-table-column label="连接器类型" align="left" prop="connectorType" :formatter="connectorTypeFormat" />
+      <el-table-column label="新增人" align="center" width="130" prop="createBy"/>
+      <el-table-column label="修改人" align="center" width="130" prop="updateBy"/>
+      <el-table-column label="新增时间" align="center" prop="createTime" width="160">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="修改时间" align="center" prop="modifyTime" width="180">
+      <el-table-column label="修改时间" align="center" prop="updateTime" width="160">
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.modifyTime) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
-        <template slot-scope="scope">
-          <el-button size="mini" type="text" icon="el-icon-view" @click="handleDetail(scope.row)">详情
-          </el-button>
-          <el-button size="mini" type="text" icon="el-icon-edit" @click="handleUpdate(scope.row)">修改
-          </el-button>
-          <el-button size="mini" type="text" icon="el-icon-delete" @click="handleDelete(scope.row)">删除
-          </el-button>
+          <span>{{ parseTime(scope.row.updateTime) }}</span>
         </template>
       </el-table-column>
     </el-table>
@@ -987,7 +974,7 @@
           zookeeperAddress: undefined,
           rowkey: undefined,
           createTime: undefined,
-          modifyTime: undefined,
+          updateTime: undefined,
           hbaseSchemaDefine: undefined,
           dimensionNameZH: undefined,
           jdbcDynamicItem: [{

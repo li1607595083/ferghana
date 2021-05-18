@@ -10,6 +10,15 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
+      <el-form-item label="数据源英文名" prop="tableName">
+        <el-input
+          v-model="queryParams.tableName"
+          placeholder="请输入数据源英文名"
+          clearable
+          size="small"
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
       <el-form-item label="连接器类型" prop="connectorType" label-width="100px">
         <el-select
           v-model="queryParams.connectorType"
@@ -25,15 +34,7 @@
           />
         </el-select>
       </el-form-item>
-      <el-form-item label="描述" prop="description">
-        <el-input
-          v-model="queryParams.description"
-          placeholder="请输入描述"
-          clearable
-          size="small"
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
+
       <el-form-item style="padding-left: 12px">
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
         <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
@@ -55,6 +56,7 @@
           type="primary"
           icon="el-icon-edit"
           size="mini"
+          :disabled="single"
           @click="handleUpdate"
         >修改
         </el-button>
@@ -64,58 +66,34 @@
           type="primary"
           icon="el-icon-delete"
           size="mini"
+          :disabled="multiple"
           @click="handleDelete"
         >删除
         </el-button>
       </el-col>
     </el-row>
 
-    <el-table v-loading="loading" :data="sourceList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center"/>
-      <el-table-column label="序号" width="55" align="center" type="index"/>
-      <el-table-column label="数据源中文名" align="center" prop="dataSourceName"/>
-      <el-table-column label="数据源英文名" align="center" prop="tableName"/>
+    <el-table v-loading="loading" :data="sourceList" @selection-change="handleSelectionChange"  @row-dblclick="handleDetail">
+      <el-table-column type="selection" width="30" align="center"/>
+      <el-table-column label="数据源中文名" align="left" prop="dataSourceName"/>
+      <el-table-column label="数据源英文名" align="left" prop="tableName"/>
       <el-table-column
         label="连接器类型"
         align="center"
         prop="connectorType"
         :formatter="connectorTypeMatter"
       />
-      <el-table-column label="数据来源" align="center" prop="dataSource"/>
-      <el-table-column label="创建时间" align="center" prop="createTime" width="160">
+      <el-table-column label="数据来源" align="left" prop="dataSource"/>
+      <el-table-column label="新增人" align="center" width="130" prop="createBy"/>
+      <el-table-column label="修改人" align="center" width="130" prop="updateBy"/>
+      <el-table-column label="新增时间" align="center" prop="createTime" width="160">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="修改时间" align="center" prop="modifyTime" width="160">
+      <el-table-column label="修改时间" align="center" prop="updateTime" width="160">
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.modifyTime) }}</span>
-        </template>
-      </el-table-column>
-
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
-        <template slot-scope="scope">
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-view"
-            @click="handleDetail(scope.row)"
-          >详情
-          </el-button>
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-edit"
-            @click="handleUpdate(scope.row)"
-          >修改
-          </el-button>
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-delete"
-            @click="handleDelete(scope.row)"
-          >删除
-          </el-button>
+          <span>{{ parseTime(scope.row.updateTime) }}</span>
         </template>
       </el-table-column>
     </el-table>
@@ -131,7 +109,7 @@
     <!-- 添加或修改数据源表对话框 -->
     <el-dialog :title="title" :visible.sync="open" width="1100px" :close-on-click-modal="false">
       <el-form ref="form" :model="form" :rules="rules" label-width="130px" class="el-col-24">
-        <el-form-item label="数据源中文名" prop="dataSourceName" class="el-col-12">
+        <el-form-item label="数据源中文名" prop="dataSourceName" class="el-col-12" >
           <el-input v-model="form.dataSourceName" placeholder="请输入数据源中文名" :disabled="detailViem"/>
         </el-form-item>
         <el-form-item label="数据源英文名" prop="tableName" class="el-col-12">
@@ -183,8 +161,8 @@
           </el-form-item>
         </div>
         <div v-show="!connShow" class="el-col-24">
-          <el-form-item label="URL地址" prop="myAddress" class="el-col-12">
-            <el-input v-model="form.myAddress" placeholder="请输入URL地址" :disabled="detailViem"/>
+          <el-form-item :label="mysqlIPFlag?'ip地址':'URL地址'" prop="myAddress" class="el-col-12">
+            <el-input v-model="form.myAddress" :placeholder="mysqlIPFlag?'请输入ip地址':'请输入URL地址'" :disabled="detailViem"/>
           </el-form-item>
           <el-form-item label="端口" prop="port" class="el-col-12" v-show="mysqlPropertyShow">
             <el-input v-model="form.port" placeholder="请输入端口号"  :disabled="detailViem"/>
@@ -320,6 +298,8 @@
         sysDataBaseTypes: [],
         // mysql-Port展示字段
         mysqlPropertyShow:false,
+        // 当选择mysql-cdc时为true
+        mysqlIPFlag:true,
 
         // dynamicItem: [{
         //   schemaDefine:"",
@@ -387,7 +367,7 @@
             {required: true, message: "kafka地址不能为空", trigger: "blur"}
           ],
           myAddress: [
-            {required: true, message: "URL地址不能为空", trigger: "blur"}
+            {required: true, message: "地址不能为空", trigger: "blur"}
           ],
           port: [
             {required: true, message: "端口不能为空", trigger: "blur"}
@@ -479,6 +459,7 @@
           this.rules.myTableName[0].required = true;
           this.rules.scanAll[0].required = true;
           this.rules.handleData[0].required = true;
+          this.mysqlIPFlag = true;
         } else if (value === '03'){
           this.mysqlPropertyShow = false;
           this.rules.topicName[0].required = false;
@@ -495,6 +476,7 @@
           this.rules.myTableName[0].required = true;
           this.rules.scanAll[0].required = true;
           this.rules.handleData[0].required = true;
+          this.mysqlIPFlag = false;
         }
       },
 
@@ -671,6 +653,7 @@
       },
       /** 详情按钮操作 */
       handleDetail(row) {
+        console.log("============");
         this.reset();
         const dataSourceId = row.dataSourceId || this.ids;
         getSource(dataSourceId).then(response => {

@@ -10,6 +10,11 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
+      <el-form-item label="结果表英文名" prop="tableName">
+        <el-input v-model="queryParams.tableName" placeholder="请输入英文名" clearable size="small"
+                  @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
       <el-form-item label="连接器类型" prop="connectorType" label-width="100px">
         <el-select
           v-model="queryParams.connectorType"
@@ -24,11 +29,6 @@
             :value="dictSource.dictValue"
           />
         </el-select>
-      </el-form-item>
-      <el-form-item label="描述" prop="description">
-        <el-input v-model="queryParams.description" placeholder="请输入描述" clearable size="small"
-                  @keyup.enter.native="handleQuery"
-        />
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
@@ -66,65 +66,28 @@
         >删除
         </el-button>
       </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          icon="el-icon-download"
-          size="mini"
-          @click="handleExport"
-          v-hasPermi="['system:source:export']"
-        >导出
-        </el-button>
-      </el-col>
     </el-row>
 
-    <el-table v-loading="loading" :data="sourceList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center"/>
-      <el-table-column label="序号" width="55" align="center" type="index"/>
-      <el-table-column label="结果表中文名" align="center" prop="dataSourceName"/>
-      <el-table-column label="结果表英文名" align="center" prop="tableName"/>
+    <el-table v-loading="loading" :data="sourceList" @selection-change="handleSelectionChange" @row-dblclick="handleDetail">
+      <el-table-column type="selection" width="30" align="center"/>
+      <el-table-column label="结果表中文名" align="left" prop="dataSourceName"/>
+      <el-table-column label="结果表英文名" align="left" prop="tableName"/>
       <el-table-column
         label="连接器类型"
-        align="center"
+        align="left"
         prop="connectorType"
         :formatter="connectorTypeMatter"
       />
-      <el-table-column label="创建时间" align="center" prop="createTime" width="160">
+      <el-table-column label="新增人" align="center" width="130" prop="createBy"/>
+      <el-table-column label="修改人" align="center" width="130" prop="updateBy"/>
+      <el-table-column label="新增时间" align="center" prop="createTime" width="160">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="修改时间" align="center" prop="modifyTime" width="160">
+      <el-table-column label="修改时间" align="center" prop="updateTime" width="160">
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.modifyTime) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
-        <template slot-scope="scope">
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-view"
-            @click="handleDetail(scope.row)"
-            v-hasPermi="['system:source:edit']"
-          >详情
-          </el-button>
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-edit"
-            @click="handleUpdate(scope.row)"
-            v-hasPermi="['system:source:edit']"
-          >修改
-          </el-button>
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-delete"
-            @click="handleDelete(scope.row)"
-            v-hasPermi="['system:source:remove']"
-          >删除
-          </el-button>
+          <span>{{ parseTime(scope.row.updateTime) }}</span>
         </template>
       </el-table-column>
     </el-table>
@@ -273,7 +236,7 @@
           schemaDefine: undefined,
           dataBaseType: undefined,
           description: undefined,
-          modifyTime: undefined
+          updateTime: undefined
         },
         // 表单参数
         form: {},
@@ -464,7 +427,7 @@
           hbaseZKAddress: undefined,
 
           createTime: undefined,
-          modifyTime: undefined,
+          updateTime: undefined,
         };
         this.resetForm("form");
         this.form.connectorType = "01";
