@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.base.Strings;
+import com.skyon.common.utils.SecurityUtils;
 import com.skyon.common.utils.StringUtils;
 import com.skyon.project.system.domain.TDataSource;
 import com.skyon.project.system.domain.TDatasourceField;
@@ -96,9 +97,8 @@ public class TDataSourceServiceImpl implements ITDataSourceService {
     public int insertTDataSource(TDataSource tDataSource) {
         tranSchemaJson(tDataSource);
         tDataSource.setCreateTableSql(joinCreateTableSql(tDataSource));
-//        if (tDataSource.getConnectorType().equals("02")){
         tDataSource.setHandleData(JSON.toJSONString(tDataSource.getHandleData()));
-//        }
+        tDataSource.setCreateBy(SecurityUtils.getUsername());
         return tDataSourceMapper.insertTDataSource(tDataSource);
     }
 
@@ -213,10 +213,8 @@ public class TDataSourceServiceImpl implements ITDataSourceService {
     public int updateTDataSource(TDataSource tDataSource) {
         tranSchemaJson(tDataSource);
         tDataSource.setCreateTableSql(joinCreateTableSql(tDataSource));
-//        if (tDataSource.getConnectorType().equals("02")){
         tDataSource.setHandleData(JSON.toJSONString(tDataSource.getHandleData()));
-//        }
-        tDataSource.setModifyTime(new Date());
+        tDataSource.setUpdateBy(SecurityUtils.getUsername());
         return tDataSourceMapper.updateTDataSource(tDataSource);
     }
 

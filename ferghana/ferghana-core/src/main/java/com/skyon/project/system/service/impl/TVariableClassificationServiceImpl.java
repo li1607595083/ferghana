@@ -6,6 +6,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.skyon.common.utils.DateUtils;
+import com.skyon.common.utils.SecurityUtils;
 import com.skyon.project.system.domain.TDimensionTable;
 import com.skyon.project.system.mapper.TDimensionTableMapper;
 import joptsimple.internal.Strings;
@@ -63,6 +64,7 @@ public class TVariableClassificationServiceImpl implements ITVariableClassificat
         tVariableClassification.setCreateTime(DateUtils.getNowDate());
         setDimensionRelation(tVariableClassification);
         setSourceRelation(tVariableClassification);
+        tVariableClassification.setCreateBy(SecurityUtils.getUsername());
         return tVariableClassificationMapper.insertTVariableClassification(tVariableClassification);
     }
 
@@ -82,9 +84,9 @@ public class TVariableClassificationServiceImpl implements ITVariableClassificat
      */
     @Override
     public int updateTVariableClassification(TVariableClassification tVariableClassification) {
-        tVariableClassification.setModifyTime(new Date());
         setDimensionRelation(tVariableClassification);
         setSourceRelation(tVariableClassification);
+        tVariableClassification.setUpdateBy(SecurityUtils.getUsername());
         return tVariableClassificationMapper.updateTVariableClassification(tVariableClassification);
     }
 

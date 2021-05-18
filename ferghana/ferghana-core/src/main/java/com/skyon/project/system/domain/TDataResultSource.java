@@ -95,9 +95,6 @@ public class TDataResultSource extends BaseEntity
     @Excel(name = "描述")
     private String description;
 
-    /** 修改时间 */
-    private Date modifyTime;
-
     @Transient
     private Object[] dynamicItem;
 
@@ -284,16 +281,6 @@ public class TDataResultSource extends BaseEntity
         this.dynamicItem = dynamicItem;
     }
 
-    public void setModifyTime(Date modifyTime)
-    {
-        this.modifyTime = modifyTime;
-    }
-
-    public Date getModifyTime() 
-    {
-        return modifyTime;
-    }
-
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -312,7 +299,6 @@ public class TDataResultSource extends BaseEntity
             .append("dataBaseType", getDataBaseType())
             .append("description", getDescription())
             .append("createTime", getCreateTime())
-            .append("modifyTime", getModifyTime())
             .toString();
     }
 }

@@ -14,7 +14,9 @@
         <result property="sourceRelation"    column="source_relation"    />
         <result property="description"    column="description"    />
         <result property="createTime"    column="create_time"    />
-        <result property="modifyTime"    column="modify_time"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="updateBy"    column="update_by"    />
 <!--        关联字段 -->
         <result property="schemaDefine"    column="schema_define"    />
         <result property="connectorType"    column="connector_type"    />
@@ -41,7 +43,7 @@
 
     <sql id="selectTVariableClassificationVo">
         select variable_classification_id, variable_classification_name, source_dab_relation, source_two_dab_relation, source_dab_field,dimension_relation,source_relation,
-               d.description, d.create_time, d.modify_time,t.schema_define,t.connector_type
+               d.description, d.create_time, d.update_time,d.create_by,d.update_by,t.schema_define,t.connector_type
         from t_variable_classification d
                  left join t_data_source t on d.source_dab_relation = t.table_name
     </sql>
@@ -85,8 +87,8 @@
             <if test="sourceDabField != null  and sourceDabField != ''">source_dab_field,</if>
             <if test="dimensionRelation != null  and dimensionRelation != ''">dimension_relation,</if>
             <if test="sourceRelation != null  and sourceRelation != ''">source_relation,</if>
-            <if test="createTime != null ">create_time,</if>
-            <if test="modifyTime != null ">modify_time,</if>
+            <if test="createBy != null ">create_by,</if>
+            create_time
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="variableClassificationName != null  and variableClassificationName != ''">#{variableClassificationName},</if>
@@ -96,8 +98,8 @@
             <if test="sourceDabField != null  and sourceDabField != ''">#{sourceDabField},</if>
             <if test="dimensionRelation != null  and dimensionRelation != ''">#{dimensionRelation},</if>
             <if test="sourceRelation != null  and sourceRelation != ''">#{sourceRelation},</if>
-            <if test="createTime != null ">#{createTime},</if>
-            <if test="modifyTime != null ">#{modifyTime},</if>
+            <if test="createBy != null ">#{createBy},</if>
+            sysdate()
         </trim>
     </insert>
 
@@ -111,8 +113,9 @@
             <if test="sourceDabField != null">source_Dab_Field = #{sourceDabField},</if>
             <if test="dimensionRelation != null">dimension_Relation = #{dimensionRelation},</if>
             <if test="sourceRelation != null">source_Relation = #{sourceRelation},</if>
-            <if test="createTime != null ">create_time = #{createTime},</if>
-            <if test="modifyTime != null ">modify_time = #{modifyTime},</if>
+            <if test="updateBy != null ">update_by = #{updateBy},</if>
+            update_time=sysdate()
+
         </trim>
         where variable_classification_id = #{variableClassificationId}
     </update>

@@ -34,7 +34,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="jdbcCreateSql"    column="jdbc_create_sql"    />
         <result property="esCreateSql"    column="es_create_sql"    />
         <result property="createTime"    column="create_time"    />
-        <result property="modifyTime"    column="modify_time"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="updateBy"    column="update_by"    />
     </resultMap>
 
     <resultMap type="java.util.Map" id="TDimensionTableResultGroup">
@@ -45,7 +47,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="selectTDimensionTableVo">
         select dimension_id, dimension_name, connector_type, data_source, description, redis_address, redis_data_type, redis_key,hbase_create_sql,es_create_sql,jdbc_create_sql,cluster_Name,
          redis_key_field,redis_Schema_Define, jdbc_url_address, jdbc_drive, jdbc_user_name, jdbc_user_pwd,jdbc_Primary_Key,es_Index,es_Url_Address,es_Primary_Key, schema_define, zookeeper_address,
-          hbase_table_name,hbase_schema_define,rowkey,dimension_Name_ZH, create_time, modify_time from t_dimension_table
+          hbase_table_name,hbase_schema_define,rowkey,dimension_Name_ZH, create_time, update_time,create_by,update_by from t_dimension_table
     </sql>
 
     <select id="selectTDimensionTableList" parameterType="TDimensionTable" resultMap="TDimensionTableResult">
@@ -122,8 +124,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="jdbcCreateSql != null  and jdbcCreateSql != ''">jdbc_create_sql,</if>
             <if test="esCreateSql != null  and esCreateSql != ''">es_create_sql,</if>
             <if test="rowkey != null  and rowkey != ''">rowkey,</if>
-            <if test="createTime != null ">create_time,</if>
-            <if test="modifyTime != null ">modify_time,</if>
+            <if test="createBy != null  and createBy != ''">create_by,</if>
+            create_time
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="dimensionName != null  and dimensionName != ''">#{dimensionName},</if>
@@ -153,8 +155,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="jdbcCreateSql != null  and jdbcCreateSql != ''">#{jdbcCreateSql},</if>
             <if test="esCreateSql != null  and esCreateSql != ''">#{esCreateSql},</if>
             <if test="rowkey != null  and rowkey != ''">#{rowkey},</if>
-            <if test="createTime != null ">#{createTime},</if>
-            <if test="modifyTime != null ">#{modifyTime},</if>
+            <if test="createBy != null  and createBy != ''">#{createBy},</if>
+            sysdate()
          </trim>
     </insert>
 
@@ -187,8 +189,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="hbaseCreateSql != null  and hbaseCreateSql != ''">hbase_create_sql = #{hbaseCreateSql},</if>
             <if test="jdbcCreateSql != null  and jdbcCreateSql != ''">jdbc_create_sql = #{jdbcCreateSql},</if>
             <if test="rowkey != null  and rowkey != ''">rowkey = #{rowkey},</if>
-            <if test="createTime != null ">create_time = #{createTime},</if>
-            <if test="modifyTime != null ">modify_time = #{modifyTime},</if>
+            <if test="updateBy != null  and updateBy != ''">update_by = #{updateBy},</if>
+            update_time = sysdate()
         </trim>
         where dimension_id = #{dimensionId}
     </update>

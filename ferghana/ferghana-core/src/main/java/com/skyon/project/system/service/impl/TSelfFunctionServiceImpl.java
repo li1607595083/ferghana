@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.base.Strings;
 import com.skyon.common.exception.CustomException;
+import com.skyon.common.utils.SecurityUtils;
 import com.skyon.project.system.domain.TSelfFunction;
 import com.skyon.project.system.mapper.TSelfFunctionMapper;
 import com.skyon.project.system.service.ITSelfFunctionService;
@@ -91,6 +92,7 @@ public class TSelfFunctionServiceImpl implements ITSelfFunctionService {
      */
     @Override
     public int insertTSelfFunction(TSelfFunction tSelfFunction) {
+        tSelfFunction.setCreateBy(SecurityUtils.getUsername());
         return tSelfFunctionMapper.insertTSelfFunction(tSelfFunction);
     }
 
@@ -108,13 +110,13 @@ public class TSelfFunctionServiceImpl implements ITSelfFunctionService {
         if (file.exists() && file.isFile() && !filePath.equals(jarPath)) {
             file.delete();
         }
-        tSelfFunction.setUpdateTime(new Date());
+        tSelfFunction.setUpdateBy(SecurityUtils.getUsername());
         return tSelfFunctionMapper.updateTSelfFunction(tSelfFunction);
     }
 
     @Override
     public int updateTSelfFunction(TSelfFunction tSelfFunction) {
-        tSelfFunction.setUpdateTime(new Date());
+        tSelfFunction.setUpdateBy(SecurityUtils.getUsername());
         return tSelfFunctionMapper.updateTSelfFunction(tSelfFunction);
     }
 

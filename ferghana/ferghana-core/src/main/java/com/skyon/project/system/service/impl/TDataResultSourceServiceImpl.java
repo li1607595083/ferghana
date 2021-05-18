@@ -3,6 +3,7 @@ package com.skyon.project.system.service.impl;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.base.Strings;
 import com.skyon.common.utils.DateUtils;
+import com.skyon.common.utils.SecurityUtils;
 import com.skyon.project.system.domain.TDataResultSource;
 import com.skyon.project.system.mapper.TDataResultSourceMapper;
 import com.skyon.project.system.service.ITDataResultSourceService;
@@ -84,7 +85,7 @@ public class TDataResultSourceServiceImpl implements ITDataResultSourceService {
      */
     @Override
     public int insertTDataResultSource(TDataResultSource tDataResultSource) {
-        tDataResultSource.setCreateTime(DateUtils.getNowDate());
+        tDataResultSource.setCreateBy(SecurityUtils.getUsername());
 //        tranSchemaJson(tDataResultSource);
         return tDataResultSourceMapper.insertTDataResultSource(tDataResultSource);
     }
@@ -98,7 +99,7 @@ public class TDataResultSourceServiceImpl implements ITDataResultSourceService {
     @Override
     public int updateTDataResultSource(TDataResultSource tDataResultSource) {
         tranSchemaJson(tDataResultSource);
-        tDataResultSource.setModifyTime(new Date());
+        tDataResultSource.setUpdateBy(SecurityUtils.getUsername());
         return tDataResultSourceMapper.updateTDataResultSource(tDataResultSource);
     }
 

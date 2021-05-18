@@ -130,10 +130,6 @@ public class TVariableCenter extends BaseEntity {
 
 
 
-    /**
-     * 修改时间
-     */
-    private Date modifyTime;
 
     // 数据源表名
     private String sourceTableName;
@@ -465,14 +461,6 @@ public class TVariableCenter extends BaseEntity {
     }
 
 
-    public void setModifyTime(Date modifyTime) {
-        this.modifyTime = modifyTime;
-    }
-
-    public Date getModifyTime() {
-        return modifyTime;
-    }
-
     public String getStatisticsCountModel() {
         return statisticsCountModel;
     }
@@ -562,7 +550,6 @@ public class TVariableCenter extends BaseEntity {
                 ", watermark='" + watermark + '\'' +
                 ", sqlContext='" + sqlContext + '\'' +
                 ", deriveBaseVariable='" + deriveBaseVariable + '\'' +
-                ", modifyTime=" + modifyTime +
                 ", sourceTableName='" + sourceTableName + '\'' +
                 ", variableClassificationName='" + variableClassificationName + '\'' +
                 ", selfFunctionNameCn='" + selfFunctionNameCn + '\'' +

@@ -130,10 +130,6 @@ public class TVariableClassification extends BaseEntity
         this.schemaPrimaryKey = schemaPrimaryKey;
     }
 
-    /** 修改时间 */
-    @Excel(name = "修改时间", width = 30, dateFormat = "yyyy-MM-dd")
-    private Date modifyTime;
-
     public void setVariableClassificationId(Long variableClassificationId)
     {
         this.variableClassificationId = variableClassificationId;
@@ -181,15 +177,6 @@ public class TVariableClassification extends BaseEntity
     {
         return description;
     }
-    public void setModifyTime(Date modifyTime)
-    {
-        this.modifyTime = modifyTime;
-    }
-
-    public Date getModifyTime()
-    {
-        return modifyTime;
-    }
 
     @Override
     public String toString() {
@@ -201,7 +188,6 @@ public class TVariableClassification extends BaseEntity
                 ", dimensionRelation='" + dimensionRelation + '\''+
                 ", sourceRelation='" + sourceRelation + '\''+
                 ", description='" + description + '\'' +
-                ", modifyTime=" + modifyTime +
                 '}';
     }
 }

@@ -96,7 +96,6 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
      */
     @Override
     public int insertTVariableCenter(TVariableCenter tVariableCenter) {
-        tVariableCenter.setCreateTime(DateUtils.getNowDate());
         tVariableCenter.setCreateBy(SecurityUtils.getUsername());
         insertORupdate(tVariableCenter);
         return tVariableCenterMapper.insertTVariableCenter(tVariableCenter);
@@ -493,8 +492,8 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
      */
     @Override
     public int updateTVariableCenter(TVariableCenter tVariableCenter) {
-        tVariableCenter.setModifyTime(new Date());
         insertORupdate(tVariableCenter);
+        tVariableCenter.setUpdateBy(SecurityUtils.getUsername());
         return tVariableCenterMapper.updateTVariableCenter(tVariableCenter);
     }
 

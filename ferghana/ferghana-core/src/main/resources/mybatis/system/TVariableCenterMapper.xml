@@ -45,8 +45,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="testDimensionTableCol"    column="test_dimension_Table_Col"    />
 
         <result property="createTime"    column="create_time"    />
-        <result property="modifyTime"    column="modify_time"    />
-        <result property="createBy"    column="create_By"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="updateBy"    column="update_by"    />
         <result property="variableClassificationName"    column="variable_classification_name"    />
     </resultMap>
 
@@ -54,9 +55,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select variable_id, variable_name, variable_name_EN,variable_classification, variable_type, s.description,version_Num,version_Show,
          variable_Model_Type, variable_factor, cluster_Name,redis_function,redis_value,redis_key,redis_Self_Function_item,statistics_Self_Function_item,
          statistics_count_model,statistics_model,statistics_num,statistics_cycle,user_Defined_Sql,derive_Variable_Sql,redis_Element_Distinct,global_variable_start_time,global_variable_stop_time,
-         statistics_condition_option,statistics_conditions,process_model,process_input_params,sql_context,derive_base_Variable,create_By,
+         statistics_condition_option,statistics_conditions,process_model,process_input_params,sql_context,derive_base_Variable,
          test_source_Table_Col,test_dimension_Table_Col,statistics_Group_Item,derive_Variable_Model_Type,derive_Process_Model,derive_Input_Params,
-          s.create_time, s.modify_time,d.variable_classification_name from t_variable_center s
+          s.create_time, s.update_time,s.create_by,s.update_by,d.variable_classification_name from t_variable_center s
           left join t_variable_classification d on s.variable_classification = d.variable_classification_id
     </sql>
 
@@ -157,9 +158,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="testSourceTableCol != null  and testSourceTableCol!=''">test_source_Table_Col,</if>
             <if test="testDimensionTableCol != null  and testDimensionTableCol!=''">test_dimension_Table_Col,</if>
             <if test="createBy != null  and createBy!=''">create_By,</if>
-
-            <if test="createTime != null ">create_time,</if>
-            <if test="modifyTime != null ">modify_time,</if>
+            create_time
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="variableName != null  and variableName != ''">#{variableName},</if>
@@ -200,9 +199,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="testSourceTableCol != null  and testSourceTableCol!=''">#{testSourceTableCol},</if>
             <if test="testDimensionTableCol != null  and testDimensionTableCol!=''">#{testDimensionTableCol},</if>
             <if test="createBy != null  and createBy!=''">#{createBy},</if>
-
-            <if test="createTime != null ">#{createTime},</if>
-            <if test="modifyTime != null ">#{modifyTime},</if>
+            sysdate()
          </trim>
     </insert>
 
@@ -251,9 +248,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="deriveVariableSql != null  and deriveVariableSql !=''">derive_Variable_Sql = #{deriveVariableSql},</if>
             <if test="testSourceTableCol != null  and testSourceTableCol != ''">test_source_Table_Col = #{testSourceTableCol},</if>
             <if test="testDimensionTableCol != null  and testDimensionTableCol != ''">test_dimension_Table_Col = #{testDimensionTableCol},</if>
-
-            <if test="createTime != null ">create_time = #{createTime},</if>
-            <if test="modifyTime != null ">modify_time = #{modifyTime},</if>
+            <if test="updateBy != null  and updateBy != ''">update_by = #{updateBy},</if>
+            update_time = sysdate()
         </trim>
         where variable_id = #{variableId}
     </update>

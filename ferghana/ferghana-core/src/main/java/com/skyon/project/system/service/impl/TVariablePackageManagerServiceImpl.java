@@ -10,6 +10,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.skyon.common.exception.CustomException;
 import com.skyon.common.utils.DateUtils;
+import com.skyon.common.utils.SecurityUtils;
 import com.skyon.common.utils.StringUtils;
 import com.skyon.project.system.domain.*;
 import com.skyon.project.system.mapper.*;
@@ -104,8 +105,8 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
      */
     @Override
     public int insertTVariablePackageManager(Map map, TVariablePackageManager pkManager, String runFlag) {
-        pkManager.setCreateTime(DateUtils.getNowDate());
         pkManager.setRuningState("0"); // 初始化都是0 停止
+        pkManager.setCreateBy(SecurityUtils.getUsername());
 
         if (pkManager.getVariablePackType().equals("03")) { // oraclecdc
             pkManager.setResultTableSql(editOraclecdcSql(map, pkManager));
@@ -385,7 +386,7 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
      */
     @Override
     public int updateTVariablePackageManager(Map map, TVariablePackageManager tVariablePackageManager) {
-        tVariablePackageManager.setModifyTime(new Date());
+        tVariablePackageManager.setUpdateBy(SecurityUtils.getUsername());
         Map map1 = setResultTableSql(tVariablePackageManager, "start", "");
         tVariablePackageManager.setResultTableSql(map1.get("resultSql").toString());
         tVariablePackageManager.setVariableId(JSON.toJSONString(tVariablePackageManager.getVariableId()));

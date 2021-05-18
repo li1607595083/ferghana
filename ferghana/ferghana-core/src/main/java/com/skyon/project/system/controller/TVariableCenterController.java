@@ -138,7 +138,6 @@ public class TVariableCenterController extends BaseController {
             BigDecimal bigDecimal = new BigDecimal(old.getVersionNum()).add(new BigDecimal("1.0"));
             tVariableCenter.setVersionNum(bigDecimal.toString());
             tVariableCenter.setVersionShow("1");
-            tVariableCenter.setModifyTime(null);
             num = tVariableCenterService.insertTVariableCenter(tVariableCenter);
             // 新增日志
             TVariableOperateLog log = new TVariableOperateLog();

@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.base.Strings;
 import com.skyon.common.utils.DateUtils;
+import com.skyon.common.utils.SecurityUtils;
 import com.skyon.common.utils.StringUtils;
 import com.skyon.project.system.domain.TDatasourceField;
 import com.skyon.project.system.domain.TDimensionTable;
@@ -255,6 +256,7 @@ public class TDimensionTableServiceImpl implements ITDimensionTableService {
         tDimensionTable.setCreateTime(DateUtils.getNowDate());
         tranSchemaJson(tDimensionTable);
         joinDimensionTableSql(tDimensionTable);
+        tDimensionTable.setCreateBy(SecurityUtils.getUsername());
         return tDimensionTableMapper.insertTDimensionTable(tDimensionTable);
     }
 
@@ -374,8 +376,8 @@ public class TDimensionTableServiceImpl implements ITDimensionTableService {
     @Override
     public int updateTDimensionTable(TDimensionTable tDimensionTable) {
         tranSchemaJson(tDimensionTable);
-        tDimensionTable.setModifyTime(new Date());
         joinDimensionTableSql(tDimensionTable);
+        tDimensionTable.setUpdateBy(SecurityUtils.getUsername());
         return tDimensionTableMapper.updateTDimensionTable(tDimensionTable);
     }
 
