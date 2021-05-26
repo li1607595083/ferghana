@@ -155,7 +155,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="resultTableSql != null  and resultTableSql != ''">result_Table_Sql = #{resultTableSql},</if>
             <if test="savePointDir != null">save_Point_Dir = #{savePointDir},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
-            updateTime=sysdate()
+            update_time=sysdate()
 
         </trim>
         where variable_pack_id = #{variablePackId}

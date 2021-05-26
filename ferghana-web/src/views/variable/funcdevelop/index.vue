@@ -73,19 +73,19 @@
     </el-row>
 
     <el-table v-loading="loading" :data="functionList" @selection-change="handleSelectionChange" @row-dblclick="handleDetail">
-      <el-table-column type="selection" width="30" align="center"/>
+      <el-table-column type="selection" width="45" align="center"/>
       <el-table-column label="函数中文名" align="left" prop="selfFunctionNameCn"/>
       <el-table-column label="函数英文名" align="left" prop="functionName"/>
       <el-table-column label="函数类型" align="left" prop="functionType" :formatter="functionTypeFormat"/>
       <el-table-column label="函数描述" align="left" prop="selfFunctionDesc"/>
       <el-table-column label="新增人" align="center" width="130" prop="createBy"/>
       <el-table-column label="修改人" align="center" width="130" prop="updateBy"/>
-      <el-table-column label="新增时间" align="center" prop="createTime" width="160">
+      <el-table-column label="新增时间" align="center" prop="createTime" width="170">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="修改时间" align="center" prop="updateTime" width="160">
+      <el-table-column label="修改时间" align="center" prop="updateTime" width="170">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.updateTime) }}</span>
         </template>

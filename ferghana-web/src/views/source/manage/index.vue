@@ -74,7 +74,7 @@
     </el-row>
 
     <el-table v-loading="loading" :data="sourceList" @selection-change="handleSelectionChange"  @row-dblclick="handleDetail">
-      <el-table-column type="selection" width="30" align="center"/>
+      <el-table-column type="selection" width="45" align="center"/>
       <el-table-column label="数据源中文名" align="left" prop="dataSourceName"/>
       <el-table-column label="数据源英文名" align="left" prop="tableName"/>
       <el-table-column
@@ -86,12 +86,12 @@
       <el-table-column label="数据来源" align="left" prop="dataSource"/>
       <el-table-column label="新增人" align="center" width="130" prop="createBy"/>
       <el-table-column label="修改人" align="center" width="130" prop="updateBy"/>
-      <el-table-column label="新增时间" align="center" prop="createTime" width="160">
+      <el-table-column label="新增时间" align="center" prop="createTime" width="170">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="修改时间" align="center" prop="updateTime" width="160">
+      <el-table-column label="修改时间" align="center" prop="updateTime" width="170">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.updateTime) }}</span>
         </template>

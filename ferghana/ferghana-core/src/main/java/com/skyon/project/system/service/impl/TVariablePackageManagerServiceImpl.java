@@ -160,7 +160,7 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
 
         Map parameter = new HashMap();
         parameter.put("timezone", "UTC");
-        parameter.put("topic", resultSource.getTopicName());
+        parameter.put("topic", resultSource.getTableName());
         parameter.put("producerSettings", producerSettings);
 
         Map writer = new HashMap();
@@ -171,11 +171,13 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
         Object createTableSql = map.get("createTableSql");
         JSONObject jsonObject = JSON.parseObject((String) createTableSql);
         JSONObject job = (JSONObject) jsonObject.get("job");
-        job.put("schema", joinSchema);
+//        job.put("schema", joinSchema);
         JSONArray content = (JSONArray) job.get("content");
         for (int i = 0; i < content.size(); i++) {
             JSONObject o = (JSONObject) content.get(i);
             o.put("writer", writer);
+            JSONObject reader = (JSONObject) o.get("reader");
+            reader.put("schema", joinSchema);
         }
 
         return JSON.toJSONString(jsonObject);
@@ -387,10 +389,18 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
     @Override
     public int updateTVariablePackageManager(Map map, TVariablePackageManager tVariablePackageManager) {
         tVariablePackageManager.setUpdateBy(SecurityUtils.getUsername());
-        Map map1 = setResultTableSql(tVariablePackageManager, "start", "");
-        tVariablePackageManager.setResultTableSql(map1.get("resultSql").toString());
-        tVariablePackageManager.setVariableId(JSON.toJSONString(tVariablePackageManager.getVariableId()));
-        tVariablePackageManager.setOriginalVariableSql(joinOriginalVariableSql(map, tVariablePackageManager));
+        if (tVariablePackageManager.getVariablePackType().equals("03")) { // oraclecdc
+            tVariablePackageManager.setResultTableSql(editOraclecdcSql(map, tVariablePackageManager));
+            tVariablePackageManager.setVariableId(null);
+        } else if (tVariablePackageManager.getVariablePackType().equals("02")) { // mysqlcdc
+            tVariablePackageManager.setResultTableSql(setMysqlResultSql(tVariablePackageManager));
+            tVariablePackageManager.setVariableId(null);
+        } else if (tVariablePackageManager.getVariablePackType().equals("01")) { // 一般变量包
+            Map map1 = setResultTableSql(tVariablePackageManager, "start", "");
+            tVariablePackageManager.setResultTableSql(map1.get("resultSql").toString());
+            tVariablePackageManager.setVariableId(JSON.toJSONString(tVariablePackageManager.getVariableId()));
+            tVariablePackageManager.setOriginalVariableSql(joinOriginalVariableSql(map, tVariablePackageManager));
+        }
         ArrayList array = (ArrayList) tVariablePackageManager.getOriginalVariable();
         if (array != null && array.size() > 0) {
             tVariablePackageManager.setOriginalVariable(JSON.toJSONString(tVariablePackageManager.getOriginalVariable()));
@@ -881,7 +891,7 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
     @Override
     public String[] joinOraclePath(TVariablePackageManager pkManager){
         Map mapParam = new HashMap();
-        mapParam.put("sinkSql", pkManager.getResultTableSql());
+        mapParam.put("sinkSql", JSON.parseObject(pkManager.getResultTableSql()));
         // 启动资源配置
         String source = sourceConfiguration(pkManager);
         // point 的配置

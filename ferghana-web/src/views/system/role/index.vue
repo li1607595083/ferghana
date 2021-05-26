@@ -116,13 +116,13 @@
             @click="handleUpdate(scope.row)"
             v-hasPermi="['system:role:edit']"
           >修改</el-button>
-<!--          <el-button-->
-<!--            size="mini"-->
-<!--            type="text"-->
-<!--            icon="el-icon-circle-check"-->
-<!--            @click="handleDataScope(scope.row)"-->
-<!--            v-hasPermi="['system:role:edit']"-->
-<!--          >数据权限</el-button>-->
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-circle-check"
+            @click="handleDataScope(scope.row)"
+            v-hasPermi="['system:role:edit']"
+          >数据权限</el-button>
           <el-button
             size="mini"
             type="text"

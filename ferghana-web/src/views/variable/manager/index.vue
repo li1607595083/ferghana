@@ -79,7 +79,7 @@
       </el-row>
 
       <el-table v-loading="loading" :data="centerList" @selection-change="handleSelectionChange" @row-dblclick="versionDetail">
-        <el-table-column type="selection" width="55" align="left" />
+        <el-table-column type="selection" width="45" align="left" />
         <el-table-column label="变量中文名" align="left" header-align="left" prop="variableName"/>
         <el-table-column label="变量英文名"  width="200" align="left" prop="variableNameEn"/>
         <el-table-column label="变量分类"  width="200" align="left" prop="variableClassificationName"/>

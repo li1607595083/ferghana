@@ -69,7 +69,7 @@ public class TVariableClassificationController extends BaseController
     /**
      * 新增变量分类
      */
-    @PreAuthorize("@ss.hasPermi('system:classification:add')")
+//    @PreAuthorize("@ss.hasPermi('system:classification:add')")
     @Log(title = "变量分类", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody TVariableClassification tVariableClassification)
