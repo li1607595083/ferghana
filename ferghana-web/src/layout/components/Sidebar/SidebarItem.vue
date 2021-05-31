@@ -1,10 +1,10 @@
 <template>
-  <div v-if="!item.hidden" class="menu-wrapper" :class="{'horizontal-menu':horizontal}">
+  <div v-if="!item.hidden" class="menu-wrapper" :class="{'horizontal-menu':menuLayout}">
     <template
       v-if="hasOneShowingChild(item.children,item) && (!onlyOneChild.children||onlyOneChild.noShowingChildren)&&!item.alwaysShow">
       <app-link v-if="onlyOneChild.meta" :to="resolvePath(onlyOneChild.path)">
         <el-menu-item :index="resolvePath(onlyOneChild.path)" :class="{'submenu-title-noDropdown':!isNest}">
-          <item :icon="onlyOneChild.meta.icon||(item.meta&&item.meta.icon)" :title="onlyOneChild.meta.title"/>
+          <item :icon="onlyOneChild.meta.icon||(item.meta&&item.meta.icon)" :title="onlyOneChild.meta.title" />
         </el-menu-item>
       </app-link>
     </template>
@@ -20,6 +20,9 @@
 </template>
 
 <script>
+  import {
+    mapState
+  } from 'vuex'
   import path from 'path'
   import {
     isExternal
@@ -33,6 +36,11 @@
     components: {
       Item,
       AppLink
+    },
+    computed: {
+      ...mapState({
+        menuLayout: state => state.settings.menuLayout
+      })
     },
     mixins: [FixiOSBug],
     props: {
@@ -48,10 +56,6 @@
       basePath: {
         type: String,
         default: ''
-      },
-      horizontal: {
-        type: Boolean,
-        default: true
       }
     },
     data() {
@@ -102,6 +106,7 @@
 
 <style lang="scss" scoped>
   @import "~@/assets/styles/variables.scss";
+
   .horizontal-menu {
 
     .el-submenu__title {
@@ -110,28 +115,56 @@
         padding-right: 15px;
         color: $menuTextHorizontal !important;
       }
+
       & * {
         color: $subMenuTextHorizontal !important;
       }
     }
 
-    & :hover{
-      background-color: $menuBgActiveHorizontal !important;
+    &>.el-submenu,
+    .el-menu-item {
+      &:hover {
+        background-color: $menuBgActiveHorizontal !important;
+      }
+
+      & :hover {
+        background-color: $menuBgActiveHorizontal !important;
+      }
+
+      &:hover * {
+        background-color: rgba(0, 0, 0, 0) !important;
+      }
     }
 
-    & :hover * {
-      color: $menuActiveTextHorizontal !important;
+    &>.el-submenu,
+    .el-menu-item {
+      & :hover * {
+        color: $menuActiveTextHorizontal !important;
+      }
+
+      &:hover * {
+        color: $menuActiveTextHorizontal !important;
+      }
     }
 
-    &.horizontal-menu > a > li[class='el-menu-item'] {
+    // & :hover {
+    //   background-color: $menuBgActiveHorizontal !important;
+    // }
+
+    // & :hover * {
+    //   color: $menuActiveTextHorizontal !important;
+    // }
+
+    &.horizontal-menu>a>li[class='el-menu-item'] {
       color: $subMenuTextHorizontal !important;
     }
 
-    .el-menu-item > span {
+    .el-menu-item>span {
       margin: 0 10px;
     }
 
-    .is-active,.is-opened {
+    .is-active,
+    .is-opened {
       background-color: $menuBgActiveHorizontal !important;
     }
 
@@ -143,27 +176,29 @@
       color: $menuActiveTextHorizontal !important;
     }
 
-    & > .el-submenu > .el-submenu__title {
+    &>.el-submenu>.el-submenu__title {
       &:hover * {
         color: $subMenuActiveTextHorizontal !important;
       }
+
       & * {
         color: $menuTextHorizontal !important;
       }
     }
 
-    & > .el-submenu.is-active * {
+    &>.el-submenu.is-active * {
       color: $menuActiveTextHorizontal !important;
     }
 
-    & > .el-submenu.is-opened * {
+    &>.el-submenu.is-opened * {
       color: $menuActiveTextHorizontal !important;
     }
 
-    &.nest-menu > .el-submenu > .el-submenu__title {
+    &.nest-menu>.el-submenu>.el-submenu__title {
       &:hover * {
         color: $subMenuActiveTextHorizontal !important;
       }
+
       & * {
         color: $subMenuTextHorizontal !important;
       }

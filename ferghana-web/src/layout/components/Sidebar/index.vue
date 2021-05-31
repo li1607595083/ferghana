@@ -11,7 +11,7 @@
         :collapse-transition="false"
         mode="vertical"
       >
-        <sidebar-item v-for="route in permission_routes" :key="route.path" :item="route" :base-path="route.path" :horizontal="menuLayout"/>
+        <sidebar-item v-for="route in permission_routes" :key="route.path" :item="route" :base-path="route.path"/>
       </el-menu>
     </el-scrollbar>
    <el-menu v-else
@@ -23,7 +23,7 @@
       mode="horizontal"
       style="display: flex;"
     >
-      <sidebar-item v-for="route in permission_routes" :key="route.path" :item="route" :base-path="route.path" :horizontal="menuLayout"/>
+      <sidebar-item v-for="route in permission_routes" :key="route.path" :item="route" :base-path="route.path"/>
     </el-menu>
   </div>
 </template>
