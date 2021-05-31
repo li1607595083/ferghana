@@ -1,5 +1,5 @@
 <template>
-  <div class="container">
+  <div class="container" :style="{height:'calc(100vh - '+(tagsView ? '84px' : '50px')+')'}">
     <div class="left-board">
       <div class="logo-wrapper">
         <div class="logo">
@@ -161,6 +161,7 @@ import drawingDefalut from '@/utils/generator/drawingDefalut'
 import logo from '@/assets/logo/logo.png'
 import CodeTypeDialog from './CodeTypeDialog'
 import DraggableItem from './DraggableItem'
+import { mapState } from 'vuex'
 
 const emptyActiveData = { style: {}, autosize: {} }
 let oldActiveId
@@ -195,6 +196,9 @@ export default {
     }
   },
   computed: {
+    ...mapState({
+      tagsView: state => state.settings.tagsView
+    }),
   },
   watch: {
     // eslint-disable-next-line func-names
@@ -521,7 +525,6 @@ $lighterBlue: #409EFF;
 .container {
   position: relative;
   width: 100%;
-  height: 100%;
 }
 
 .components-list {

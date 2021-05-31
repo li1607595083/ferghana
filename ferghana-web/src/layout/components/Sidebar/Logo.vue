@@ -1,6 +1,6 @@
 <template>
   <div class="sidebar-logo-container el-button--primary" :class="{'collapse':collapse}">
-    <transition name="sidebarLogoFade">
+    <transition name="sidebarLogoFade" v-if="show">
       <router-link v-if="collapse" key="collapse" to="/">
         <img v-if="logo" :src="logo">
 <!--        <h1 v-else class="sidebar-title">{{ title }} </h1>-->
@@ -24,6 +24,10 @@ export default {
     collapse: {
       type: Boolean,
       required: true
+    },
+    show: {
+      type: Boolean,
+      default: true
     }
   },
   data() {
@@ -34,7 +38,6 @@ export default {
   }
 }
 </script>
-
 <style lang="scss" scoped>
 .sidebarLogoFade-enter-active {
   transition: opacity 1.5s;
@@ -47,7 +50,7 @@ export default {
 
 .sidebar-logo-container {
   position: relative;
-  width: 100%;
+  width: 200px;
   height: 50px;
   line-height: 50px;
   background: -moz-linear-gradient(top,#00a0f1,#0075bd,#005d9f);

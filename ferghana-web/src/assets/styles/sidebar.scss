@@ -1,18 +1,32 @@
 #app {
 
-  .main-container {
+  .container {
     min-height: 100%;
     transition: margin-left .28s;
-    margin-left: $sideBarWidth;
+    margin-left: 0;
     position: relative;
+  }
+
+  .main-container {
+    // width: calc(100vw - #{$sideBarWidth});
+    margin-left: 0;
+    margin-right:0;
+  }
+
+  .hide-sidebar {
+    width: 100vw !important;
+  }
+
+  .show-sidebar {
+    width: calc(100% - #{$sideBarWidth}) !important;
   }
 
   .sidebar-container {
     transition: width 0.28s;
     width: $sideBarWidth !important;
     background-color: $menuBg;
-    height: 100%;
-    position: fixed;
+    height: calc(100vh - 50px);
+    position: relative;
     font-size: 0px;
     top: 0;
     bottom: 0;
@@ -93,8 +107,12 @@
       width: 54px !important;
     }
 
-    .main-container {
-      margin-left: 54px;
+    .show-sidebar {
+      width: calc(100% - 54px) !important;
+    }
+
+    .container {
+      margin-left: 0px;
     }
 
     .submenu-title-noDropdown {
@@ -147,7 +165,7 @@
 
   // mobile responsive
   .mobile {
-    .main-container {
+    .container {
       margin-left: 0px;
     }
 
@@ -167,7 +185,7 @@
 
   .withoutAnimation {
 
-    .main-container,
+    .container,
     .sidebar-container {
       transition: none;
     }

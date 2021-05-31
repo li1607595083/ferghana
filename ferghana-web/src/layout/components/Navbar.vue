@@ -1,64 +1,73 @@
 <template>
   <div class="navbar el-button--primary">
-<!--    <hamburger id="hamburger-container" :is-active="sidebar.opened"-->
-<!--                class="hamburger-container" @toggleClick="toggleSideBar" />-->
 
-    <breadcrumb id="breadcrumb-container" class="breadcrumb-container" />
+    <div class="logo"><logo :collapse="isCollapse" :show="sidebarLogo"/></div>
 
+    <!-- <hamburger id="hamburger-container" :is-active="sidebar.opened"
+                class="hamburger-container" @toggleClick="toggleSideBar" /> -->
+    <breadcrumb v-if="!menuLayout" id="breadcrumb-container" class="breadcrumb-container" />
+
+    <div class="left-menu" v-if="menuLayout">
+      <sidebar/>
+
+    </div>
 
     <div class="right-menu">
-      <template v-if="device!=='mobile'">
-<!--        <search id="header-search" class="right-menu-item" />-->
-<!--        -->
-<!--        <el-tooltip content="源码地址" effect="dark" placement="bottom">-->
-<!--          <ruo-yi-git id="ruoyi-git" class="right-menu-item hover-effect" />-->
-<!--        </el-tooltip>-->
+      <div>
+        <span>{{name}}，欢迎登录！</span>
+      </div>
+      <div>
+            <template v-if="device!=='mobile'">
+      <!--        <search id="header-search" class="right-menu-item" />-->
+      <!--        -->
+      <!--        <el-tooltip content="源码地址" effect="dark" placement="bottom">-->
+      <!--          <ruo-yi-git id="ruoyi-git" class="right-menu-item hover-effect" />-->
+      <!--        </el-tooltip>-->
 
-<!--        <el-tooltip content="文档地址" effect="dark" placement="bottom">-->
-<!--          <ruo-yi-doc id="ruoyi-doc" class="right-menu-item hover-effect" />-->
-<!--        </el-tooltip>-->
+      <!--        <el-tooltip content="文档地址" effect="dark" placement="bottom">-->
+      <!--          <ruo-yi-doc id="ruoyi-doc" class="right-menu-item hover-effect" />-->
+      <!--        </el-tooltip>-->
 
-<!--        <screenfull id="screenfull" class="right-menu-item hover-effect" />-->
+      <!--        <screenfull id="screenfull" class="right-menu-item hover-effect" />-->
 
-        <el-tooltip content="布局大小" effect="dark" placement="bottom">
+              <el-tooltip content="布局大小" effect="dark" placement="bottom">
 
-        </el-tooltip>
+              </el-tooltip>
 
-      </template>
+            </template>
 
-      <el-dropdown class="avatar-container right-menu-item hover-effect" trigger="click">
+            <el-dropdown class="avatar-container right-menu-item hover-effect" trigger="click">
 
 
-        <div class="avatar-wrapper">
-<!--          用户头像-->
-          <img :src="avatar" class="user-avatar">
-<!--          <i class="el-icon-caret-bottom" />-->
-        </div>
-        <el-dropdown-menu slot="dropdown">
-          <router-link to="/user/profile">
-            <el-dropdown-item>个人中心</el-dropdown-item>
-          </router-link>
-          <el-dropdown-item>
-            <span @click="setting = true">布局设置</span>
-          </el-dropdown-item>
-          <div style="padding-left: 18px;padding-top: 3px;font-size: 12px">
-            <size-select id="size-select" class="right-menu-item hover-effect" />
+              <div class="avatar-wrapper">
+      <!--          用户头像-->
+                <img :src="avatar" class="user-avatar">
+      <!--          <i class="el-icon-caret-bottom" />-->
+              </div>
+              <el-dropdown-menu slot="dropdown">
+                <router-link to="/user/profile">
+                  <el-dropdown-item>个人中心</el-dropdown-item>
+                </router-link>
+                <el-dropdown-item>
+                  <span @click="setting = true">布局设置</span>
+                </el-dropdown-item>
+                <div style="padding-left: 18px;padding-top: 3px;font-size: 12px">
+                  <size-select id="size-select" class="right-menu-item hover-effect" />
+                </div>
+                <el-dropdown-item divided>
+                  <span @click="logout">退出登录</span>
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </el-dropdown>
           </div>
-          <el-dropdown-item divided>
-            <span @click="logout">退出登录</span>
-          </el-dropdown-item>
-        </el-dropdown-menu>
-      </el-dropdown>
+
     </div>
 
-    <div class="right-menu">
-      <span>{{name}}，欢迎登录！</span>
-    </div>
   </div>
 </template>
 
 <script>
-import { mapGetters } from 'vuex'
+import { mapGetters, mapState } from 'vuex'
 import Breadcrumb from '@/components/Breadcrumb'
 import Hamburger from '@/components/Hamburger'
 import Screenfull from '@/components/Screenfull'
@@ -66,6 +75,8 @@ import SizeSelect from '@/components/SizeSelect'
 import Search from '@/components/HeaderSearch'
 import RuoYiGit from '@/components/RuoYi/Git'
 import RuoYiDoc from '@/components/RuoYi/Doc'
+import Logo from './Sidebar/Logo'
+import Sidebar from './Sidebar/index.vue'
 import '@/assets/styles/element-variables.scss';
 
 export default {
@@ -76,7 +87,9 @@ export default {
     SizeSelect,
     Search,
     RuoYiGit,
-    RuoYiDoc
+    RuoYiDoc,
+    Logo,
+    Sidebar
   },
   computed: {
     ...mapGetters([
@@ -85,6 +98,10 @@ export default {
       'name',
       'device'
     ]),
+    ...mapState({
+      sidebarLogo: state => state.settings.sidebarLogo,
+      menuLayout: state => state.settings.menuLayout
+    }),
     setting: {
       get() {
         return this.$store.state.settings.showSettings
@@ -127,6 +144,7 @@ export default {
   background: -ms-linear-gradient(top,#00a0f1,#0075bd,#005d9f);
   background: linear-gradient(top,#00a0f1,#0075bd,#005d9f);
   box-shadow: 0 1px 4px rgba(0,21,41,.08);
+  display: flex;
   .hamburger-container {
     line-height: 46px;
     height: 100%;
@@ -144,7 +162,7 @@ export default {
   /*background-color: #409EFF;*/
 
   .breadcrumb-container {
-    float: left;
+    position: relative;
     margin-left: 20px;
   }
 
@@ -153,8 +171,25 @@ export default {
     vertical-align: top;
   }
 
+  .logo {
+    // float: left;
+    position: relative;
+    top: 0;
+    left: 0;
+    height: 100%;
+  }
+
+  .left-menu {
+    position: relative;
+    margin-left: 20px;
+    height: 100%;
+  }
+
   .right-menu {
-    float: right;
+    display: flex;
+    position: relative;
+    margin-left: auto;
+    margin-right: 0;
     height: 100%;
     line-height: 50px;
 

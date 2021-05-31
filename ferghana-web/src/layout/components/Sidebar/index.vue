@@ -1,7 +1,6 @@
 <template>
-  <div :class="{'has-logo':showLogo}">
-    <logo v-if="showLogo" :collapse="isCollapse" />
-    <el-scrollbar wrap-class="scrollbar-wrapper">
+  <div>
+    <el-scrollbar wrap-class="scrollbar-wrapper" v-if="!menuLayout">
       <el-menu
         :default-active="activeMenu"
         :collapse="isCollapse"
@@ -12,25 +11,38 @@
         :collapse-transition="false"
         mode="vertical"
       >
-        <sidebar-item v-for="route in permission_routes" :key="route.path" :item="route" :base-path="route.path" />
+        <sidebar-item v-for="route in permission_routes" :key="route.path" :item="route" :base-path="route.path" :horizontal="menuLayout"/>
       </el-menu>
     </el-scrollbar>
+   <el-menu v-else
+      :default-active="activeMenu"
+      :text-color="variables.menuTextHorizontal"
+      :unique-opened="true"
+      :active-text-color="variables.menuActiveTextHorizontal"
+      :collapse-transition="false"
+      mode="horizontal"
+      style="display: flex;"
+    >
+      <sidebar-item v-for="route in permission_routes" :key="route.path" :item="route" :base-path="route.path" :horizontal="menuLayout"/>
+    </el-menu>
   </div>
 </template>
 
 <script>
-import { mapGetters } from 'vuex'
-import Logo from './Logo'
+import { mapGetters, mapState } from 'vuex'
 import SidebarItem from './SidebarItem'
 import variables from '@/assets/styles/variables.scss'
 
 export default {
-  components: { SidebarItem, Logo },
+  components: { SidebarItem },
   computed: {
     ...mapGetters([
       'permission_routes',
-      'sidebar'
+      'sidebar',
     ]),
+    ...mapState({
+      menuLayout: state => state.settings.menuLayout
+    }),
     activeMenu() {
       const route = this.$route
       const { meta, path } = route
@@ -39,9 +51,6 @@ export default {
         return meta.activeMenu
       }
       return path
-    },
-    showLogo() {
-      return this.$store.state.settings.sidebarLogo
     },
     variables() {
       return variables
@@ -52,3 +61,10 @@ export default {
   }
 }
 </script>
+
+<style>
+  .el-menu {
+      background-color: rgba(0,0,0,0) !important;
+      border-right: solid 1px rgba(0,0,0,0) !important;
+  }
+</style>

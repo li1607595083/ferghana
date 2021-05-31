@@ -1,13 +1,19 @@
 <template>
   <div :class="classObj" class="app-wrapper">
     <div v-if="device==='mobile'&&sidebar.opened" class="drawer-bg" @click="handleClickOutside" />
-   <sidebar class="sidebar-container"/>  <!-- 嵌套修改-->
-    <div :class="{hasTagsView:needTagsView}" class="main-container">
+
+    <div :class="{hasTagsView:needTagsView}" class="container">
       <div :class="{'fixed-header':fixedHeader}">
         <navbar />
-        <tags-view v-if="needTagsView" />
+        <div style="display: flex;">
+          <sidebar v-show="!menuLayout" class="sidebar-container"/>  <!-- 嵌套修改-->
+          <div class="main-container" :class="(menuLayout ? 'hide-sidebar' : 'show-sidebar')">
+            <tags-view v-if="needTagsView" />
+            <app-main />
+          </div>
+        </div>
       </div>
-      <app-main />
+
       <right-panel v-if="showSettings">
         <settings />
       </right-panel>
@@ -38,7 +44,8 @@ export default {
       device: state => state.app.device,
       showSettings: state => state.settings.showSettings,
       needTagsView: state => state.settings.tagsView,
-      fixedHeader: state => state.settings.fixedHeader
+      fixedHeader: state => state.settings.fixedHeader,
+      menuLayout: state => state.settings.menuLayout
     }),
     classObj() {
       return {
@@ -90,6 +97,7 @@ export default {
     z-index: 9;
     width: calc(100% - #{$sideBarWidth});
     transition: width 0.28s;
+    display: flex;
   }
 
   .hideSidebar .fixed-header {

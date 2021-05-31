@@ -8,6 +8,7 @@ $tiffany: #4AB7BD;
 $yellow:#FEC171;
 $panGreen: #30B08F;
 
+// 纵向菜单
 // sidebar
 // 菜单字体颜色
 $menuText:#000000;
@@ -27,7 +28,29 @@ $subMenuBg:#FDFEFA;
 $subMenuHover:#E9E6F8;
 
 $sideBarWidth: 200px;  // 嵌套修改
-//$sideBarWidth: 0px;
+
+// 横向菜单
+// 菜单字体颜色
+$menuTextHorizontal:#FFFFFF;
+// 菜单点击颜色
+$menuActiveTextHorizontal:#0069BA;
+// 菜单点击上级字体颜色
+$subMenuActiveTextHorizontal:#0069BA; // https://github.com/ElemeFE/element/issues/12951
+
+// 一级菜单颜色
+$menuBgHorizontal:#FDFEFA;
+// 一级菜单鼠标颜色
+$menuHoverHorizontal:#FDFEFA;
+
+// 二级菜单字体颜色
+$subMenuTextHorizontal:#000000;
+// 二级菜单颜色
+$subMenuBgHorizontal:#BAD8F0;
+// 二级菜单鼠标颜色
+$subMenuHoverHorizontal:#BAD8F0;
+
+// 菜单激活背景颜色
+$menuBgActiveHorizontal: #BAD8F0;
 
 // the :export directive is the magic sauce for webpack
 // https://www.bluematador.com/blog/how-to-share-variables-between-js-and-sass
@@ -40,4 +63,13 @@ $sideBarWidth: 200px;  // 嵌套修改
   subMenuBg: $subMenuBg;
   subMenuHover: $subMenuHover;
   sideBarWidth: $sideBarWidth;
+  menuTextHorizontal: $menuTextHorizontal;
+  menuActiveTextHorizontal: $menuActiveTextHorizontal;
+  subMenuActiveTextHorizontal: $subMenuActiveTextHorizontal;
+  subMenuTextHorizontal: $subMenuTextHorizontal;
+  menuBgHorizontal: $menuBgHorizontal;
+  menuHoverHorizontal: $menuHoverHorizontal;
+  subMenuBgHorizontal: $subMenuBgHorizontal;
+  subMenuHoverHorizontal: $subMenuHoverHorizontal;
+  menuBgActiveHorizontal: $menuBgActiveHorizontal;
 }
