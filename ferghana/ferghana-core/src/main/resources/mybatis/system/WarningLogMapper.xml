@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.skyon.project.system.mapper.WarningLogMapper">
+
+    <resultMap type="WarningLog" id="WarningLogResult">
+        <id     property="warningLogId"      column="warning_log_id"      />
+        <result property="variablePackageName" column="variable_pack_name" />
+        <result property="warningName"    column="warning_name"    />
+        <result property="warningNoticeType"   column="warning_notice_type"   />
+        <result property="warningContent"    column="warning_content"    />
+        <result property="warningLogTime"    column="warning_log_time"    />
+        <result property="warningNoticeUser"    column="warning_notice_user"    />
+    </resultMap>
+
+    <sql id="selectWarningLog">
+        select warning_log_id, warning_name, warning_notice_type, variable_pack_name, warning_log_time, warning_notice_user, warning_content
+        from `warning_log`
+    </sql>
+
+
+    <select id="selectWarningLogList" parameterType="WarningLog" resultMap="WarningLogResult">
+        <include refid="selectWarningLog"/>
+        <where>
+            <if test="warningName != null  and warningName != ''"> and warning_name like concat('%', #{warningName}, '%')</if>
+            <if test="variablePackageName != null  and variablePackageName != ''"> and variable_pack_name like concat('%', #{variablePackageName}, '%')</if>
+            <if test="warningContent != null  and warningContent != ''"> and warning_content like concat('%', #{warningContent}, '%')</if>
+        </where>
+    </select>
+</mapper>
