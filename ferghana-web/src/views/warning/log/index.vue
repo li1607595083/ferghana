@@ -81,7 +81,6 @@
       getList() {
         this.loading = true;
         listLog(this.queryParams).then(response => {
-          console.log(response)
           this.warningLogList = response.rows;
           this.warningLogList.map((item, index) => {
             item.warningNoticeType = JSON.parse(item.warningNoticeType);
