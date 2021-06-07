@@ -10,13 +10,10 @@ import com.skyon.project.system.mapper.TDataResultSourceMapper;
 import com.skyon.project.system.mapper.TDataSourceMapper;
 import com.skyon.project.system.mapper.TSqlDevelopMapper;
 import com.skyon.project.system.service.ITSqlDevelopService;
-import com.skyon.project.system.tuil.PropertiesUtil;
+import com.skyon.project.system.util.PropertiesUtil;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.Producer;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

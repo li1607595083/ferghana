@@ -8,7 +8,7 @@ import com.skyon.common.utils.SecurityUtils;
 import com.skyon.project.system.domain.TSelfFunction;
 import com.skyon.project.system.mapper.TSelfFunctionMapper;
 import com.skyon.project.system.service.ITSelfFunctionService;
-import com.skyon.project.system.tuil.PropertiesUtil;
+import com.skyon.project.system.util.PropertiesUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

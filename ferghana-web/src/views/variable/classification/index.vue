@@ -121,13 +121,13 @@
 
           <el-form-item label="关联时间范围" class="el-col-24" v-if="sourceTwoDabItem" :rules="[{ required: true}]">
             <el-form-item class="el-col-11" :prop="sourceTwoDabItem ? 'sourceRelation.lowScope' : ''" v-if="sourceTwoDabItem">
-              <el-input type="number" :validate-event="true" :disabled="detailViem" v-model.number="form.sourceRelation.lowScope"></el-input>
+              <el-input-number v-model="form.sourceRelation.lowScope" controls-position="right" :min="0" style="width: 100%;" :validate-event="true" :disabled="detailViem"/>
             </el-form-item>
             <el-form-item class="el-col-2" v-if="sourceTwoDabItem">
               <el-col class="line" style="text-align: center;">-</el-col>
             </el-form-item>
             <el-form-item class="el-col-11" :prop="sourceTwoDabItem ? 'sourceRelation.highScope' : ''" v-if="sourceTwoDabItem">
-              <el-input type="number" validate-event="true" :disabled="detailViem" v-model.number="form.sourceRelation.highScope"></el-input>
+              <el-input-number v-model="form.sourceRelation.highScope" controls-position="right" :min="0" style="width: 100%;" :validate-event="true" :disabled="detailViem"/>
             </el-form-item>
           </el-form-item>
 

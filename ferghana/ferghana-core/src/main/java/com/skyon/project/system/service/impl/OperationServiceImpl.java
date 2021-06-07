@@ -5,8 +5,8 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.skyon.project.system.domain.*;
 import com.skyon.project.system.service.OperationService;
-import com.skyon.project.system.tuil.HttpUtil;
-import com.skyon.project.system.tuil.PropertiesUtil;
+import com.skyon.project.system.util.HttpUtil;
+import com.skyon.project.system.util.PropertiesUtil;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
