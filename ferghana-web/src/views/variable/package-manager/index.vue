@@ -1213,6 +1213,8 @@
             } else if (data.connectorType === "02"){
               this.cdcShow();
               this.form.variablePackType = "02";
+            } else {
+              this.form.variablePackType = data.connectorType;
             }
             this.sourceDataChange(data.sourceTableName);
             this.getDimensionRelationFild(data.dimensionRelation);
@@ -1258,6 +1260,7 @@
           variablePackId: undefined,
           variablePackName: undefined,
           variablePackEn: undefined,
+          variablePackType: undefined,
           runingState: undefined,
           variableClassification: undefined,
           description: undefined,
