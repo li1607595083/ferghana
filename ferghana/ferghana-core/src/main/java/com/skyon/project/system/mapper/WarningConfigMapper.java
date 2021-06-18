@@ -3,6 +3,7 @@ package com.skyon.project.system.mapper;
 import com.skyon.project.system.domain.WarningConfig;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 预警配置Mapper接口
@@ -54,4 +55,8 @@ public interface WarningConfigMapper {
      * @return 修改数据条数
      */
     public int updateWarningConfig(WarningConfig warningConfig);
+
+    public Map selectWarningConfigMapById(Long WarningId);
+
+    public List<Map> selectWarningConfigMapList();
 }

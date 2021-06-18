@@ -13,6 +13,9 @@ public class WarningLog {
     /** 预警日志Id */
     private Long warningLogId;
 
+    /** 预警Id */
+    private Long warningId;
+
     /** 预警名称 */
     private String warningName;
 
@@ -91,10 +94,19 @@ public class WarningLog {
         this.warningLogTime = warningLogTime;
     }
 
+    public Long getWarningId() {
+        return warningId;
+    }
+
+    public void setWarningId(Long warningId) {
+        this.warningId = warningId;
+    }
+
     @Override
     public String toString() {
         return "WarningLog{" +
                 "warningLogId=" + warningLogId +
+                ", warningId=" + warningId +
                 ", warningName='" + warningName + '\'' +
                 ", variablePackageName='" + variablePackageName + '\'' +
                 ", warningNoticeType=" + warningNoticeType +

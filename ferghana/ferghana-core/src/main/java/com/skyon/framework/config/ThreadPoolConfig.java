@@ -56,7 +56,7 @@ public class ThreadPoolConfig
             protected void afterExecute(Runnable r, Throwable t)
             {
                 super.afterExecute(r, t);
-                Threads.printException(r, t);
+//                Threads.printException(r, t);
             }
         };
     }

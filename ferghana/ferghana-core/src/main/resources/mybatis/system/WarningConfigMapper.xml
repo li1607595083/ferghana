@@ -35,6 +35,19 @@
         <result property="updateTime"    column="update_time"    />
     </resultMap>
 
+    <resultMap id="WarningConfigMapResult" type="java.util.Map">
+        <id     property="warningId"      column="warning_id"      />
+        <result property="warningNoticeType"   column="warning_notice_type"   />
+        <result property="warningState"    column="warning_state"    />
+        <result property="warningName"    column="warning_name"    />
+        <result property="variablePackageName"    column="variable_pack_name"    />
+        <result property="variablePackageJobId"    column="job_id"    />
+        <result property="warningContent"    column="warning_content"    />
+        <result property="warningFrequency"   column="warning_frequency"   />
+        <result property="warningEffectTime"    column="warning_effect_time"    />
+        <result property="warningNoticeUser"    column="warning_notice_user"    />
+    </resultMap>
+
     <sql id="selectWarningConfigDetail">
         select warning_id, a.variable_pack_id, warning_name, warning_notice_type, warning_state, a.description, a.create_by, a.create_time, a.update_by, a.update_time, warning_content,
                warning_frequency, warning_effect_time, warning_notice_user, variable_pack_name
@@ -44,6 +57,11 @@
     <sql id="selectWarningConfig">
         select warning_id, warning_name, warning_notice_type, warning_state, a.description, a.create_by, a.create_time, a.update_by, a.update_time,
                variable_pack_name
+        from `warning_config` a left join `t_variable_package_manager` b on a.variable_pack_id = b.variable_pack_id
+    </sql>
+
+    <sql id="selectWarningConfigMap">
+        select warning_id, warning_name, warning_notice_type, warning_state, warning_content,warning_frequency, warning_effect_time, warning_notice_user, b.job_id, b.variable_pack_name
         from `warning_config` a left join `t_variable_package_manager` b on a.variable_pack_id = b.variable_pack_id
     </sql>
 
@@ -62,12 +80,27 @@
             <if test="variablePackageName != null  and variablePackageName != ''"> and variable_pack_name like concat('%', #{variablePackageName}, '%')</if>
             <if test="warningState != null  and warningState != ''"> and warning_state = #{warningState} </if>
         </where>
+        order by create_time desc
     </select>
 
     <select id="selectWarningConfigById" parameterType="WarningConfig" resultMap="WarningConfigResult">
         <include refid="selectWarningConfigDetail"></include>
         <where>
             warning_id = #{warningId}
+        </where>
+    </select>
+
+    <select id="selectWarningConfigMapById" parameterType="WarningConfig" resultMap="WarningConfigMapResult">
+        <include refid="selectWarningConfigMap"></include>
+        <where>
+            warning_id = #{warningId}
+        </where>
+    </select>
+
+    <select id="selectWarningConfigMapList" parameterType="WarningConfig" resultMap="WarningConfigMapResult">
+        <include refid="selectWarningConfigMap"></include>
+        <where>
+            warning_state = '1'
         </where>
     </select>
 

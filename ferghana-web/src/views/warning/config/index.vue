@@ -656,7 +656,7 @@
           this.open = true;
           this.detailViem = true;
           this.showComfirm = false;
-          this.title = "修改预警规则";
+          this.title = "预警规则详情";
         })
       },
     }
