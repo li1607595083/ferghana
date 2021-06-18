@@ -3,6 +3,7 @@ package com.skyon.project.system.service;
 import com.skyon.project.system.domain.WarningConfig;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 预警配置Service接口
@@ -55,4 +56,6 @@ public interface WarningConfigService
      * @return 删除预警条数
      */
     public int deleteWarningConfigByIds(Long[] warningIds);
+
+    public List<Map> selectWarningConfigMapList();
 }

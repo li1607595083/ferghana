@@ -12,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import com.skyon.framework.web.controller.BaseController;
+
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -46,11 +48,17 @@ public class WarningConfigController extends BaseController
     }
 
     /**
-     *  获取变量包列表
+     *  获取已经启动的变量包列表
      */
     @GetMapping("/variablepackagelist")
     public TableDataInfo VariablePackageList(TVariablePackageManager tVariablePackageManager){
-        List<TVariablePackageManager> list = tVariablePackageManagerService.selectTVariablePackageManagerList(tVariablePackageManager);
+        List<TVariablePackageManager> arr = tVariablePackageManagerService.selectTVariablePackageManagerList(tVariablePackageManager);
+        List<TVariablePackageManager> list = new ArrayList<>();
+        for(int i=0;i<arr.size();i++){
+            if("1".equals(arr.get(i).getRuningState())){
+                list.add(arr.get(i));
+            }
+        }
         return getDataTable(list);
     }
 

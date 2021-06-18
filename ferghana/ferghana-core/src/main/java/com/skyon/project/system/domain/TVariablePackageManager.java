@@ -392,4 +392,44 @@ public class TVariablePackageManager extends BaseEntity
         return modifyTime;
     }
 
+    @Override
+    public String toString() {
+        return "TVariablePackageManager{" +
+                "variablePackId=" + variablePackId +
+                ", variablePackName='" + variablePackName + '\'' +
+                ", variablePackEn='" + variablePackEn + '\'' +
+                ", variablePackType='" + variablePackType + '\'' +
+                ", versionNum='" + versionNum + '\'' +
+                ", versionShow='" + versionShow + '\'' +
+                ", runingState='" + runingState + '\'' +
+                ", variableClassification=" + variableClassification +
+                ", description='" + description + '\'' +
+                ", variableId=" + variableId +
+                ", selectVariableNoteForm='" + selectVariableNoteForm + '\'' +
+                ", createTableSql='" + createTableSql + '\'' +
+                ", runingSql='" + runingSql + '\'' +
+                ", configurationType='" + configurationType + '\'' +
+                ", concurrency='" + concurrency + '\'' +
+                ", jobMemory='" + jobMemory + '\'' +
+                ", taskMemory='" + taskMemory + '\'' +
+                ", resultTable='" + resultTable + '\'' +
+                ", resultTableSql='" + resultTableSql + '\'' +
+                ", applicationId=" + applicationId +
+                ", jobId=" + jobId +
+                ", varDir='" + varDir + '\'' +
+                ", originalVariable=" + originalVariable +
+                ", originalVariableSql='" + originalVariableSql + '\'' +
+                ", startParamBase='" + startParamBase + '\'' +
+                ", savePointDir='" + savePointDir + '\'' +
+                ", sourceTableName='" + sourceTableName + '\'' +
+                ", dimensionId='" + dimensionId + '\'' +
+                ", sourceTableValue=" + sourceTableValue +
+                ", dimensionTableValue=" + dimensionTableValue +
+                ", sourceKey='" + sourceKey + '\'' +
+                ", testResultItem=" + testResultItem +
+                ", testDimdata=" + testDimdata +
+                ", modifyTime=" + modifyTime +
+                ", variableClassificationName='" + variableClassificationName + '\'' +
+                '}';
+    }
 }

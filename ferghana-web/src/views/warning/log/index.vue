@@ -24,7 +24,7 @@
       <el-table-column label="变量包名称" width="300" align="left" prop="variablePackageName" />
       <el-table-column label="预警方式" width="250" align="left" prop="warningNoticeType" :formatter="NoticeTypeFormat" />
       <el-table-column label="预警联系人" width="250" align="left" prop="warningNoticeUser" :formatter="NoticeUserFormat" />
-      <el-table-column label="预警内容" align="center" prop="warningContent" />
+      <el-table-column label="预警内容" align="center" prop="warningContent"  :formatter="WarningContentFormat"/>
       <el-table-column label="预警时间"  width="170" align="center" prop="warningLogTime" />
     </el-table>
 
@@ -107,6 +107,13 @@
           })
         })
         return users;
+      },
+      WarningContentFormat(row, column) {
+        var warningContent = "";
+        row.warningContent.forEach((item, index) => {
+          warningContent = warningContent + (warningContent.length > 0 ? "、" : "") + item;
+        })
+        return warningContent;
       },
       NoticeTypeFormat(row, column) {
         var result = "";
