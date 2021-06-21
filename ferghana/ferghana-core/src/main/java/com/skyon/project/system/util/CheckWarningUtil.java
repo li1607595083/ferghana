@@ -74,21 +74,30 @@ public class CheckWarningUtil {
             }
             else{
                 String operatorId = String.valueOf(warningContent.get("operatorId"));
-                String value = String.valueOf(warningContent.get("value"));
+                double value = Double.valueOf(String.valueOf(warningContent.get("value")));
                 if("1".equals(warningConfigIndicatorsId)){
-                    warningFlag = restartNum(job_id, checkTime, dataBase, Double.parseDouble(value)).equals(operatorId) ||
-                            restartNum(job_id, checkTime, dataBase, Double.parseDouble(value)).equals("3") ? true : warningFlag;
-                    if(restartNum(job_id, checkTime, dataBase, Double.parseDouble(value)).equals(operatorId) ||
-                            restartNum(job_id, checkTime, dataBase, Double.parseDouble(value)).equals("3")){
-                        warningContentList.add(warningConfigIndicatorsName+(operatorId.equals("1") ? "大于" : "小于")+value);
+                    double restartsNumbers = restartNum(job_id, checkTime, dataBase);
+                    warningFlag = judgeParam(restartsNumbers,value).equals(operatorId) || judgeParam(restartsNumbers,value).equals("3") ?
+                            true : warningFlag;
+                    if(judgeParam(restartsNumbers,value).equals(operatorId) || judgeParam(restartsNumbers,value).equals("3")){
+                        warningContentList.add(warningConfigIndicatorsName+(operatorId.equals("1") ? "大于" : "小于")+value+",当前值"+restartsNumbers);
                     }
                 }
+                else if("2".equals(warningConfigIndicatorsId)){
+                    double avgComputerDuration = checkAvgComputerDuration(job_id, checkTime, dataBase);
+                    warningFlag = judgeParam(avgComputerDuration,value).equals(operatorId) || judgeParam(avgComputerDuration,value).equals("3") ?
+                            true : warningFlag;
+                    if(judgeParam(avgComputerDuration,value).equals(operatorId) || judgeParam(avgComputerDuration,value).equals("3")){
+                        warningContentList.add(warningConfigIndicatorsName+(operatorId.equals("1") ? "大于" : "小于")+value+",当前值"+avgComputerDuration);
+                    }
+
+                }
                 else if("3".equals(warningConfigIndicatorsId)){
-                    warningFlag = checkpointFailNum(job_id, checkTime, dataBase, Double.parseDouble(value)).equals(operatorId) ||
-                            checkpointFailNum(job_id, checkTime, dataBase, Double.parseDouble(value)).equals("3") ? true : warningFlag;
-                    if(checkpointFailNum(job_id, checkTime, dataBase, Double.parseDouble(value)).equals(operatorId) ||
-                            checkpointFailNum(job_id, checkTime, dataBase, Double.parseDouble(value)).equals("3")){
-                        warningContentList.add(warningConfigIndicatorsName+(operatorId.equals("1") ? "大于" : "小于")+value);
+                    double failNumbers = checkpointFailNum(job_id, checkTime, dataBase);
+                    warningFlag = judgeParam(failNumbers,value).equals(operatorId) || judgeParam(failNumbers,value).equals("3") ?
+                            true : warningFlag;
+                    if(judgeParam(failNumbers,value).equals(operatorId) || judgeParam(failNumbers,value).equals("3")){
+                        warningContentList.add(warningConfigIndicatorsName+(operatorId.equals("1") ? "大于" : "小于")+value+",当前值"+failNumbers);
                     }
                 }
             }
@@ -100,7 +109,7 @@ public class CheckWarningUtil {
         // 获取预警频率
         String warningFrequency = String.valueOf(map.get("warningFrequency"));
         Map timeMap = staticWarningLogService.checkWarningTime(Long.valueOf(warningId));
-        // 查看距离上一次预警是否达到时间
+        // 查看距离上一次预警是否达到预警频率
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         try {
             String last = String.valueOf(timeMap.get(warningId));
@@ -161,7 +170,7 @@ public class CheckWarningUtil {
     }
 
     // 获取近5分钟checkpoint失败次数
-    private static String checkpointFailNum(String job_id, int checkTime, String dataBase, double value){
+    private static double checkpointFailNum(String job_id, int checkTime, String dataBase){
         String checkpointFailNumbersSql =
                 "SELECT value "
                         + " FROM jobmanager_job_numberOfFailedCheckpoints "
@@ -172,11 +181,12 @@ public class CheckWarningUtil {
 
         double failNumbers =  getValue(checkpointFailNumbersSql, dataBase);
 //        System.out.println("近5分钟checkpoint失败次数:\t" + failNumbers);
-        return failNumbers > value ? "1" : failNumbers == value ? "3" : "2";
+//        return failNumbers > value ? "1" : failNumbers == value ? "3" : "2";
+        return failNumbers;
     }
 
     // 5分钟内重启次数
-    private static String restartNum(String job_id, int checkTime, String dataBase, double value){
+    private static double restartNum(String job_id, int checkTime, String dataBase){
         String restartsNumbersSql =
                 "SELECT value "
                         + " FROM jobmanager_job_numRestarts "
@@ -186,7 +196,27 @@ public class CheckWarningUtil {
                         + " tz('Asia/Shanghai')";
         double restartsNumbers =  getValue(restartsNumbersSql, dataBase);
 //        System.out.println("5分钟内重启次数:\t" + restartsNumbers);
-        return restartsNumbers > value ? "1" : restartsNumbers == value ? "3" : "2";
+//        return restartsNumbers > value ? "1" : restartsNumbers == value ? "3" : "2";
+        return restartsNumbers;
+    }
+
+    // 5分钟内平均延时
+    private static double checkAvgComputerDuration(String job_id, int checkTime, String dataBase){
+        String computerDurationSql =
+                "SELECT MEAN(value) "
+                        + " FROM taskmanager_job_task_operator_flink_customer_metric_computer_duration "
+                        + " WHERE job_id = " + "'" + job_id + "' "
+                        + " AND time >= now() - " + checkTime  + "m "
+                        + " ORDER BY time DESC"
+                        + " tz('Asia/Shanghai')";
+        double avgComputerDuration = getAvg(computerDurationSql, dataBase);
+//        System.out.println("5分钟内平局计算延迟:\t" + avgComputerDuration);
+//        return avgComputerDuration > value ? "1" : avgComputerDuration == value ? "3" : "2";
+        return avgComputerDuration;
+    }
+
+    private static String judgeParam(double param, double value){
+        return param > value ? "1" : param == value ? "3" : "2";
     }
 
     // 插入预警日志
@@ -212,7 +242,6 @@ public class CheckWarningUtil {
         return mailList;
     }
 
-
     private static boolean isBackPressured(String isBackPressuredSql, String database) {
         List<QueryResult.Series> series = null;
         QueryResult flink = influxdbConnection.query(new Query(isBackPressuredSql, database));
@@ -230,5 +259,10 @@ public class CheckWarningUtil {
         double current = (double)values.get(0).get(1);
         double last = (double)values.get(values.size() - 1).get(1);
         return  current - last;
+    }
+
+    private static double getAvg(String sql, String database) {
+        QueryResult queryResult = influxdbConnection.query(new Query(sql, database));
+        return (double)queryResult.getResults().get(0).getSeries().get(0).getValues().get(0).get(1);
     }
 }
