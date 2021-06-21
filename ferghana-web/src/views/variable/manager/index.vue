@@ -2322,7 +2322,16 @@
 
       // 关联字段
       relationField() {
+
         if (this.listResultDimension.length > 0) {
+          // 解决测试时，关联的数据维没有选择时，则不需要在数据源表中有关联字段
+          let tableName = [];
+          for (let i = 0; i < this.listResultDimension.length; i++) {
+            let split = this.listResultDimension[i].name.split(":")
+            console.log(split);
+            tableName = tableName.concat(split[1]);
+          }
+
           this.variableClassificationOptions.map((data) => {
             if (data.value === this.form.variableClassification) {
               let parse = JSON.parse(data.dimensionRelation);
@@ -2332,14 +2341,10 @@
                 let flag = true;
                 for (let i = 0; i < this.sourceTableCol.length; i++) {
                   let tmp = this.sourceTableCol[i].dataItem;
-                  // if (this.sourceTableCol[i].dataName.indexOf(".") > 0) {
-                  //   let split1 = this.sourceTableCol[i].dataItem.split(".");
-                  //   tmp = split1[1];
-                  // }
                   if (parse[j].relation){
-                    flag = "true";
+                    flag = true;
                   }
-                  if (flag !== "true" && tmp === parse[j].sourceDabField) {
+                  if (flag !== true && tmp === parse[j].sourceDabField) {
                     flag = false;
                     if (this.sourceTableCol[i].dataName.indexOf("主键") <= 0) { // 主键不修改
                       this.sourceTableCol[i].dataName = parse[j].sourceDabField + "-" + parse[j].dimensionName +
@@ -2348,41 +2353,43 @@
                   }
                 }
                 if (flag === true) {
-                  tmpArr.push({
-                    dataItem: parse[j].sourceDabField,
-                    dataName: parse[j].sourceDabField + "-" + parse[j].dimensionName + "关联字段",
-                  })
-                }
-                // 如果有关联es表，那么分别提取数据源表与之关联的字段
-                else if(flag === "true"){
-                  for (let k = 0; k < parse[j].relation.length; k++) {
-                    // 拼接临时数据
-                    let tmpData = this.sourceTableCol.concat(tmpArr);
-                    var flag2 = true;
-                    for(let m = 0; m<tmpData.length;m++){
-                      let tmp = tmpData[m].dataItem;
-                      if (tmp === parse[j].relation[k].sourceDabField) {
-                        flag2 = false;
-                        if (tmpData[m].dataName.indexOf("主键") <= 0) { // 主键不修改
-                          tmpData[m].dataName = parse[j].relation[k].sourceDabField + "-" + parse[j]
-                            .dimensionName + "." + parse[j].relation[k].dimensionDabField + "关联字段";
-                        }
-                      }
-                    }
-                    if(flag2){
-                      tmpArr.push({
-                        dataItem: parse[j].relation[k].sourceDabField,
-                        dataName: parse[j].relation[k].sourceDabField + "-" + parse[j].dimensionName + "." + parse[j].relation[k].dimensionDabField + "关联字段",
-                      });
-                    }
+                  if(tableName.indexOf(parse[j].dimensionName) > -1){
+                    tmpArr.push({
+                      dataItem: parse[j].sourceDabField,
+                      dataName: parse[j].sourceDabField + "-" + parse[j].dimensionName + "关联字段",
+                    })
+
                   }
                 }
+                // 如果有关联es表，那么分别提取数据源表与之关联的字段
+                // else if(flag === true){
+                //   for (let k = 0; k < parse[j].relation.length; k++) {
+                //     // 拼接临时数据
+                //     let tmpData = this.sourceTableCol.concat(tmpArr);
+                //     var flag2 = true;
+                //     for(let m = 0; m<tmpData.length;m++){
+                //       let tmp = tmpData[m].dataItem;
+                //       if (tmp === parse[j].relation[k].sourceDabField) {
+                //         flag2 = false;
+                //         if (tmpData[m].dataName.indexOf("主键") <= 0) { // 主键不修改
+                //           tmpData[m].dataName = parse[j].relation[k].sourceDabField + "-" + parse[j]
+                //             .dimensionName + "." + parse[j].relation[k].dimensionDabField + "关联字段";
+                //         }
+                //       }
+                //     }
+                //     if(flag2){
+                //       tmpArr.push({
+                //         dataItem: parse[j].relation[k].sourceDabField,
+                //         dataName: parse[j].relation[k].sourceDabField + "-" + parse[j].dimensionName + "." + parse[j].relation[k].dimensionDabField + "关联字段",
+                //       });
+                //     }
+                //   }
+                // }
               }
               this.sourceTableCol = this.sourceTableCol.concat(tmpArr);
             }
           });
         }
-        console.log(this.sourceTableCol)
       },
 
       // 获取基础变量对应的测试数据
