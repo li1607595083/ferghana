@@ -84,13 +84,6 @@ public class TDimensionTableServiceImpl implements ITDimensionTableService {
             JSONArray array = JSON.parseArray(jdbcSchemaDefine);
             for (int i = 0; i < array.size(); i++) {
                 JSONObject o = (JSONObject) array.get(i);
-                if (!Strings.isNullOrEmpty(jdbcPrimaryKey)) {
-                    if (jdbcPrimaryKey.equals(o.get("jdbcKey"))) {
-                        o.put("primaryKey", o.get("jdbcKey"));
-                    } else {
-                        o.put("primaryKey", "");
-                    }
-                }
                 Object schemaDefine = o.get("jdbcKey");
                 if (tDatasourceFields != null) {
                     for (int j = 0; j < tDatasourceFields.size(); j++) {
@@ -125,6 +118,8 @@ public class TDimensionTableServiceImpl implements ITDimensionTableService {
                     } else {
                         o.put("primaryKey", "");
                     }
+                } else {
+                    o.put("primaryKey", "");
                 }
                 Object schemaDefine = o.get("esKey");
                 if (tDatasourceFields != null) {
@@ -266,7 +261,7 @@ public class TDimensionTableServiceImpl implements ITDimensionTableService {
         StringBuilder sb = new StringBuilder();
         if ("02".equals(connectorType)) { // jdbc
             sb.append(" CREATE TABLE `").append(table.getDimensionName())
-                    .append("` ( ").append(schemaTransform(table.getSchemaDefine(),connectorType))
+                    .append("` ( ").append(schemaTransform(table.getSchemaDefine(), connectorType))
                     .append(" ,PRIMARY KEY (`").append(table.getJdbcPrimaryKey()).append("`)").append(" NOT ENFORCED) WITH ")
                     .append(" ('connector' = 'jdbc', 'url' = '").append(table.getJdbcUrlAddress()).append("',")
                     .append("'driver' = '").append(table.getJdbcDrive()).append("',")
@@ -306,16 +301,16 @@ public class TDimensionTableServiceImpl implements ITDimensionTableService {
                     .append("'zookeeper.quorum' = '").append(table.getZookeeperAddress()).append("')");
             table.setHbaseCreateSql(sb.toString());
 
-        } else if("04".equals(connectorType)){
+        } else if ("04".equals(connectorType)) {
             sb.append(" CREATE TABLE `").append(table.getDimensionName())
-                    .append("` ( ").append(schemaTransform(table.getSchemaDefine(),connectorType))
+                    .append("` ( ").append(schemaTransform(table.getSchemaDefine(), connectorType))
                     .append(" ,PRIMARY KEY (`").append(table.getEsPrimaryKey()).append("`)").append(" NOT ENFORCED) WITH ")
                     .append(" ('connector' = 'elasticsearch-6', 'hosts' = '").append(table.getEsUrlAddress()).append("',")
                     .append("'index' = '").append(table.getEsIndex()).append("')");
             table.setEsCreateSql(sb.toString());
-        } else if("05".equals(connectorType)){
+        } else if ("05".equals(connectorType)) {
             sb.append(" CREATE TABLE `").append(table.getDimensionName())
-                    .append("` ( ").append(schemaTransform(table.getSchemaDefine(),connectorType))
+                    .append("` ( ").append(schemaTransform(table.getSchemaDefine(), connectorType))
                     .append(" ,PRIMARY KEY (`").append(table.getEsPrimaryKey()).append("`)").append(" NOT ENFORCED) WITH ")
                     .append(" ('connector' = 'elasticsearch-7', 'hosts' = '").append(table.getEsUrlAddress()).append("',")
                     .append("'index' = '").append(table.getEsIndex()).append("')");
@@ -323,18 +318,17 @@ public class TDimensionTableServiceImpl implements ITDimensionTableService {
         }
     }
 
-    private String schemaTransform(String schemaDefine,String connectorType) {
+    private String schemaTransform(String schemaDefine, String connectorType) {
         StringBuilder sb = new StringBuilder();
         JSONArray array = JSON.parseArray(schemaDefine);
-        if("02".equals(connectorType)){
+        if ("02".equals(connectorType)) {
             for (int i = 0; i < array.size(); i++) {
                 JSONObject o = (JSONObject) array.get(i);
                 Object schemaDefine1 = o.get("jdbcKey");
                 Object dataBaseType = o.get("jdbcType");
                 sb.append("`" + schemaDefine1 + "` " + dataBaseType + ",");
             }
-        }
-        else if("04".equals(connectorType) || "05".equals(connectorType)){
+        } else if ("04".equals(connectorType) || "05".equals(connectorType)) {
             for (int i = 0; i < array.size(); i++) {
                 JSONObject o = (JSONObject) array.get(i);
                 Object schemaDefine1 = o.get("esKey");
@@ -350,11 +344,11 @@ public class TDimensionTableServiceImpl implements ITDimensionTableService {
 
         Object[] jdbcDynamicItem = tDimensionTable.getJdbcDynamicItem();
         Object[] esDynamicItem = tDimensionTable.getEsDynamicItem();
-        if("02".equals(tDimensionTable.getConnectorType()))
+        if ("02".equals(tDimensionTable.getConnectorType()))
             tDimensionTable.setSchemaDefine(JSON.toJSONString(jdbcDynamicItem));
-        else if("04".equals(tDimensionTable.getConnectorType()))
+        else if ("04".equals(tDimensionTable.getConnectorType()))
             tDimensionTable.setSchemaDefine(JSON.toJSONString(esDynamicItem));
-        else if("05".equals(tDimensionTable.getConnectorType()))
+        else if ("05".equals(tDimensionTable.getConnectorType()))
             tDimensionTable.setSchemaDefine(JSON.toJSONString(esDynamicItem));
 //        if (jdbcDynamicItem != null && jdbcDynamicItem.length > 0) {
 //            List list = new ArrayList();

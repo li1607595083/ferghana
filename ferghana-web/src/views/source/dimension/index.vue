@@ -131,7 +131,7 @@
             <el-input v-model="item.primaryKey" :disabled="detailViem" v-show="false" />
             <el-button @click="primaryKeyCheck(index)" :ref="'ref' + index" :id="'ref' + index"
               :disabled="item.isUsed === '1'" style="padding: 10px;"
-              :style="{backgroundColor:item.primaryKey !== '' ? '#1890ff' : '#fff',color:item.primaryKey !== '' ? '#fff' : '#C0C4CC',}">
+              :style="{backgroundColor:(item.primaryKey !== '')  ? '#1890ff' : '#fff',color:(item.primaryKey !== '') ? '#fff' : '#C0C4CC',}">
               主键
             </el-button>
           </el-form-item>
@@ -561,13 +561,16 @@
     },
     methods: {
       schemaDefineChange(type, index) {
-        if (this.form.jdbcDynamicItem[index].primaryKey !== "" && type === "jdnc") {
-          this.form.jdbcDynamicItem[index].primaryKey = this.form.jdbcDynamicItem[index].jdbcKey;
-          this.form.jdbcPrimaryKey = this.form.jdbcDynamicItem[index].jdbcKey;
-        }
-        if (this.form.esDynamicItem[index].primaryKey !== "" && type === "es") {
-          this.form.esDynamicItem[index].primaryKey = this.form.esDynamicItem[index].esKey;
-          this.form.esPrimaryKey = this.form.esDynamicItem[index].esKey;
+        if (type === 'jdbc') {
+          if (this.form.jdbcDynamicItem[index].primaryKey !== '') {
+            this.form.jdbcDynamicItem[index].primaryKey = this.form.jdbcDynamicItem[index].jdbcKey
+            this.form.jdbcPrimaryKey = this.form.jdbcDynamicItem[index].jdbcKey
+          }
+        } else if (type === 'es') {
+          if (this.form.esDynamicItem[index].primaryKey !== '') {
+            this.form.esDynamicItem[index].primaryKey = this.form.esDynamicItem[index].esKey
+            this.form.esPrimaryKey = this.form.esDynamicItem[index].esKey
+          }
         }
       },
       // redis增加行
@@ -1088,6 +1091,8 @@
         const dimensionId = row.dimensionId || this.ids;
         getDimension(dimensionId).then(response => {
           this.form = response.data;
+          console.log("----sss");
+          console.log(this.form);
           if (this.form.connectorType === "01") {
             this.redisCheck();
           } else if (this.form.connectorType === "02") {
@@ -1127,9 +1132,6 @@
                 this.form.dimensionName = "";
               }
               if (this.form.connectorType === "02") {
-                for (let i = 0; i < this.form.jdbcDynamicItem.length; i++) {
-                  this.$delete(this.form.jdbcDynamicItem[i], "primaryKey");
-                }
                 this.form.schemaDefine = JSON.stringify(this.form.jdbcDynamicItem);
               }
               if (this.form.connectorType === "03") {
@@ -1158,10 +1160,6 @@
                 this.form.dimensionName = "";
               }
               if (this.form.connectorType === "02") {
-                // primaryKey
-                for (let i = 0; i < this.form.jdbcDynamicItem.length; i++) {
-                  this.$delete(this.form.jdbcDynamicItem[i], "primaryKey");
-                }
                 this.form.schemaDefine = JSON.stringify(this.form.jdbcDynamicItem);
               }
               if (this.form.connectorType === "03") {

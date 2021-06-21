@@ -76,6 +76,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <where>
             <if test="variableClassificationName != null  and variableClassificationName != ''"> and variable_classification_name like concat('%', #{variableClassificationName}, '%')</if>
             <if test="variableName != null  and variableName != ''"> and variable_name like concat('%', #{variableName}, '%')</if>
+            <if test="variableNameEn != null  and variableNameEn != ''"> and variable_Name_En like concat('%', #{variableNameEn}, '%')</if>
             <if test="variableType != null  and variableType != ''"> and variable_type = #{variableType}</if>
             <if test="variableClassification != null  and variableClassification != ''"> and variable_classification = #{variableClassification}</if>
             <if test="description != null  and description != ''"> and description like concat('%', #{description}, '%')</if>

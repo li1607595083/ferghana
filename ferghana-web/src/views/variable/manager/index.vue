@@ -2400,6 +2400,7 @@
           for (let i = 0; i < value.length; i++) {
             tmp = tmp + value[i] + ","
           }
+          // axios请求
           const baseUrl = process.env.VUE_APP_BASE_API;
           axios({
             method: 'post',
@@ -2532,12 +2533,14 @@
                 dataItem: this.sourceTwoCol[0],
                 dataName: this.sourceTwoCol[0] + "-水印",
               });
-              if(this.form.deriveVariableModelType === "01"){
+              if(this.form.deriveVariableModelType === "01"){ // 四则运算
                 this.getBaseVariableTestCol(this.variableArray);
-              } else if(this.form.deriveVariableModelType === "02"){
-
+              } else if(this.form.deriveVariableModelType === "02"){ // 计算引擎
+                this.getBaseVariableTestCol(this.variableArray);
+              } else if(this.form.deriveVariableModelType === "03"){ // 逻辑运算
                 this.getBaseVariableTestCol(this.variableArray);
               }
+
             }
 
             // 添加关联字段
