@@ -597,12 +597,9 @@
             this.open = true;
             this.sourceTableValueItem = true;
             this.title = "变量包测试";
-            console.log("--q--");
-            console.log(this.selectVariableNote);
             for (let i = 0; i < this.selectVariableNote.length; i++) { // 已经选中的变量
 
-              console.log("-------2www-------------");
-              console.log(this.selectVariableNote);
+              // 数据源表的sql使用字段
               let testSourceTableCol = this.selectVariableNote[i].testSourceTableCol;
               if (testSourceTableCol !== null) {
                 let parse = JSON.parse(testSourceTableCol);
@@ -628,6 +625,8 @@
                   }
                 }
               }
+
+
               // listResultDimension dimensionTableCol
               let testDimensionTableCol = this.selectVariableNote[i].testDimensionTableCol;
               let parse1 = JSON.parse(testDimensionTableCol);
@@ -680,6 +679,50 @@
                 }
               }
             }
+
+            // 数据源表的关联字段
+            this.variableClassificationOptions.map((data, i) => {
+              if (data.value === this.form.variableClassification) {
+                let parse = JSON.parse(data.dimensionRelation)
+                //"[{"dimensionName":"EP_CUST_INF","sourceDabField":"CUST_NO"},{"dimensionName":"EP_BIND_ACCT","sourceDabField":"ACCT_NO"}]"
+                for (let k = 0; k < parse.length; k++) {
+                  console.log("---------sssss----------------");
+                  let flag = true;
+                  let sourceDabField = parse[k].sourceDabField;
+                  for (let j = 0; j < this.sourceTableCol.length; j++) {
+                    let dataItem = this.sourceTableCol[j].dataItem;
+                    if (dataItem.indexOf('.')>-1) {
+                      let split = dataItem.split('.')
+                      dataItem = split[1]
+                    }
+
+                    if (dataItem === sourceDabField) {
+                      // 如果不是主键和水印字段就后缀增加：“关联字段”
+                      if(!(this.sourceTableCol[j].dataName.indexOf("主键") > 0 || this.sourceTableCol[j].dataName.indexOf("水印") > 0 )){
+                        this.sourceTableCol[j].dataName = this.sourceTableCol[j].dataName + "-关联字段";
+                      }
+                      flag = false;
+                      break;
+                    }
+                  }
+                  if (flag === true){
+
+                    let dimenName = [];
+                    for (let l = 0; l < this.listResultDimension.length; l++) { // 没用的维表不关联
+                      let name = this.listResultDimension[l].name.split(":");
+                      dimenName = dimenName.concat(name[1]);
+                    }
+                    if (dimenName.indexOf(parse[k].dimensionName) > -1){
+                      this.sourceTableCol.push({
+                        dataItem: sourceDabField,
+                        dataName: parse[k].dimensionName + "."+sourceDabField+"-关联字段",
+                      })
+                    }
+
+                  }
+                }
+              }
+            })
 
             // 若测试的数据源表有字段，展示
             if (this.sourceTableCol.length > 0) {

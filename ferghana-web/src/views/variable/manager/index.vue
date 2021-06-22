@@ -3813,9 +3813,9 @@
                     this.form.processInputParams = JSON.stringify(arr);
                   }
                 } else if (this.form.variableType === '02') {
-                   if("01" === this.form.deriveVariableModelType){
+                   if("01" === this.form.deriveVariableModelType){  // 四则运算
                      this.getBaseVariableTestCol(this.variableArray);
-                   } else if("02" === this.form.deriveVariableModelType){
+                   } else if("02" === this.form.deriveVariableModelType){ // 计算引擎
                      // 保存计算引擎输入参数
                      let arr = [];
                      // [{"selfFuncParam":"source1","outParam":"1112"},{"selfFuncParam":"source2","outParam":"222"},{"selfFuncParam":"sourceMap","outParam":["ad","e"]}]
@@ -3833,6 +3833,8 @@
                        }
                      }
                      this.form.deriveInputParams = JSON.stringify(arr);
+                     this.getBaseVariableTestCol(this.variableArray);
+                   }else if("03" === this.form.deriveVariableModelType){ // 逻辑运算
                      this.getBaseVariableTestCol(this.variableArray);
                    }
 
@@ -3914,6 +3916,8 @@
                       }
                     }
                     this.form.deriveInputParams = JSON.stringify(arr);
+                    this.getBaseVariableTestCol(this.variableArray);
+                  } else if("03" === this.form.deriveVariableModelType){
                     this.getBaseVariableTestCol(this.variableArray);
                   }
                 }
