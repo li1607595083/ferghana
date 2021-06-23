@@ -69,6 +69,16 @@
         <el-col :span="1.5">
           <el-button
             type="primary"
+            icon="el-icon-check"
+            size="mini"
+            :disabled="single"
+            @click="testVariabel"
+          >测 试
+          </el-button>
+        </el-col>
+        <el-col :span="1.5">
+          <el-button
+            type="primary"
             icon="el-icon-delete"
             size="mini"
             :disabled="multiple"
@@ -802,8 +812,7 @@
                                                    col.dataName.indexOf('水印') > 0 ? 'sourceTableValue.'+scope.$index+'.' + col.dataItem : ''"
                                                 :rules="col.dataName.indexOf('主键') > 0 ? testRules.primaryKey :
                                                    col.dataName.indexOf('水印') > 0 ? testRules.waterMark :[{ required: false }]">
-                                    <el-input v-model="scope.row[col.dataItem]" placeholder="请输入内容"
-                                              :disabled="detailViem"/>
+                                    <el-input v-model="scope.row[col.dataItem]" placeholder="请输入内容" />
                                   </el-form-item>
                                 </template>
                               </el-table-column>
@@ -811,10 +820,9 @@
                             <el-table-column label="操作" width="200px" align="center"
                                              class-name="small-padding fixed-width">
                               <template slot-scope="scope">
-                                <el-button @click="addInputSource"><i class="el-icon-plus" :disabled="detailViem"/>
+                                <el-button @click="addInputSource"><i class="el-icon-plus"/>
                                 </el-button>
-                                <el-button @click="removeInputSource(scope)"><i class="el-icon-minus"
-                                                                                :disabled="detailViem"/></el-button>
+                                <el-button @click="removeInputSource(scope)"><i class="el-icon-minus"/></el-button>
                               </template>
                             </el-table-column>
                           </el-table>
@@ -878,6 +886,7 @@
                   </el-tab-pane>
                 </el-tabs>
                 <div style="margin-left: 790px;margin-top:10px">
+
                   <el-button type="primary" @click="confirmTest">开 始</el-button>
                   <el-button @click="cancelTest">关 闭</el-button>
                 </div>
@@ -889,8 +898,8 @@
 
         <el-form-item class="el-col-24">
           <div style="float: right">
-            <el-button type="primary" @click="testRun" v-show="testButton" :disabled="detailViem">测 试</el-button>
-            <el-button type="primary" @click="submitForm" :disabled="detailViem">确 定</el-button>
+            <el-button type="primary" @click="testRun" v-show="testButton" :disabled="testRunButton">调  试</el-button>
+            <el-button type="primary" @click="submitForm" v-show="submitButton" :disabled="detailViem">确 定</el-button>
             <el-button @click="cancel">取 消</el-button>
           </div>
         </el-form-item>
@@ -1029,6 +1038,8 @@
         detailDiv: false,
         statisticsModelShow: true,
         globalVariableModelShow: false,
+        // 调试按钮
+        testRunButton: false,
         // 控制新增时是否展示
         layoutOne: true,
         // 数据维表的options
@@ -1124,6 +1135,8 @@
         testResultCol: [],
         // 控制测试按钮的展示
         testButton: true,
+        // 确定按钮的 展示
+        submitButton: true,
         // 变量编辑区
         deriveVariableSqlShow: true,
         deriveEngineTableShow: false,
@@ -2692,7 +2705,6 @@
           this.deriveVariableDiv = false;
           this.deriveProcessModelShow = false;
           this.decisionEngineDiv = false;
-          this.testButton = true;
           this.rules.deriveVariableSql[0].required = false;
         } else if ('02' === value) { // 派生变量
           this.variableModelTypeItem = false;
@@ -2705,7 +2717,6 @@
           this.decisionEngineDiv = true;
           this.rules.clusterName[0].required = false;
           this.rules.variableModelType[0].required = false;
-          this.testButton = true;
           this.rules.deriveVariableSql[0].required = true;
           this.form.variableModelType = "";
           this.rules.statisticsCountModel[0].required = false;
@@ -2990,7 +3001,6 @@
           this.processDiv = false;
           this.userDefinedDiv = false;
           this.normalCheck();
-          this.testButton = true;
           this.normalAndCount = true;
         } else if (this.form.variableModelType === '02') {  // 统计查询
           this.countDiv = true;
@@ -2998,7 +3008,6 @@
           this.normalDiv = false;
           this.userDefinedDiv = false;
           this.countCheck();
-          this.testButton = true;
           this.normalAndCount = true;
         } else if (this.form.variableModelType === '03') { // 数据加工
           this.processDiv = true;
@@ -3006,14 +3015,12 @@
           this.userDefinedDiv = false;
           this.countDiv = false;
           this.processCheck();
-          this.testButton = true;
           this.normalAndCount = false;
         } else if (this.form.variableModelType === '04') { // 自定义查询
           this.processDiv = false;
           this.normalDiv = false;
           this.countDiv = false;
           this.userDefinedDiv = true;
-          this.testButton = true;
           this.selfQueryCheck();
           this.normalAndCount = false;
         }
@@ -3516,7 +3523,6 @@
         this.open = false;
         this.variableArray = [];
         this.baseVariableOptions = [];
-        this.testButton = true;
         this.selfQueryTestItem = [];
         this.allVariableOptions = [];
         this.sourceTableCol = [];
@@ -3528,6 +3534,8 @@
         this.statisticsModelShow = true;
         this.globalVariableModelShow = false;
         this.deriveVariableSqlShow = true;
+        this.testRunButton = false;
+        this.getVariableClassification();
 
       },
       /** 搜索按钮操作 */
@@ -3551,18 +3559,18 @@
         // 跳转页面
         //直接跳转
         this.addDiv = true;
+        this.submitButton = true;
         this.layoutOne = false;
         this.versionNumShow = false;
         this.detailViem = false;
         this.UnAllowedUpdate = false;
+        this.testButton = false;
         // 查询数据源表
         this.getSourceData();
         // 查询数据源维表
         this.getDimensionData();
         // 查询自定义模板表
         this.getVariableModelType();
-        // 查询所有的变量分类
-        this.getVariableClassification();
         // 查询所有的作用函数
         this.getFunctionTypeOptions();
         this.redisSelfFunctionChange("");
@@ -3629,12 +3637,11 @@
         this.UnAllowedUpdate = true;
         this.versionNumShow = true;
         this.addDiv = true;
+        this.submitButton = fasle;
         this.layoutOne = false;
         this.detailDiv = false;
         this.reset();
         const variableId = row.variableId || this.ids;
-        // 查询所有的变量分类
-        this.getVariableClassification();
         getCenter(variableId).then(response => {
           this.form = response.data;
           this.form.conditionTable = [];
@@ -3682,17 +3689,33 @@
 
       },
 
+      // 测试变量按钮
+      testVariabel(row){
+        this.testButton = true;
+        this.detailViem = true;
+        this.addDiv = true;
+        this.submitButton = false;
+        this.layoutOne = false;
+        this.detailDiv = false;
+        this.testAndUpdate(row);
+      },
+
       /** 修改按钮操作 */
       handleUpdate(row) {
         this.detailViem = false;
+        this.submitButton = true;
+        this.testButton = false;
+        this.testAndUpdate(row);
+
+      },
+      // 测试和修改通用代码
+      testAndUpdate(row){
+
         this.UnAllowedUpdate = true;
         this.versionNumShow = true;
         this.reset();
 
         const variableId = row.variableId || this.ids;
-        this.variableClassificationOptions = [];
-        // 查询所有的变量分类
-        this.getVariableClassification();
         getCenter(variableId).then(response => {
           this.form = response.data;
           this.variableTmp = response.data;
@@ -3710,14 +3733,14 @@
 
           // 派生变量的返显
           if ("02" === this.form.variableType) {
-              let parse = JSON.parse(this.form.deriveBaseVariable);
-              this.variableArray = [];
-              for (let i = 0; i < parse.length; i++) {
-                this.variableArray = this.variableArray.concat(parse[i]);
-              }
+            let parse = JSON.parse(this.form.deriveBaseVariable);
+            this.variableArray = [];
+            for (let i = 0; i < parse.length; i++) {
+              this.variableArray = this.variableArray.concat(parse[i]);
+            }
 
-              console.log("--1-1-1");
-              console.log(this.variableArray);
+            console.log("--1-1-1");
+            console.log(this.variableArray);
           }
           // 查询所有的作用函数
           this.getFunctionTypeOptions();
@@ -3771,8 +3794,9 @@
         },2000);
         this.addDiv = true;
         this.layoutOne = false;
-
       },
+
+
       /** 提交按钮 */
       submitForm() {
         this.$refs["form"].validate((valid) => {

@@ -11,9 +11,15 @@
           <el-input v-model="queryParams.variablePackEn" placeholder="请输入英文名" clearable size="small"
                     @keyup.enter.native="handleQuery" />
         </el-form-item>
-        <el-form-item label="变量分类" label-width="70px" prop="variableClassification">
-          <el-input v-model="queryParams.variableClassification" placeholder="请输入变量分类" clearable size="small"
-                    @keyup.enter.native="handleQuery" />
+        <el-form-item label="变量分类" prop="variableClassificationName">
+          <el-select v-model="queryParams.variableClassificationName" placeholder="请选择变量类型" clearable size="small">
+            <el-option
+              v-for="dict in variableClassificationOptions"
+              :key="dict.name"
+              :label="dict.name"
+              :value="dict.name"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item label="运行状态" label-width="70px" prop="runingState">
           <el-select v-model="queryParams.runingState" placeholder="请选择运行状态" clearable size="small">
@@ -34,6 +40,10 @@
         </el-col>
         <el-col :span="1.5">
           <el-button type="primary" icon="el-icon-edit" size="mini" :disabled="single" @click="handleUpdate">修改
+          </el-button>
+        </el-col>
+        <el-col :span="1.5">
+          <el-button type="primary" icon="el-icon-check" size="mini" :disabled="single" @click="testPackage">测试
           </el-button>
         </el-col>
         <el-col :span="1.5">
@@ -123,8 +133,8 @@
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer" style="float: right">
-        <el-button type="primary" @click="testRun" :disabled="detailViem" v-show="testButton">测 试</el-button>
-        <el-button type="primary" @click="submitForm" :disabled="detailViem">确 定</el-button>
+        <el-button type="primary" @click="testRun" v-show="testButton">调  试</el-button>
+        <el-button type="primary" @click="submitForm" v-show="submitButton" :disabled="detailViem">确 定</el-button>
         <el-button @click="cancel">取 消</el-button>
       </div>
     </div>
@@ -352,6 +362,8 @@
         variableCenter: [],
         //
         layoutOne: true,
+        // 确定按钮的展示
+        submitButton: true,
         // 新增展示参数
         addDiv: false,
         // 控制手动配置资源div
@@ -485,6 +497,7 @@
       this.getDicts("sql_task_status").then(response => {
         this.runingStateOptions = response.data;
       });
+      this.getVariableClassificationOptions();
     },
     methods: {
 
@@ -1249,7 +1262,6 @@
             // 如果数据源表是oracle-cdc
             this.variableIdShow = true;
             this.rules.variableId[0].required = true;
-            this.testButton = true;
             if (data.connectorType === "03") {
               this.cdcShow();
               this.form.variablePackType = "03";
@@ -1272,7 +1284,6 @@
         // 变量分类字段不展示
         this.variableIdShow = false;
         this.rules.variableId[0].required = false;
-        this.testButton = false;
       },
 
       /** 查询变量包管理列表 */
@@ -1330,7 +1341,7 @@
         this.resultTableOptions = [];
         this.variableClassificationOptions = [];
         this.variableNum = 0;
-        this.testButton = true;
+        this.getVariableClassificationOptions();
 
       },
       /** 搜索按钮操作 */
@@ -1351,6 +1362,7 @@
       },
       /** 新增按钮操作 */
       handleAdd() {
+        this.submitButton = true;
         this.detailViem = false;
         this.reset();
         this.title = "添加变量包管理";
@@ -1358,9 +1370,8 @@
         this.versionNumShow = false;
         this.UnAllowedUpdate = false;
         this.addDiv = true;
+        this.testButton = false;
 
-        // 查询变量分类
-        this.getVariableClassificationOptions();
         // 查询数据结果表
         this.getResultTable();
 
@@ -1368,6 +1379,8 @@
 
       // 查看变量的版本详细
       versionDetail(row) {
+        this.submitButton = false;
+        this.testButton = false;
         this.detailDiv = true;
         this.layoutOne = false;
         this.versionNumShow = true;
@@ -1388,8 +1401,6 @@
         this.detailDiv = false;
         this.addDiv = true;
         const variablePackId = row.variablePackId || this.ids;
-        // 查询变量分类
-        this.getVariableClassificationOptions();
         // 查询数据结果表
         this.getResultTable();
         getManager(variablePackId).then(response => {
@@ -1402,19 +1413,31 @@
           this.variableClassificationChange(this.form.variableClassification);
         });
       },
-
+      // 测试按钮
+      testPackage(row){
+        this.testButton = true;
+        this.detailViem = true;
+        this.detailDiv = false;
+        this.submitButton = false;
+        this.testAndUpdate(row);
+      },
       /** 修改按钮操作 */
       handleUpdate(row) {
+        this.submitButton = true;
+        this.testButton = false;
         this.detailViem = false;
-        this.reset();
         this.title = "修改变量包管理";
+        this.testAndUpdate(row);
+      },
+
+      // 测试和修改共用
+      testAndUpdate(row) {
+        this.reset();
         this.layoutOne = false;
         this.versionNumShow = true;
         this.UnAllowedUpdate = true;
         this.addDiv = true;
         const variablePackId = row.variablePackId || this.ids
-        // 查询变量分类
-        this.getVariableClassificationOptions();
         // 查询数据结果表
         this.getResultTable();
         getManager(variablePackId).then(response => {
