@@ -20,13 +20,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="createTime"    column="create_time"    />
         <result property="updateTime"    column="update_time"    />
         <result property="createBy"    column="create_by"    />
+        <result property="createId"    column="create_id"    />
         <result property="updateBy"    column="update_by"    />
     </resultMap>
 
     <sql id="selectTSelfFunctionVo">
         select self_function_id, self_function_name_cn, module_type, function_name, function_package_path,function_Type,file_path_two,
          file_path, function_params, self_function_desc,input_param,output_param,
-          create_time, update_time,create_by,update_by from t_self_function
+          create_time, update_time,create_by,create_id,update_by from t_self_function t
     </sql>
 
     <select id="selectTSelfFunctionList" parameterType="TSelfFunction" resultMap="TSelfFunctionResult">
@@ -38,6 +39,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null ">and create_Time = #{createTime}</if>
             <if test="updateTime != null ">and update_Time = #{updateTime}</if>
             <if test="functionType != null and functionType != '' ">and function_Type = #{functionType}</if>
+            <if test="dataScope != null and dataScope != ''"> ${dataScope}</if>
             and (function_Type = '01' or function_Type = '02' or function_Type = '03')
         </where>
         order by  create_Time desc
@@ -69,6 +71,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="inputParam != null  and inputParam != ''">input_Param,</if>
             <if test="outputParam != null  and outputParam != ''">output_Param,</if>
             <if test="createBy != null  and createBy != ''">create_by,</if>
+            <if test="createId != null  and createId != ''">create_id,</if>
             create_time
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -84,6 +87,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="inputParam != null  and inputParam != ''">#{inputParam},</if>
             <if test="outputParam != null  and outputParam != ''">#{outputParam},</if>
             <if test="createBy != null  and createBy != ''">#{createBy},</if>
+            <if test="createId != null  and createId != ''">#{createId},</if>
             sysdate()
          </trim>
     </insert>

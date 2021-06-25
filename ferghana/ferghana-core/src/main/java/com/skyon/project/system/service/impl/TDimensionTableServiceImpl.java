@@ -7,6 +7,7 @@ import com.google.common.base.Strings;
 import com.skyon.common.utils.DateUtils;
 import com.skyon.common.utils.SecurityUtils;
 import com.skyon.common.utils.StringUtils;
+import com.skyon.framework.aspectj.lang.annotation.DataScope;
 import com.skyon.project.system.domain.TDatasourceField;
 import com.skyon.project.system.domain.TDimensionTable;
 import com.skyon.project.system.mapper.TDatasourceFieldMapper;
@@ -15,6 +16,7 @@ import com.skyon.project.system.service.ITDimensionTableService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.security.Security;
 import java.util.*;
 
 /**
@@ -231,6 +233,7 @@ public class TDimensionTableServiceImpl implements ITDimensionTableService {
      * @return 数据维
      */
     @Override
+    @DataScope(serviceTable = "1")
     public List<TDimensionTable> selectTDimensionTableList(TDimensionTable tDimensionTable) {
         return tDimensionTableMapper.selectTDimensionTableList(tDimensionTable);
     }
@@ -252,6 +255,7 @@ public class TDimensionTableServiceImpl implements ITDimensionTableService {
         tranSchemaJson(tDimensionTable);
         joinDimensionTableSql(tDimensionTable);
         tDimensionTable.setCreateBy(SecurityUtils.getUsername());
+        tDimensionTable.setCreateId(SecurityUtils.getUserId());
         return tDimensionTableMapper.insertTDimensionTable(tDimensionTable);
     }
 

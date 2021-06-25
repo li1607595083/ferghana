@@ -35,16 +35,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="createTime"    column="create_time"    />
         <result property="updateTime"    column="update_time"    />
         <result property="createBy"    column="create_by"    />
+        <result property="createId"    column="create_id"    />
         <result property="updateBy"    column="update_by"    />
         <result property="variableClassificationName"    column="variable_classification_name"    />
     </resultMap>
 
     <sql id="selectTVariablePackageManagerVo">
         select variable_pack_id, variable_pack_name, variable_pack_en, runing_state,select_Variable_Note_form,var_Dir,concurrency,job_Memory,task_Memory,
-         variable_classification, s.description, variable_id, create_table_sql, runing_sql,application_id,job_id,s.result_table,s.result_table_sql,var_Dir,
+         variable_classification, t.description, variable_id, create_table_sql, runing_sql,application_id,job_id,t.result_table,t.result_table_sql,var_Dir,
          original_Variable,original_Variable_Sql,version_num,version_show,start_Param_Base,save_Point_Dir,variable_pack_type,
-         s.create_time, s.update_time,s.create_by,s.update_by,d.variable_classification_name from t_variable_package_manager s
-         left join t_variable_classification d on s.variable_classification = d.variable_classification_id
+         t.create_time, t.update_time,t.create_by,t.create_id,t.update_by,d.variable_classification_name from t_variable_package_manager t
+         left join t_variable_classification d on t.variable_classification = d.variable_classification_id
     </sql>
 
     <select id="selectTVariablePackageManagerByVersion" parameterType="TVariablePackageManager" resultMap="TVariablePackageManagerResult">
@@ -62,6 +63,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="runingState != null  and runingState != ''"> and runing_state = #{runingState}</if>
             <if test="variableClassificationName != null  and variableClassificationName != ''"> and variable_classification_name = #{variableClassificationName}</if>
             <if test="variablePackEn != null  and variablePackEn != ''"> and variable_pack_en like concat('%',#{variablePackEn},'%')</if>
+            <if test="dataScope != null and dataScope != ''"> ${dataScope}</if>
              and version_show = '1'
         </where>
         order by create_time desc
@@ -102,6 +104,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="varDir != null  and varDir != ''">var_Dir,</if>
             <if test="savePointDir != null">save_Point_Dir,</if>
             <if test="createBy != null  and createBy != ''">create_By,</if>
+            <if test=" createId != null  and createId != ''">create_id,</if>
             create_time
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -124,6 +127,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="varDir != null  and varDir != ''">#{varDir},</if>
             <if test="savePointDir != null">#{savePointDir},</if>
             <if test="createBy != null  and createBy != ''">#{createBy},</if>
+            <if test="createId != null  and createId != ''">#{createId},</if>
             sysdate()
 
          </trim>

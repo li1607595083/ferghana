@@ -6,6 +6,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.skyon.common.exception.CustomException;
 import com.skyon.common.utils.SecurityUtils;
 import com.skyon.common.utils.StringUtils;
+import com.skyon.framework.aspectj.lang.annotation.DataScope;
 import com.skyon.project.system.domain.*;
 import com.skyon.project.system.mapper.TDimensionTableMapper;
 import com.skyon.project.system.mapper.TSelfFunctionMapper;
@@ -75,6 +76,7 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
      * @return 变量管理中心
      */
     @Override
+    @DataScope(serviceTable = "1")
     public List<TVariableCenter> selectTVariableCenterList(TVariableCenter tVariableCenter) {
         return tVariableCenterMapper.selectTVariableCenterList(tVariableCenter);
     }
@@ -93,6 +95,7 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
     @Override
     public int insertTVariableCenter(TVariableCenter tVariableCenter) {
         tVariableCenter.setCreateBy(SecurityUtils.getUsername());
+        tVariableCenter.setCreateId(SecurityUtils.getUserId());
         insertORupdate(tVariableCenter);
         return tVariableCenterMapper.insertTVariableCenter(tVariableCenter);
     }

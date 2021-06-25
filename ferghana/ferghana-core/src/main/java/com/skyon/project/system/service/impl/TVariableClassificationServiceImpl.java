@@ -7,6 +7,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.skyon.common.utils.DateUtils;
 import com.skyon.common.utils.SecurityUtils;
+import com.skyon.framework.aspectj.lang.annotation.DataScope;
 import com.skyon.project.system.domain.TDimensionTable;
 import com.skyon.project.system.mapper.TDimensionTableMapper;
 import joptsimple.internal.Strings;
@@ -47,6 +48,7 @@ public class TVariableClassificationServiceImpl implements ITVariableClassificat
      * @return 变量分类
      */
     @Override
+    @DataScope(serviceTable = "1")
     public List<TVariableClassification> selectTVariableClassificationList(TVariableClassification tVariableClassification) {
         List<TVariableClassification> classifications = tVariableClassificationMapper
                 .selectTVariableClassificationList(tVariableClassification);
@@ -65,6 +67,7 @@ public class TVariableClassificationServiceImpl implements ITVariableClassificat
         setDimensionRelation(tVariableClassification);
         setSourceRelation(tVariableClassification);
         tVariableClassification.setCreateBy(SecurityUtils.getUsername());
+        tVariableClassification.setCreateId(SecurityUtils.getUserId());
         return tVariableClassificationMapper.insertTVariableClassification(tVariableClassification);
     }
 

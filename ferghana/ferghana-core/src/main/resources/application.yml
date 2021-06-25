@@ -38,6 +38,8 @@ logging:
   level:
     com.unityup: debug
     org.springframework: warn
+#    show-sql
+    com.skyon.project.system.mapper: debug
 
 # Spring配置
 spring:

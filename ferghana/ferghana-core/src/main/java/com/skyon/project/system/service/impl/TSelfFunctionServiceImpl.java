@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.google.common.base.Strings;
 import com.skyon.common.exception.CustomException;
 import com.skyon.common.utils.SecurityUtils;
+import com.skyon.framework.aspectj.lang.annotation.DataScope;
 import com.skyon.project.system.domain.TSelfFunction;
 import com.skyon.project.system.mapper.TSelfFunctionMapper;
 import com.skyon.project.system.service.ITSelfFunctionService;
@@ -16,6 +17,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.security.Security;
 import java.util.*;
 
 import static org.apache.flink.optimizer.Optimizer.LOG;
@@ -76,6 +78,7 @@ public class TSelfFunctionServiceImpl implements ITSelfFunctionService {
      * @return 自定义函数
      */
     @Override
+    @DataScope(serviceTable = "1")
     public List<TSelfFunction> selectTSelfFunctionList(TSelfFunction tSelfFunction) {
         return tSelfFunctionMapper.selectTSelfFunctionList(tSelfFunction);
     }
@@ -93,6 +96,7 @@ public class TSelfFunctionServiceImpl implements ITSelfFunctionService {
     @Override
     public int insertTSelfFunction(TSelfFunction tSelfFunction) {
         tSelfFunction.setCreateBy(SecurityUtils.getUsername());
+        tSelfFunction.setCreateId(SecurityUtils.getUserId());
         return tSelfFunctionMapper.insertTSelfFunction(tSelfFunction);
     }
 

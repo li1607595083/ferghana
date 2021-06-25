@@ -3,9 +3,9 @@ package com.skyon.project.system.service.impl;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.google.common.base.Strings;
 import com.skyon.common.utils.SecurityUtils;
 import com.skyon.common.utils.StringUtils;
+import com.skyon.framework.aspectj.lang.annotation.DataScope;
 import com.skyon.project.system.domain.TDataSource;
 import com.skyon.project.system.domain.TDatasourceField;
 import com.skyon.project.system.mapper.TDataSourceMapper;
@@ -14,9 +14,10 @@ import com.skyon.project.system.service.ITDataSourceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.swing.text.TabableView;
-import java.lang.reflect.Array;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 【请填写功能名称】Service业务层处理
@@ -83,6 +84,7 @@ public class TDataSourceServiceImpl implements ITDataSourceService {
      * @return 【请填写功能名称】
      */
     @Override
+    @DataScope(serviceTable = "1")
     public List<TDataSource> selectTDataSourceList(TDataSource tDataSource) {
         return tDataSourceMapper.selectTDataSourceList(tDataSource);
     }
@@ -99,6 +101,7 @@ public class TDataSourceServiceImpl implements ITDataSourceService {
         tDataSource.setCreateTableSql(joinCreateTableSql(tDataSource));
         tDataSource.setHandleData(JSON.toJSONString(tDataSource.getHandleData()));
         tDataSource.setCreateBy(SecurityUtils.getUsername());
+        tDataSource.setCreateId(SecurityUtils.getUserId());
         return tDataSourceMapper.insertTDataSource(tDataSource);
     }
 

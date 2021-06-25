@@ -11,6 +11,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.skyon.common.exception.CustomException;
 import com.skyon.common.utils.SecurityUtils;
 import com.skyon.common.utils.StringUtils;
+import com.skyon.framework.aspectj.lang.annotation.DataScope;
 import com.skyon.project.system.domain.*;
 import com.skyon.project.system.mapper.*;
 import com.skyon.project.system.service.ITDataResultSourceService;
@@ -85,6 +86,7 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
      * @return 变量包管理
      */
     @Override
+    @DataScope(serviceTable = "1")
     public List<TVariablePackageManager> selectTVariablePackageManagerList(TVariablePackageManager tVariablePackageManager) {
         return tVariablePackageManagerMapper.selectTVariablePackageManagerList(tVariablePackageManager);
     }
@@ -104,6 +106,7 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
     public int insertTVariablePackageManager(Map map, TVariablePackageManager pkManager, String runFlag) {
         pkManager.setRuningState("0"); // 初始化都是0 停止
         pkManager.setCreateBy(SecurityUtils.getUsername());
+        pkManager.setCreateId(SecurityUtils.getUserId());
 
         if (pkManager.getVariablePackType().equals("03")) { // oraclecdc
             pkManager.setResultTableSql(editOraclecdcSql(map, pkManager));

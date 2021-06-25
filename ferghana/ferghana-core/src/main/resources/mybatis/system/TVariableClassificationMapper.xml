@@ -17,6 +17,7 @@
         <result property="updateTime"    column="update_time"    />
         <result property="createBy"    column="create_by"    />
         <result property="updateBy"    column="update_by"    />
+        <result property="updateId"    column="update_id"    />
 <!--        关联字段 -->
         <result property="schemaDefine"    column="schema_define"    />
         <result property="connectorType"    column="connector_type"    />
@@ -43,9 +44,9 @@
 
     <sql id="selectTVariableClassificationVo">
         select variable_classification_id, variable_classification_name, source_dab_relation, source_two_dab_relation, source_dab_field,dimension_relation,source_relation,
-               d.description, d.create_time, d.update_time,d.create_by,d.update_by,t.schema_define,t.connector_type
-        from t_variable_classification d
-                 left join t_data_source t on d.source_dab_relation = t.table_name
+               t.description, t.create_time, t.update_time,t.create_by,t.create_id,t.update_by,s.schema_define,s.connector_type
+        from t_variable_classification t
+                 left join t_data_source s on t.source_dab_relation = s.table_name
     </sql>
 
     <sql id="selectSchemaPrimaryKey">
@@ -68,6 +69,7 @@
             <if test="variableClassificationName != null  and variableClassificationName != ''"> and variable_classification_name like concat('%', #{variableClassificationName}, '%')</if>
             <if test="sourceDabRelation != null  and sourceDabRelation != ''"> and source_dab_relation = #{sourceDabRelation}</if>
             <if test="description != null  and description != ''"> and description like concat('%', #{description}, '%')</if>
+            <if test="dataScope != null and dataScope != ''"> ${dataScope}</if>
         </where>
         order by create_time desc
     </select>
@@ -88,6 +90,7 @@
             <if test="dimensionRelation != null  and dimensionRelation != ''">dimension_relation,</if>
             <if test="sourceRelation != null  and sourceRelation != ''">source_relation,</if>
             <if test="createBy != null ">create_by,</if>
+            <if test="createId != null ">create_id,</if>
             create_time
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -99,6 +102,7 @@
             <if test="dimensionRelation != null  and dimensionRelation != ''">#{dimensionRelation},</if>
             <if test="sourceRelation != null  and sourceRelation != ''">#{sourceRelation},</if>
             <if test="createBy != null ">#{createBy},</if>
+            <if test="createId != null ">#{createId},</if>
             sysdate()
         </trim>
     </insert>

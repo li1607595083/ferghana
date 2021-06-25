@@ -47,18 +47,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="createTime"    column="create_time"    />
         <result property="updateTime"    column="update_time"    />
         <result property="createBy"    column="create_by"    />
+        <result property="createId"    column="create_id"    />
         <result property="updateBy"    column="update_by"    />
         <result property="variableClassificationName"    column="variable_classification_name"    />
     </resultMap>
 
     <sql id="selectTVariableCenterVo">
-        select variable_id, variable_name, variable_name_EN,variable_classification, variable_type, s.description,version_Num,version_Show,
+        select variable_id, variable_name, variable_name_EN,variable_classification, variable_type, t.description,version_Num,version_Show,
          variable_Model_Type, variable_factor, cluster_Name,redis_function,redis_value,redis_key,redis_Self_Function_item,statistics_Self_Function_item,
          statistics_count_model,statistics_model,statistics_num,statistics_cycle,user_Defined_Sql,derive_Variable_Sql,redis_Element_Distinct,global_variable_start_time,global_variable_stop_time,
          statistics_condition_option,statistics_conditions,process_model,process_input_params,sql_context,derive_base_Variable,
          test_source_Table_Col,test_dimension_Table_Col,statistics_Group_Item,derive_Variable_Model_Type,derive_Process_Model,derive_Input_Params,
-          s.create_time, s.update_time,s.create_by,s.update_by,d.variable_classification_name from t_variable_center s
-          left join t_variable_classification d on s.variable_classification = d.variable_classification_id
+          t.create_time, t.update_time,t.create_by,t.create_id,t.update_by,d.variable_classification_name from t_variable_center t
+          left join t_variable_classification d on t.variable_classification = d.variable_classification_id
     </sql>
 
     <select id="selectTVariableCenterVersion" resultMap="TVariableCenterResult">
@@ -80,6 +81,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="variableType != null  and variableType != ''"> and variable_type = #{variableType}</if>
             <if test="variableClassification != null  and variableClassification != ''"> and variable_classification = #{variableClassification}</if>
             <if test="description != null  and description != ''"> and description like concat('%', #{description}, '%')</if>
+            <if test="dataScope != null and dataScope != ''"> ${dataScope}</if>
              and version_show = '1'
         </where>
         order by create_time desc
@@ -159,6 +161,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="testSourceTableCol != null  and testSourceTableCol!=''">test_source_Table_Col,</if>
             <if test="testDimensionTableCol != null  and testDimensionTableCol!=''">test_dimension_Table_Col,</if>
             <if test="createBy != null  and createBy!=''">create_By,</if>
+            <if test="createId != null  and v!=''">create_id,</if>
             create_time
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -200,6 +203,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="testSourceTableCol != null  and testSourceTableCol!=''">#{testSourceTableCol},</if>
             <if test="testDimensionTableCol != null  and testDimensionTableCol!=''">#{testDimensionTableCol},</if>
             <if test="createBy != null  and createBy!=''">#{createBy},</if>
+            <if test="createId != null  and createId!=''">#{createId},</if>
             sysdate()
          </trim>
     </insert>
