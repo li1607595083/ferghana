@@ -63,7 +63,7 @@ public class TDataResultSourceServiceImpl implements ITDataResultSourceService {
      * @return 【请填写功能名称】
      */
     @Override
-    @DataScope(serviceTable = "1")
+    @DataScope(serviceTable = true)
     public List<TDataResultSource> selectTDataResultSourceList(TDataResultSource tDataResultSource) {
         return tDataResultSourceMapper.selectTDataResultSourceList(tDataResultSource);
     }

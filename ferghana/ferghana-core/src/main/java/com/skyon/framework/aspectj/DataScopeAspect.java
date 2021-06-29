@@ -73,10 +73,10 @@ public class DataScopeAspect {
         if (currentUser != null) {
             // 如果是超级管理员，则不过滤数据
             if (!currentUser.isAdmin()) {
-                if ("0".equals(controllerDataScope.serviceTable())) { // 非业务表的数据权限
+                if (!controllerDataScope.serviceTable()) { // 非业务表的数据权限
                     dataScopeFilter(joinPoint, currentUser, controllerDataScope.deptAlias(),
                             controllerDataScope.userAlias());
-                } else if ("1".equals(controllerDataScope.serviceTable())) { // 业务表的数据权限
+                } else if (controllerDataScope.serviceTable()) { // 业务表的数据权限
                     serviceTableScope(joinPoint, currentUser);
                 }
             }

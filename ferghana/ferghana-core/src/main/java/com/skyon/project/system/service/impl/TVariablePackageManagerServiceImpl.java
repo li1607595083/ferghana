@@ -86,7 +86,7 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
      * @return 变量包管理
      */
     @Override
-    @DataScope(serviceTable = "1")
+    @DataScope(serviceTable = true)
     public List<TVariablePackageManager> selectTVariablePackageManagerList(TVariablePackageManager tVariablePackageManager) {
         return tVariablePackageManagerMapper.selectTVariablePackageManagerList(tVariablePackageManager);
     }

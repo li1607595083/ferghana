@@ -233,7 +233,7 @@ public class TDimensionTableServiceImpl implements ITDimensionTableService {
      * @return 数据维
      */
     @Override
-    @DataScope(serviceTable = "1")
+    @DataScope(serviceTable = true)
     public List<TDimensionTable> selectTDimensionTableList(TDimensionTable tDimensionTable) {
         return tDimensionTableMapper.selectTDimensionTableList(tDimensionTable);
     }

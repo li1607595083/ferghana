@@ -76,7 +76,7 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
      * @return 变量管理中心
      */
     @Override
-    @DataScope(serviceTable = "1")
+    @DataScope(serviceTable = true)
     public List<TVariableCenter> selectTVariableCenterList(TVariableCenter tVariableCenter) {
         return tVariableCenterMapper.selectTVariableCenterList(tVariableCenter);
     }

@@ -48,7 +48,7 @@ public class TVariableClassificationServiceImpl implements ITVariableClassificat
      * @return 变量分类
      */
     @Override
-    @DataScope(serviceTable = "1")
+    @DataScope(serviceTable = true)
     public List<TVariableClassification> selectTVariableClassificationList(TVariableClassification tVariableClassification) {
         List<TVariableClassification> classifications = tVariableClassificationMapper
                 .selectTVariableClassificationList(tVariableClassification);

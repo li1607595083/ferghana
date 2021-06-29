@@ -78,7 +78,7 @@ public class TSelfFunctionServiceImpl implements ITSelfFunctionService {
      * @return 自定义函数
      */
     @Override
-    @DataScope(serviceTable = "1")
+    @DataScope(serviceTable = true)
     public List<TSelfFunction> selectTSelfFunctionList(TSelfFunction tSelfFunction) {
         return tSelfFunctionMapper.selectTSelfFunctionList(tSelfFunction);
     }
