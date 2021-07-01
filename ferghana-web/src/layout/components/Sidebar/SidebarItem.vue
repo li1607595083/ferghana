@@ -11,7 +11,7 @@
 
     <el-submenu v-else ref="subMenu" :index="resolvePath(item.path)" popper-append-to-body>
       <template slot="title">
-        <item v-if="item.meta" :icon="item.meta && item.meta.icon" :title="item.meta.title" />
+        <div class="submenu-box"><item v-if="item.meta" :icon="item.meta && item.meta.icon" :title="item.meta.title" /></div>
       </template>
       <sidebar-item v-for="child in item.children" :key="child.path" :is-nest="true" :item="child"
         :base-path="resolvePath(child.path)" class="nest-menu" />
@@ -110,6 +110,10 @@
   .horizontal-menu {
 
     .el-submenu__title {
+
+      display: flex;
+      align-items: center;
+
       & span {
         margin: 0 10px;
         padding-right: 15px;
@@ -204,5 +208,17 @@
       }
     }
 
+  }
+</style>
+
+<style>
+  .el-submenu__icon-arrow {
+    display: none;
+  }
+
+  .submenu-box {
+    height: 50px;
+    display: flex;
+    align-items: center;
   }
 </style>

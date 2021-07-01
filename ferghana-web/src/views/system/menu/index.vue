@@ -40,26 +40,22 @@
         <template slot-scope="scope">
           <el-button size="mini"
                      type="text"
-                     icon="el-icon-edit"
                      @click="handleDetail(scope.row)"
           >详情</el-button>
           <el-button size="mini"
             type="text"
-            icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['system:menu:edit']"
           >修改</el-button>
           <el-button
             size="mini"
             type="text"
-            icon="el-icon-plus"
             @click="handleAdd(scope.row)"
             v-hasPermi="['system:menu:add']"
           >新增</el-button>
           <el-button
             size="mini"
             type="text"
-            icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['system:menu:remove']"
           >删除</el-button>

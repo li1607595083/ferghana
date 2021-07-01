@@ -27,11 +27,7 @@
         </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="primary" icon="el-icon-edit" size="mini" :disabled="single" @click="handleUpdate">修改
-        </el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button type="primary" icon="el-icon-delete" size="mini" :disabled="multiple" @click="handleDelete">删除
+        <el-button type="primary" icon="el-icon-delete" size="mini" :disabled="multiple" @click="handleDelete">批量删除
         </el-button>
       </el-col>
     </el-row>
@@ -51,6 +47,34 @@
       <el-table-column label="修改时间" align="center" prop="updateTime" width="170">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.updateTime) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column
+        label="操作"
+        align="center"
+        width="250"
+        class-name="small-padding fixed-width"
+      >
+        <template slot-scope="scope">
+          <el-button
+            size="mini"
+            type="text"
+            @click="handleDetail(scope.row)"
+          >详情
+          </el-button>
+          <el-button
+            size="mini"
+            type="text"
+            @click="handleUpdate(scope.row)"
+          >修改
+          </el-button>
+          <el-button
+            v-if="scope.row.userId !== 1"
+            size="mini"
+            type="text"
+            @click="handleDelete(scope.row)"
+          >删除
+          </el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -113,12 +137,12 @@
           <el-form-item label="schema" class="el-col-6" :prop="'jdbcDynamicItem.' + index + '.jdbcKey'"
             :rules="rules.jdbcDynamicItem.jdbcKey">
             <el-input v-model="item.jdbcKey" @change="schemaDefineChange('jdbc',index)" placeholder="请输入字段"
-              style="width: 200px" :disabled="item.isUsed === '1'" />
+              style="width: 200px" :disabled="item.isUsed === '1' || detailViem" />
           </el-form-item>
           <el-form-item class="el-col-5 elementStyle" :prop="'jdbcDynamicItem.' + index + '.jdbcType'"
             :rules="rules.jdbcDynamicItem.jdbcType">
             <el-select v-model="item.jdbcType" placeholder="请选择数据类型" clearable style="width: 190px"
-              :disabled="item.isUsed === '1'">
+              :disabled="item.isUsed === '1' || detailViem">
               <el-option v-for="dict in sysDataBaseTypes" :key="dict.dictValue" :label="dict.dictLabel"
                 :value="dict.dictValue" />
             </el-select>
@@ -130,7 +154,7 @@
           <el-form-item class="el-col-2 elementStyle" :prop="'jdbcDynamicItem.' + index + '.primaryKey'">
             <el-input v-model="item.primaryKey" :disabled="detailViem" v-show="false" />
             <el-button @click="primaryKeyCheck(index)" :ref="'ref' + index" :id="'ref' + index"
-              :disabled="item.isUsed === '1'" style="padding: 10px;"
+              :disabled="item.isUsed === '1' || detailViem" style="padding: 10px;"
               :style="{backgroundColor:(item.primaryKey !== '')  ? '#1890ff' : '#fff',color:(item.primaryKey !== '') ? '#fff' : '#C0C4CC',}">
               主键
             </el-button>
@@ -140,7 +164,7 @@
               <el-button @click="jdbcAddItem" :disabled="detailViem">
                 <i class="el-icon-plus" />
               </el-button>
-              <el-button @click="jdbcDeleteItem(item, index)" :disabled="item.isUsed === '1'">
+              <el-button @click="jdbcDeleteItem(item, index)" :disabled="item.isUsed === '1' || detailViem || form.jdbcDynamicItem === 1">
                 <i class="el-icon-minus" />
               </el-button>
             </span>
@@ -209,7 +233,7 @@
               <el-button @click="hbaseAddItem(item,index)" :disabled="detailViem">
                 <i class="el-icon-plus" />增加列族
               </el-button>
-              <el-button @click="hbaseDeleteItem(item, index)" :disabled="detailViem">
+              <el-button @click="hbaseDeleteItem(item, index)" :disabled="detailViem || form.hbaseItem.length === 1">
                 <i class="el-icon-minus" />删除列族
               </el-button>
             </el-form-item>
@@ -247,7 +271,7 @@
                   <el-button @click="hbaseAddDynamicItem(index, item2, index2)" :disabled="detailViem">
                     <i class="el-icon-plus" />
                   </el-button>
-                  <el-button @click="hbaseDeleteDynamicItem(index, item2, index2)" :disabled="detailViem">
+                  <el-button @click="hbaseDeleteDynamicItem(index, item2, index2)" :disabled="detailViem || form.hbaseItem[index].div2.hbaseDynamicItem.length === 1">
                     <i class="el-icon-minus" />
                   </el-button>
                 </span>

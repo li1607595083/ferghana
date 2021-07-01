@@ -39,15 +39,11 @@
           </el-button>
         </el-col>
         <el-col :span="1.5">
-          <el-button type="primary" icon="el-icon-edit" size="mini" :disabled="single" @click="handleUpdate">修改
-          </el-button>
-        </el-col>
-        <el-col :span="1.5">
           <el-button type="primary" icon="el-icon-check" size="mini" :disabled="single" @click="testPackage">测试
           </el-button>
         </el-col>
         <el-col :span="1.5">
-          <el-button type="primary" icon="el-icon-delete" size="mini" :disabled="multiple" @click="handleDelete">删除
+          <el-button type="primary" icon="el-icon-delete" size="mini" :disabled="multiple" @click="handleDelete">批量删除
           </el-button>
         </el-col>
       </el-row>
@@ -76,6 +72,41 @@
             <span>{{ parseTime(scope.row.updateTime) }}</span>
           </template>
         </el-table-column>
+        <el-table-column
+            label="操作"
+            align="center"
+            width="250"
+            class-name="small-padding fixed-width"
+          >
+            <template slot-scope="scope">
+              <el-button
+                size="mini"
+                type="text"
+                @click="handleDetail(scope.row)"
+              >详情
+              </el-button>
+              <el-button
+                size="mini"
+                type="text"
+                @click="handleUpdate(scope.row)"
+              >修改
+              </el-button>
+              <el-button
+                type="primary"
+                size="mini"
+                :disabled="single"
+                @click="testPackage"
+              >测试
+              </el-button>
+              <el-button
+                v-if="scope.row.userId !== 1"
+                size="mini"
+                type="text"
+                @click="handleDelete(scope.row)"
+              >删除
+              </el-button>
+            </template>
+          </el-table-column>
       </el-table>
 
       <pagination v-show="total>0" :total="total" :page.sync="queryParams.pageNum" :limit.sync="queryParams.pageSize"

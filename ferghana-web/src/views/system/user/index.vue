@@ -62,23 +62,12 @@
           <el-col :span="1.5">
             <el-button
               type="primary"
-              icon="el-icon-edit"
-              size="mini"
-              :disabled="single"
-              @click="handleUpdate"
-              v-hasPermi="['system:user:edit']"
-            >修改
-            </el-button>
-          </el-col>
-          <el-col :span="1.5">
-            <el-button
-              type="primary"
               icon="el-icon-delete"
               size="mini"
               :disabled="multiple"
               @click="handleDelete"
               v-hasPermi="['system:user:remove']"
-            >删除
+            >批量删除
             </el-button>
           </el-col>
           <!--          <el-col :span="1.5">-->
@@ -132,14 +121,12 @@
               <el-button
                 size="mini"
                 type="text"
-                icon="el-icon-edit"
                 @click="handleDetail(scope.row)"
               >详情
               </el-button>
               <el-button
                 size="mini"
                 type="text"
-                icon="el-icon-edit"
                 @click="handleUpdate(scope.row)"
                 v-hasPermi="['system:user:edit']"
               >修改
@@ -148,7 +135,6 @@
                 v-if="scope.row.userId !== 1"
                 size="mini"
                 type="text"
-                icon="el-icon-delete"
                 @click="handleDelete(scope.row)"
                 v-hasPermi="['system:user:remove']"
               >删除
@@ -156,7 +142,6 @@
               <el-button
                 size="mini"
                 type="text"
-                icon="el-icon-key"
                 @click="handleResetPwd(scope.row)"
                 v-hasPermi="['system:user:resetPwd']"
               >重置

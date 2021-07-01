@@ -27,11 +27,7 @@
         </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="primary" icon="el-icon-edit" size="mini" :disabled="single" @click="handleUpdate" v-hasPermi="['warning:config:edit']">修改
-        </el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button type="primary" icon="el-icon-delete" size="mini" :disabled="multiple" @click="handleDelete" v-hasPermi="['warning:config:remove']">删除
+        <el-button type="primary" icon="el-icon-delete" size="mini" :disabled="multiple" @click="handleDelete" v-hasPermi="['warning:config:remove']">批量删除
         </el-button>
       </el-col>
     </el-row>
@@ -58,6 +54,36 @@
       <el-table-column label="修改时间" align="center" prop="updateTime" width="170">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.updateTime) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column
+        label="操作"
+        align="center"
+        width="250"
+        class-name="small-padding fixed-width"
+      >
+        <template slot-scope="scope">
+          <el-button
+            size="mini"
+            type="text"
+            @click="handleDetail(scope.row)"
+          >详情
+          </el-button>
+          <el-button
+            size="mini"
+            type="text"
+            @click="handleUpdate(scope.row)"
+            v-hasPermi="['warning:config:edit']"
+          >修改
+          </el-button>
+          <el-button
+            v-if="scope.row.userId !== 1"
+            size="mini"
+            type="text"
+            @click="handleDelete(scope.row)"
+            v-hasPermi="['warning:config:remove']"
+          >删除
+          </el-button>
         </template>
       </el-table-column>
     </el-table>

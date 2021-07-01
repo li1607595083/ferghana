@@ -36,8 +36,8 @@
       </el-form-item>
 
       <el-form-item style="padding-left: 12px">
-        <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+        <el-button type="primary" icon="el-icon-search" v-hasPermi="['source:manage:query']" size="mini" @click="handleQuery">搜索</el-button>
+        <el-button icon="el-icon-refresh" size="mini" v-hasPermi="['source:manage:query']" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
 
@@ -48,17 +48,8 @@
           icon="el-icon-plus"
           size="mini"
           @click="handleAdd"
+          v-hasPermi="['source:manage:add']"
         >新增
-        </el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          icon="el-icon-edit"
-          size="mini"
-          :disabled="single"
-          @click="handleUpdate"
-        >修改
         </el-button>
       </el-col>
       <el-col :span="1.5">
@@ -67,8 +58,9 @@
           icon="el-icon-delete"
           size="mini"
           :disabled="multiple"
+          v-hasPermi="['source:manage:remove']"
           @click="handleDelete"
-        >删除
+        >批量删除
         </el-button>
       </el-col>
     </el-row>
@@ -94,6 +86,36 @@
       <el-table-column label="修改时间" align="center" prop="updateTime" width="170">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.updateTime) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column
+        label="操作"
+        align="center"
+        width="250"
+        class-name="small-padding fixed-width"
+      >
+        <template slot-scope="scope">
+          <el-button
+            size="mini"
+            type="text"
+            @click="handleDetail(scope.row)"
+          >详情
+          </el-button>
+          <el-button
+            size="mini"
+            type="text"
+            @click="handleUpdate(scope.row)"
+            v-hasPermi="['source:manage:edit']"
+          >修改
+          </el-button>
+          <el-button
+            v-if="scope.row.userId !== 1"
+            size="mini"
+            type="text"
+            @click="handleDelete(scope.row)"
+            v-hasPermi="['source:manage:remove']"
+          >删除
+          </el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -203,13 +225,13 @@
                         :prop="'dynamicItem.' + index + '.schemaDefine'"
                         :rules="rules.dynamicItem.schemaDefine">
               <el-input v-model="item.schemaDefine" @change="schemaDefineChange(index)"
-                        placeholder="请输入字段" @mouseover="mouseOver" style="width: 200px" :disabled="item.isUsed === '1'"/>
+                        placeholder="请输入字段" @mouseover="mouseOver" style="width: 200px" :disabled="item.isUsed === '1' || detailViem"/>
           </el-form-item>
           <el-form-item class="el-col-6 elementStyle" style="padding-left: 100px"
                         :prop="'dynamicItem.' + index + '.dataBaseType'"
                         :rules="rules.dynamicItem.dataBaseType">
             <el-select v-model="item.dataBaseType" placeholder="请选择数据类型" clearable style="width: 220px"
-                       :disabled="item.isUsed === '1'">
+                       :disabled="item.isUsed === '1' || detailViem">
               <el-option v-for="dict in sysDataBaseTypes" :key="dict.dictValue" :label="dict.dictLabel" :value="dict.dictValue"/>
             </el-select>
           </el-form-item>
@@ -221,7 +243,7 @@
           <el-form-item class="el-col-2 elementStyle" :prop="'dynamicItem.' + index + '.primaryKey'">
             <el-input v-model="item.primaryKey" :disabled="detailViem" v-show="false"/>
             <el-button @click="primaryKeyCheck(index)" :ref="'ref' + index" :id="'ref' + index"
-                       :disabled="item.isUsed === '1'"  style="padding: 10px; margin-left: 90px">主键
+                       :disabled="item.isUsed === '1' || detailViem"  style="padding: 10px; margin-left: 90px">主键
             </el-button>
           </el-form-item>
           <el-form-item class="el-col-6">
@@ -229,7 +251,7 @@
               <el-button @click="addItem" :disabled="detailViem">
                 <i class="el-icon-plus"/>
               </el-button>
-              <el-button @click="deleteItem(item, index)" :disabled="item.isUsed === '1'">
+              <el-button @click="deleteItem(item, index)" :disabled="item.isUsed === '1' || detailViem || form.dynamicItem.length === 1">
                 <i class="el-icon-minus"/>
               </el-button>
             </span>
