@@ -42,7 +42,7 @@ public class WarningConfigController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(WarningConfig warningConfig)
     {
-        startPage();
+         startPage();
         List<WarningConfig> list = warningConfigService.selectWarningConfigList(warningConfig);
         return getDataTable(list);
     }

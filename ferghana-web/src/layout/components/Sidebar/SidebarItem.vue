@@ -216,7 +216,7 @@
     display: none;
   }
 
-  .submenu-box {
+ .el-submenu__title {
     height: 50px;
     display: flex;
     align-items: center;
