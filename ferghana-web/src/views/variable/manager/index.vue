@@ -53,6 +53,7 @@
             icon="el-icon-plus"
             size="mini"
             @click="handleAdd"
+            v-hasPermi="['variable:variable:add']"
           >新增
           </el-button>
         </el-col>
@@ -63,6 +64,7 @@
             size="mini"
             :disabled="single"
             @click="handleUpdate"
+            v-hasPermi="['variable:variable:edit']"
           >修改
           </el-button>
         </el-col>
@@ -83,6 +85,7 @@
             size="mini"
             :disabled="multiple"
             @click="handleDelete"
+            v-hasPermi="['variable:variable:remove']"
           >批量删除
           </el-button>
         </el-col>
@@ -118,12 +121,14 @@
               size="mini"
               type="text"
               @click="handleDetail(scope.row)"
+              v-hasPermi="['variable:variable:query']"
             >详情
             </el-button>
             <el-button
               size="mini"
               type="text"
               @click="handleUpdate(scope.row)"
+              v-hasPermi="['variable:variable:edit']"
             >修改
             </el-button>
             <el-button
@@ -138,6 +143,7 @@
               size="mini"
               type="text"
               @click="handleDelete(scope.row)"
+              v-hasPermi="['variable:variable:remove']"
             >删除
             </el-button>
           </template>

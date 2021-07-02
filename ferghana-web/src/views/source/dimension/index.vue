@@ -23,11 +23,11 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" icon="el-icon-plus" size="mini" @click="handleAdd">新增
+        <el-button type="primary" icon="el-icon-plus" size="mini"  v-hasPermi="['source:dimension:add']" @click="handleAdd">新增
         </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="primary" icon="el-icon-delete" size="mini" :disabled="multiple" @click="handleDelete">批量删除
+        <el-button type="primary" icon="el-icon-delete" size="mini" :disabled="multiple" v-hasPermi="['source:dimension:remove']" @click="handleDelete">批量删除
         </el-button>
       </el-col>
     </el-row>
@@ -60,12 +60,14 @@
             size="mini"
             type="text"
             @click="handleDetail(scope.row)"
+            v-hasPermi="['source:dimension:query']"
           >详情
           </el-button>
           <el-button
             size="mini"
             type="text"
             @click="handleUpdate(scope.row)"
+            v-hasPermi="['source:dimension:edit']"
           >修改
           </el-button>
           <el-button
@@ -73,6 +75,7 @@
             size="mini"
             type="text"
             @click="handleDelete(scope.row)"
+            v-hasPermi="['source:dimension:remove']"
           >删除
           </el-button>
         </template>

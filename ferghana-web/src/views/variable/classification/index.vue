@@ -13,7 +13,7 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" icon="el-icon-plus" size="mini" @click="handleAdd">新增
+        <el-button type="primary" icon="el-icon-plus" size="mini"  v-hasPermi="['variable:classification:add']" @click="handleAdd">新增
         </el-button>
       </el-col>
       <el-col :span="1.5">
@@ -23,6 +23,7 @@
           size="mini"
           :disabled="multiple"
           @click="handleDelete"
+          v-hasPermi="['variable:classification:remove']"
         >批量删除
         </el-button>
       </el-col>
@@ -54,12 +55,14 @@
               size="mini"
               type="text"
               @click="handleDetail(scope.row)"
+              v-hasPermi="['variable:classification:query']"
             >详情
             </el-button>
             <el-button
               size="mini"
               type="text"
               @click="handleUpdate(scope.row)"
+              v-hasPermi="['variable:classification:edit']"
             >修改
             </el-button>
             <el-button
@@ -67,6 +70,7 @@
               size="mini"
               type="text"
               @click="handleDelete(scope.row)"
+              v-hasPermi="['variable:classification:remove']"
             >删除
             </el-button>
           </template>

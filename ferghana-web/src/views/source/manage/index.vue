@@ -99,6 +99,7 @@
             size="mini"
             type="text"
             @click="handleDetail(scope.row)"
+            v-hasPermi="['source:manage:query']"
           >详情
           </el-button>
           <el-button
