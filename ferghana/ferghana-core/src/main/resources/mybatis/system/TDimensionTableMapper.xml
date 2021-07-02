@@ -129,7 +129,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="rowkey != null  and rowkey != ''">rowkey,</if>
             <if test="createBy != null  and createBy != ''">create_by,</if>
             <if test="createId != null  and createId != ''">create_id,</if>
-            create_time
+            update_time
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="dimensionName != null  and dimensionName != ''">#{dimensionName},</if>

@@ -105,7 +105,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="savePointDir != null">save_Point_Dir,</if>
             <if test="createBy != null  and createBy != ''">create_By,</if>
             <if test=" createId != null  and createId != ''">create_id,</if>
-            create_time
+            update_time
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="variablePackName != null  and variablePackName != ''">#{variablePackName},</if>

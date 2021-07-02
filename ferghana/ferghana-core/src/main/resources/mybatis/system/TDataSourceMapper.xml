@@ -126,7 +126,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="waterMarkTime != null  and waterMarkTime != ''">water_Mark_Time,</if>
             <if test="createBy != null  and createBy != ''">create_by,</if>
             <if test="createId != null  and createId != ''">create_id,</if>
-            create_time,
+            update_time,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
 --             <if test="dataSourceId != null ">#{dataSourceId},</if>

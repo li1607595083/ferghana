@@ -162,7 +162,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="testDimensionTableCol != null  and testDimensionTableCol!=''">test_dimension_Table_Col,</if>
             <if test="createBy != null  and createBy!=''">create_By,</if>
             <if test="createId != null  and v!=''">create_id,</if>
-            create_time
+            update_time
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="variableName != null  and variableName != ''">#{variableName},</if>
