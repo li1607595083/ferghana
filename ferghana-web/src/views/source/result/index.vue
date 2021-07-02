@@ -70,14 +70,8 @@
         prop="connectorType"
         :formatter="connectorTypeMatter"
       />
-      <el-table-column label="新增人" align="center" width="130" prop="createBy"/>
-      <el-table-column label="修改人" align="center" width="130" prop="updateBy"/>
-      <el-table-column label="新增时间" align="center" prop="createTime" width="170">
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.createTime) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="修改时间" align="center" prop="updateTime" width="170">
+      <el-table-column label="操作人" align="center" width="130" prop="createBy"/>
+      <el-table-column label="操作时间" align="center" prop="updateTime" width="170">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.updateTime) }}</span>
         </template>
@@ -211,7 +205,7 @@
         loading: true,
         // 选中数组
         ids: [],
-        names: [],
+        names: undefined,
         // 非单个禁用
         single: true,
         // 非多个禁用
@@ -477,7 +471,8 @@
       // 多选框选中数据
       handleSelectionChange(selection) {
         this.ids = selection.map(item => item.dataResultSourceId)
-        this.names = selection.map(item => item.createBy);
+        let nameTmp = selection.map(item => item.createBy);
+        this.names = new Set(nameTmp);
         this.single = selection.length !== 1
         this.multiple = !selection.length
       },
@@ -561,7 +556,7 @@
             return false;
           }
         } else {
-          if (this.names.splice(this.name).length > 0) {
+          if (this.names.size > 1 || !this.names.has(this.name)) {
             this.$message.error("您只能删除自己创建的数据");
             return false;
           }
