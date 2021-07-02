@@ -37,6 +37,7 @@ public class TVariableClassificationController extends BaseController
      * 查询变量分类列表
      */
     @GetMapping("/list")
+    @PreAuthorize("@ss.hasPermi('variable:classification:list')")
     public TableDataInfo list(TVariableClassification tVariableClassification)
     {
         startPage();
@@ -60,6 +61,7 @@ public class TVariableClassificationController extends BaseController
     /**
      * 获取变量分类详细信息
      */
+    @PreAuthorize("@ss.hasPermi('variable:classification:query')")
     @GetMapping(value = "/{variableClassificationId}")
     public AjaxResult getInfo(@PathVariable("variableClassificationId") Long variableClassificationId)
     {
@@ -69,7 +71,7 @@ public class TVariableClassificationController extends BaseController
     /**
      * 新增变量分类
      */
-//    @PreAuthorize("@ss.hasPermi('system:classification:add')")
+    @PreAuthorize("@ss.hasPermi('variable:classification:add')")
     @Log(title = "变量分类", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody TVariableClassification tVariableClassification)
@@ -80,6 +82,7 @@ public class TVariableClassificationController extends BaseController
     /**
      * 修改变量分类
      */
+    @PreAuthorize("@ss.hasPermi('variable:classification:edit')")
     @Log(title = "变量分类", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@RequestBody TVariableClassification tVariableClassification)
@@ -90,6 +93,7 @@ public class TVariableClassificationController extends BaseController
     /**
      * 删除变量分类
      */
+    @PreAuthorize("@ss.hasPermi('variable:classification:remove')")
     @Log(title = "变量分类", businessType = BusinessType.DELETE)
 	@DeleteMapping("/{variableClassificationIds}")
     public AjaxResult remove(@PathVariable Long[] variableClassificationIds)

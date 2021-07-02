@@ -1004,6 +1004,7 @@
   import Treeselect from '@riophae/vue-treeselect';
   import '@riophae/vue-treeselect/dist/vue-treeselect.css';
   import{isLegitimateName} from "@/utils/validate.js";
+  import {mapGetters} from "vuex";
 
   const clickoutside = {
     // 初始化指令
@@ -1043,6 +1044,7 @@
         asd: "",
         // 选中数组
         ids: [],
+        names: [],
         // 非单个禁用
         single: true,
         // 非多个禁用
@@ -1337,6 +1339,13 @@
         this.fieldTypeOptions = response.data;
       });
       this.getVariableClassification();
+    },
+    // 计算属性
+    computed:{
+      // 登录人的名
+      ...mapGetters([
+        'name'
+      ]),
     },
     directives: {clickoutside},
     methods: {
@@ -3586,6 +3595,7 @@
       // 多选框选中数据
       handleSelectionChange(selection) {
         this.ids = selection.map(item => item.variableId);
+        this.names = selection.map(item => item.createBy);
         this.single = selection.length !== 1;
         this.multiple = !selection.length
       },
@@ -3737,6 +3747,12 @@
 
       /** 修改按钮操作 */
       handleUpdate(row) {
+        // 只有自己能修改
+        if (row.createBy !== this.name){
+          this.$message.error("该数据是"+row.createBy+"创建的，您不能修改！");
+          return false;
+        }
+
         this.detailViem = false;
         this.submitButton = true;
         this.testButton = false;
@@ -4125,6 +4141,20 @@
 
       /** 删除按钮操作 */
       handleDelete(row) {
+
+        // 只有自己能删除
+        if (row.variableId !== undefined) {
+          if (row.createBy !== this.name) {
+            this.$message.error("该数据为" + row.createBy + "创建，您不能删除！");
+            return false;
+          }
+        } else {
+          if (this.names.splice(this.name).length > 0) {
+            this.$message.error("您只能删除自己创建的数据");
+            return false;
+          }
+        }
+
         const variableIds = row.variableId || this.ids;
         this.$confirm('是否确认删除变量管理中心编号为"' + variableIds + '"的数据项?', "警告", {
           confirmButtonText: "确定",

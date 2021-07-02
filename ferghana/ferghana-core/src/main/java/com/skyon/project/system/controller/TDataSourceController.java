@@ -41,7 +41,7 @@ public class TDataSourceController extends BaseController {
     /**
      * 查询数据源表列表
      */
-//    @PreAuthorize("@ss.hasPermi('source:manage:list')")
+    @PreAuthorize("@ss.hasPermi('source:manage:list')")
     @GetMapping("/list")
     public TableDataInfo list(TDataSource tDataSource) {
         startPage();
@@ -52,7 +52,7 @@ public class TDataSourceController extends BaseController {
     /**
      * 导出数据源表列表
      */
-//    @PreAuthorize("@ss.hasPermi('source:manage:export')")
+    @PreAuthorize("@ss.hasPermi('source:manage:export')")
     @Log(title = "【请填写功能名称】", businessType = BusinessType.EXPORT)
     @GetMapping("/export")
     public AjaxResult export(TDataSource tDataSource) {
@@ -64,7 +64,7 @@ public class TDataSourceController extends BaseController {
     /**
      * 获取数据源表详细信息
      */
-//    @PreAuthorize("@ss.hasPermi('source:manage:query')")
+    @PreAuthorize("@ss.hasPermi('source:manage:query')")
     @GetMapping(value = "/{dataSourceId}")
     public AjaxResult getInfo(@PathVariable("dataSourceId") Long dataSourceId) {
         return AjaxResult.success(tDataSourceService.selectTDataSourceById(dataSourceId));
@@ -112,7 +112,7 @@ public class TDataSourceController extends BaseController {
     /**
      * 新增数据源表
      */
-//    @PreAuthorize("@ss.hasPermi('source:manage:add')")
+    @PreAuthorize("@ss.hasPermi('source:manage:add')")
     @Log(title = "【请填写功能名称】", businessType = BusinessType.INSERT)
     @PostMapping
     @Transactional
@@ -127,7 +127,7 @@ public class TDataSourceController extends BaseController {
     /**
      * 修改数据源表
      */
-//    @PreAuthorize("@ss.hasPermi('source:manage:edit')")
+    @PreAuthorize("@ss.hasPermi('source:manage:edit')")
     @Log(title = "【请填写功能名称】", businessType = BusinessType.UPDATE)
     @PutMapping
     @Transactional
@@ -142,7 +142,7 @@ public class TDataSourceController extends BaseController {
     /**
      * 删除数据源表
      */
-//    @PreAuthorize("@ss.hasPermi('source:manage:remove')")
+    @PreAuthorize("@ss.hasPermi('source:manage:remove')")
     @Log(title = "【请填写功能名称】", businessType = BusinessType.DELETE)
     @DeleteMapping("/{dataSourceIds}")
     public AjaxResult remove(@PathVariable Long[] dataSourceIds) {

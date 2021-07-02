@@ -53,6 +53,7 @@ public class TVariableCenterController extends BaseController {
      * 查询变量管理中心列表
      */
     @GetMapping("/list")
+    @PreAuthorize("@ss.hasPermi('variable:variable:list')")
     public TableDataInfo list(TVariableCenter tVariableCenter) {
         startPage();
         List<TVariableCenter> list = tVariableCenterService.selectTVariableCenterList(tVariableCenter);
@@ -90,7 +91,7 @@ public class TVariableCenterController extends BaseController {
     /**
      * 获取变量管理中心详细信息
      */
-//    @PreAuthorize("@ss.hasPermi('variable:manager:query')")
+    @PreAuthorize("@ss.hasPermi('variable:variable:query')")
     @GetMapping(value = "/{variableId}")
     public AjaxResult getInfo(@PathVariable("variableId") Long variableId) {
         return AjaxResult.success(tVariableCenterService.selectTVariableCenterById(variableId));
@@ -99,7 +100,7 @@ public class TVariableCenterController extends BaseController {
     /**
      * 新增变量管理中心
      */
-//    @PreAuthorize("@ss.hasPermi('variable:manager:add')")
+    @PreAuthorize("@ss.hasPermi('variable:variable:add')")
     @Log(title = "变量管理中心", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody TVariableCenter tVariableCenter) {
@@ -121,7 +122,7 @@ public class TVariableCenterController extends BaseController {
     /**
      * 修改变量管理中心或者版本升级
      */
-//    @PreAuthorize("@ss.hasPermi('system:center:edit')")
+    @PreAuthorize("@ss.hasPermi('variable:variable:edit')")
     @Log(title = "变量管理中心", businessType = BusinessType.UPDATE)
     @PutMapping
     @Transactional
@@ -280,7 +281,7 @@ public class TVariableCenterController extends BaseController {
     /**
      * 删除变量管理中心
      */
-//    @PreAuthorize("@ss.hasPermi('system:center:remove')")
+    @PreAuthorize("@ss.hasPermi('variable:variable:remove')")
     @Log(title = "变量管理中心", businessType = BusinessType.DELETE)
     @DeleteMapping("/{variableIds}")
     @Transactional

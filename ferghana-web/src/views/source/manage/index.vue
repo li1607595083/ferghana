@@ -288,6 +288,7 @@
     exportSource
   } from "@/api/source/manage.js";
   import{isLegitimateName,unContainSpace} from "@/utils/validate.js";
+  import {mapGetters} from "vuex";
 
   export default {
     name: "Manage",
@@ -297,6 +298,7 @@
         loading: true,
         // 选中数组
         ids: [],
+        names: [],
         // 非单个禁用
         single: true,
         scanAll: undefined,
@@ -441,6 +443,12 @@
       this.getDicts("datasource_schema_type").then(response => {
         this.sysDataBaseTypes = response.data;
       });
+    },
+    // 计算属性
+    computed:{
+      ...mapGetters([
+        'name'
+      ]),
     },
     methods: {
 
@@ -638,6 +646,7 @@
       // 多选框选中数据
       handleSelectionChange(selection) {
         this.ids = selection.map(item => item.dataSourceId);
+        this.names = selection.map(item => item.createBy);
         this.single = selection.length !== 1;
         this.multiple = !selection.length;
       },
@@ -652,6 +661,11 @@
       },
       /** 修改按钮操作 */
       handleUpdate(row) {
+        // 只有自己能修改
+        if (row.createBy !== this.name){
+          this.$message.error("该数据是"+row.createBy+"创建的，您不能修改！");
+          return false;
+        }
         this.reset();
         const dataSourceId = row.dataSourceId || this.ids;
         getSource(dataSourceId).then(response => {
@@ -737,6 +751,20 @@
       },
       /** 删除按钮操作 */
       handleDelete(row) {
+
+        // 只有自己能删除
+        if (row.dataSourceId !== undefined) {
+          if (row.createBy !== this.name) {
+            this.$message.error("该数据为" + row.createBy + "创建，您不能删除！");
+            return false;
+          }
+        } else {
+          if (this.names.splice(this.name).length > 0) {
+            this.$message.error("您只能删除自己创建的数据");
+            return false;
+          }
+        }
+
         const dataSourceIds = row.dataSourceId || this.ids;
         this.$confirm("是否确认删除该数据项?", "警告", {
           confirmButtonText: "确定",

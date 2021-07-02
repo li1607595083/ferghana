@@ -10,6 +10,7 @@ import com.skyon.project.system.domain.TVariablePackageOperateLog;
 import com.skyon.project.system.service.*;
 import com.skyon.project.system.util.ApplicationStatusUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -57,6 +58,7 @@ public class TVariablePackageManagerController extends BaseController {
     /**
      * 查询变量包管理列表
      */
+    @PreAuthorize("@ss.hasPermi('variable:package:list')")
     @GetMapping("/list")
     @Transactional
     public TableDataInfo list(TVariablePackageManager tVariablePackageManager) {
@@ -97,6 +99,7 @@ public class TVariablePackageManagerController extends BaseController {
     /**
      * 获取变量包管理详细信息
      */
+    @PreAuthorize("@ss.hasPermi('variable:package:query')")
     @GetMapping(value = "/{variablePackId}")
     public AjaxResult getInfo(@PathVariable("variablePackId") Long variablePackId) {
         return AjaxResult.success(tVariablePackageManagerService.selectTVariablePackageManagerById(variablePackId));
@@ -105,6 +108,7 @@ public class TVariablePackageManagerController extends BaseController {
     /**
      * 新增变量包管理
      */
+    @PreAuthorize("@ss.hasPermi('variable:package:add')")
     @Log(title = "变量包管理", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody TVariablePackageManager tVariablePackageManager) {
@@ -124,6 +128,7 @@ public class TVariablePackageManagerController extends BaseController {
     /**
      * 修改变量包管理
      */
+    @PreAuthorize("@ss.hasPermi('variable:package:edit')")
     @Log(title = "变量包管理", businessType = BusinessType.UPDATE)
     @PutMapping
     @Transactional
@@ -229,6 +234,7 @@ public class TVariablePackageManagerController extends BaseController {
 
 
     // 启动变量包
+    @PreAuthorize("@ss.hasPermi('variable:package:start')")
     @PutMapping("/start")
     public AjaxResult startVariablePackage(@RequestBody TVariablePackageManager pkManager) {
         // 日志记录
@@ -290,6 +296,7 @@ public class TVariablePackageManagerController extends BaseController {
     }
 
     // 停止变量包任务
+    @PreAuthorize("@ss.hasPermi('variable:package:stop')")
     @PutMapping("/stop")
     public AjaxResult stop(@RequestBody TVariablePackageManager pkManager) {
         // 日志记录
@@ -329,6 +336,7 @@ public class TVariablePackageManagerController extends BaseController {
     /**
      * 删除变量包管理
      */
+    @PreAuthorize("@ss.hasPermi('variable:package:remove')")
     @Log(title = "变量包管理", businessType = BusinessType.DELETE)
     @DeleteMapping("/{variablePackIds}")
     public AjaxResult remove(@PathVariable Long[] variablePackIds) {

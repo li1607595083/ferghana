@@ -30,7 +30,7 @@ public class TDataResultSourceController extends BaseController
     /**
      * 查询数据结果表列表
      */
-//    @PreAuthorize("@ss.hasPermi('source:result:list')")
+    @PreAuthorize("@ss.hasPermi('source:result:list')")
     @GetMapping("/list")
     public TableDataInfo list(TDataResultSource tDataResultSource)
     {
@@ -55,7 +55,7 @@ public class TDataResultSourceController extends BaseController
     /**
      * 获取数据结果表详细信息
      */
-//    @PreAuthorize("@ss.hasPermi('source:result:query')")
+    @PreAuthorize("@ss.hasPermi('source:result:query')")
     @GetMapping(value = "/{dataResultSourceId}")
     public AjaxResult getInfo(@PathVariable("dataResultSourceId") Long dataResultSourceId)
     {
@@ -65,7 +65,7 @@ public class TDataResultSourceController extends BaseController
     /**
      * 新增数据结果表
      */
-//    @PreAuthorize("@ss.hasPermi('source:result:add')")
+    @PreAuthorize("@ss.hasPermi('source:result:add')")
     @Log(title = "【请填写功能名称】", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody TDataResultSource tDataResultSource)
@@ -76,7 +76,7 @@ public class TDataResultSourceController extends BaseController
     /**
      * 修改数据结果表
      */
-//    @PreAuthorize("@ss.hasPermi('source:result:edit')")
+    @PreAuthorize("@ss.hasPermi('source:result:edit')")
     @Log(title = "【请填写功能名称】", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@RequestBody TDataResultSource tDataResultSource)
@@ -87,7 +87,7 @@ public class TDataResultSourceController extends BaseController
     /**
      * 删除数据结果表
      */
-//    @PreAuthorize("@ss.hasPermi('source:result:remove')")
+    @PreAuthorize("@ss.hasPermi('source:result:remove')")
     @Log(title = "【请填写功能名称】", businessType = BusinessType.DELETE)
 	@DeleteMapping("/{dataResultSourceIds}")
     public AjaxResult remove(@PathVariable Long[] dataResultSourceIds)

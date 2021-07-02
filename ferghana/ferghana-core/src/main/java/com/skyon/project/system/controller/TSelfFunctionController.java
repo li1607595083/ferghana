@@ -36,7 +36,7 @@ public class TSelfFunctionController extends BaseController
     /**
      * 查询自定义函数列表
      */
-//    @PreAuthorize("@ss.hasPermi('variable:funcdevelop:list')")
+    @PreAuthorize("@ss.hasPermi('variable:funcdevelop:list')")
     @GetMapping("/list")
     public TableDataInfo list(TSelfFunction tSelfFunction)
     {
@@ -69,6 +69,7 @@ public class TSelfFunctionController extends BaseController
     /**
      * 新增自定义函数
      */
+    @PreAuthorize("@ss.hasPermi('variable:funcdevelop:add')")
     @Log(title = "自定义函数", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody TSelfFunction tSelfFunction)
@@ -81,6 +82,7 @@ public class TSelfFunctionController extends BaseController
     /**
      * 获取【请填写功能名称】详细信息
      */
+    @PreAuthorize("@ss.hasPermi('variable:funcdevelop:query')")
     @GetMapping(value = "/{selfFunctionId}")
     public AjaxResult getInfo(@PathVariable("selfFunctionId") Long selfFunctionId)
     {
@@ -116,6 +118,7 @@ public class TSelfFunctionController extends BaseController
     /**
      * 修改自定义函数
      */
+    @PreAuthorize("@ss.hasPermi('variable:funcdevelop:edit')")
     @Log(title = "自定义函数", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@RequestParam("functionJar") MultipartFile file,
@@ -160,6 +163,7 @@ public class TSelfFunctionController extends BaseController
     /**
      * 修改自定义函数
      */
+    @PreAuthorize("@ss.hasPermi('variable:funcdevelop:edit')")
     @Log(title = "自定义函数", businessType = BusinessType.UPDATE)
     @PutMapping("/updateNoJar")
     public AjaxResult updateNoJar(@RequestParam("selfFunctionId") String selfFunctionId,
@@ -194,6 +198,7 @@ public class TSelfFunctionController extends BaseController
     /**
      * 删除自定义函数
      */
+    @PreAuthorize("@ss.hasPermi('variable:funcdevelop:remove')")
     @Log(title = "自定义函数", businessType = BusinessType.DELETE)
 	@DeleteMapping("/{selfFunctionIds}")
     public AjaxResult remove(@PathVariable Long[] selfFunctionIds)
