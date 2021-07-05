@@ -996,7 +996,8 @@
   import {listFunction} from "@/api/taskdevelop/function.js";
   import Treeselect from '@riophae/vue-treeselect';
   import '@riophae/vue-treeselect/dist/vue-treeselect.css';
-  import{isLegitimateName} from "@/utils/validate.js";
+  import {isLegitimateName} from "@/utils/validate.js";
+  import {mapGetters} from "vuex";
 
   const clickoutside = {
     // 初始化指令
@@ -3679,7 +3680,7 @@
         this.UnAllowedUpdate = true;
         this.versionNumShow = true;
         this.addDiv = true;
-        this.submitButton = fasle;
+        this.submitButton = false;
         this.layoutOne = false;
         this.detailDiv = false;
         this.reset();
