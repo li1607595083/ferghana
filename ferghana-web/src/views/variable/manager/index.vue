@@ -64,7 +64,6 @@
             size="mini"
             :disabled="multiple"
             @click="handleDelete"
-            v-hasPermi="['variable:variable:remove']"
           >批量删除
           </el-button>
         </el-col>
@@ -2375,7 +2374,7 @@
       },
 
       // 关联字段
-      relationField() {
+      relationField(callback) {
 
         if (this.listResultDimension.length > 0) {
           // 解决测试时，关联的数据维没有选择时，则不需要在数据源表中有关联字段
@@ -2444,6 +2443,7 @@
             }
           });
         }
+        callback();
       },
 
       // 获取基础变量对应的测试数据
@@ -2569,9 +2569,9 @@
 
       // 点击测试
       testRun() {
-
-        this.$refs["form"].validate(valid => {
+        this.$refs["form"].validate(async valid => {
           if (valid) {
+            this.testRunLoading = true;
             this.open = true;
             this.title = "变量测试";
             // 给测试的参数赋值
@@ -2598,8 +2598,10 @@
             }
 
             // 添加关联字段
-            setTimeout(_ => {
-              this.relationField();
+            await setTimeout(_ => {
+              this.relationField(()=>{
+                this.testRunLoading = false;
+              });
             },900);
 
             // 若测试的数据维表有字段，展示
@@ -2621,8 +2623,9 @@
               dataName: this.form.variableNameEn,
               dataItem: this.form.variableNameEn
             })
+            reslove();
           }
-        });
+        })
       },
 
       // 点击除该区域以外的地方
@@ -2897,7 +2900,7 @@
             }
           }
         }).catch(resp => {
-          console.log('获取数据源表id' + val[0] + '失败!' + resp);
+          console.log('获取数据源表id' + value[0] + '失败!' + resp);
         });
       },
 
@@ -3679,12 +3682,15 @@
         this.detailViem = true;
         this.UnAllowedUpdate = true;
         this.versionNumShow = true;
+        this.updateLoading = true;
         this.addDiv = true;
         this.submitButton = false;
         this.layoutOne = false;
         this.detailDiv = false;
         this.reset();
         const variableId = row.variableId || this.ids;
+        console.log("==================")
+        console.log(variableId)
         getCenter(variableId).then(response => {
           this.form = response.data;
           this.form.conditionTable = [];
@@ -3720,6 +3726,8 @@
             this.querySelfSchemaUpdate(this.form.processModel);
           }
           this.statisticsModelChange(this.form.statisticsModel);
+        }).then(res => {
+          this.updateLoading = false;
         })
         setTimeout(()=>{
           for (let i = 0; i < this.form.statisticsGroupItem.length; i++) {
@@ -3812,6 +3820,8 @@
           if(this.form.deriveProcessModel !== null){
             this.deriveProcessModelChange(this.form.deriveProcessModel);
           }
+
+          // let stopLoading = 0;
 
           //变量分类的切换
           setTimeout(()=>{
