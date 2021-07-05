@@ -102,6 +102,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="description != null  and description != ''">description,</if>
             <if test="createBy != null  and createBy != ''">create_by,</if>
             <if test="createId != null  and createId != ''">create_id,</if>
+            create_time,
             update_time
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -127,6 +128,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="description != null  and description != ''">#{description},</if>
             <if test="createBy != null  and createBy != ''">#{createBy},</if>
             <if test="createId != null  and createId != ''">#{createId},</if>
+            sysdate(),
             sysdate()
         </trim>
     </insert>

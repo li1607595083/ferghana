@@ -2569,7 +2569,7 @@
 
       // 点击测试
       testRun() {
-        this.$refs["form"].validate(async valid => {
+        this.$refs["form"].validate(valid => {
           if (valid) {
             this.testRunLoading = true;
             this.open = true;
@@ -2598,7 +2598,7 @@
             }
 
             // 添加关联字段
-            await setTimeout(_ => {
+            setTimeout(_ => {
               this.relationField(()=>{
                 this.testRunLoading = false;
               });
@@ -2623,7 +2623,6 @@
               dataName: this.form.variableNameEn,
               dataItem: this.form.variableNameEn
             })
-            reslove();
           }
         })
       },
@@ -3689,8 +3688,6 @@
         this.detailDiv = false;
         this.reset();
         const variableId = row.variableId || this.ids;
-        console.log("==================")
-        console.log(variableId)
         getCenter(variableId).then(response => {
           this.form = response.data;
           this.form.conditionTable = [];
@@ -3821,11 +3818,9 @@
             this.deriveProcessModelChange(this.form.deriveProcessModel);
           }
 
-          // let stopLoading = 0;
-
           //变量分类的切换
           setTimeout(()=>{
-            this.variableClassificationChange(this.form.variableClassification);
+            this.variableClassificationChange(this.form.variableClassification, "test");
           },600);
           setTimeout(()=>{
             if (this.form.processModel != null){

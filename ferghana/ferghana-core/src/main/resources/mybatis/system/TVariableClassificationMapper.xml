@@ -91,6 +91,7 @@
             <if test="sourceRelation != null  and sourceRelation != ''">source_relation,</if>
             <if test="createBy != null ">create_by,</if>
             <if test="createId != null ">create_id,</if>
+            create_time,
             update_time
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -103,6 +104,7 @@
             <if test="sourceRelation != null  and sourceRelation != ''">#{sourceRelation},</if>
             <if test="createBy != null ">#{createBy},</if>
             <if test="createId != null ">#{createId},</if>
+            sysdate(),
             sysdate()
         </trim>
     </insert>
