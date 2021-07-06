@@ -28,7 +28,7 @@
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
+          <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery" v-hasPermi="['variable:package:query']">搜索</el-button>
           <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
         </el-form-item>
       </el-form>
@@ -36,10 +36,6 @@
       <el-row :gutter="10" class="mb8">
         <el-col :span="1.5">
           <el-button type="primary" icon="el-icon-plus" size="mini"  v-hasPermi="['variable:package:add']" @click="handleAdd">新增
-          </el-button>
-        </el-col>
-        <el-col :span="1.5">
-          <el-button type="primary" icon="el-icon-check" size="mini" :disabled="single" @click="testPackage">测试
           </el-button>
         </el-col>
         <el-col :span="1.5">
@@ -88,10 +84,9 @@
               >修改
               </el-button>
               <el-button
-                type="primary"
                 size="mini"
-                :disabled="single"
-                @click="testPackage"
+                type="text"
+                @click="testPackage(scope.row)"
               >测试
               </el-button>
               <el-button
@@ -112,55 +107,57 @@
 
     <!-- 添加或修改变量包管理对话框 -->
     <div v-show="addDiv">
-      <el-form ref="form" :model="form" :rules="rules" label-width="130px" class="el-col-24">
-        <el-form-item label="变量包中文名" prop="variablePackName" class="el-col-12">
-          <el-input v-model="form.variablePackName" placeholder="请输入变量包中文名" :disabled="UnAllowedUpdate" />
-        </el-form-item>
-        <el-form-item label="变量包英文名" prop="variablePackEn" class="el-col-12">
-          <el-input v-model="form.variablePackEn" placeholder="请输入变量包英文名" :disabled="UnAllowedUpdate" />
-        </el-form-item>
-        <el-form-item label="版本号" class="el-col-12" v-show="versionNumShow">
-          <el-input v-model="form.versionNum" :disabled="UnAllowedUpdate" />
-        </el-form-item>
-        <el-form-item label="变量分类" prop="variableClassification" class="el-col-12">
-          <el-select v-model="form.variableClassification" placeholder="请选择变量类型" @change="variableClassificationChange"
-            clearable style="width: 100%" :disabled="UnAllowedUpdate">
-            <el-option v-for="data in variableClassificationOptions" :key="data.value" :label="data.name"
-              :value="data.value" :sourceTableName="data.sourceTableName" :dimensionRelation="data.dimensionRelation"
-                       :connectorType="data.connectorType"/>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="数据结果表:" prop="resultTable" class="el-col-12">
-          <el-select v-model="form.resultTable" placeholder="请选择数据结果表" clearable style="width: 100%"
-            :disabled="detailViem">
-            <el-option v-for="data in resultTableOptions" :key="data.value" :label="data.name" :value="data.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="加工变量" class="el-col-24" prop="variableId" v-show="variableIdShow">
-          <treeselect v-model="form.variableId" :options="variableCenter" :multiple="true" id="variableId"
-            @select="variableCenterSelect" @deselect="variableCenterDeSelect" :disableBranchNodes="true"
-            :showCount="true" :clearable="false" placeholder="请选择加工变量" :disabled="detailViem" />
-        </el-form-item>
-        <el-form-item label="原始变量" class="el-col-24">
-          <el-select v-model="form.originalVariable" placeholder="请选择原始变量" multiple clearable no-data-text="未选择变量分类"
-            style="width: 100%" :disabled="detailViem">
-            <el-option-group :label="dataSourceName">
-              <el-option v-for="data in dataSourcFields" :key="data.value" :label="data.label" :value="data.value"
-                :type="data.type" />
-            </el-option-group>
-            <div v-for="dataAll in listDimension">
-              <el-option-group :label="dataAll.name" size="medium">
-                <el-option v-for="data in dataAll.dimensionRelationOptions" :key="data.value" :label="data.label"
-                  :value="data.value" />
+      <el-form ref="form" :model="form" :rules="rules" label-width="130px" class="el-col-24" v-loading="updateLoading">
+        <div :style="{opacity: updateLoading ? '0' : '1'}">
+          <el-form-item label="变量包中文名" prop="variablePackName" class="el-col-12">
+            <el-input v-model="form.variablePackName" placeholder="请输入变量包中文名" :disabled="UnAllowedUpdate" />
+          </el-form-item>
+          <el-form-item label="变量包英文名" prop="variablePackEn" class="el-col-12">
+            <el-input v-model="form.variablePackEn" placeholder="请输入变量包英文名" :disabled="UnAllowedUpdate" />
+          </el-form-item>
+          <el-form-item label="版本号" class="el-col-12" v-show="versionNumShow">
+            <el-input v-model="form.versionNum" :disabled="UnAllowedUpdate" />
+          </el-form-item>
+          <el-form-item label="变量分类" prop="variableClassification" class="el-col-12">
+            <el-select v-model="form.variableClassification" placeholder="请选择变量类型" @change="variableClassificationChange"
+              clearable style="width: 100%" :disabled="UnAllowedUpdate">
+              <el-option v-for="data in variableClassificationOptions" :key="data.value" :label="data.name"
+                :value="data.value" :sourceTableName="data.sourceTableName" :dimensionRelation="data.dimensionRelation"
+                         :connectorType="data.connectorType"/>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="数据结果表:" prop="resultTable" class="el-col-12">
+            <el-select v-model="form.resultTable" placeholder="请选择数据结果表" clearable style="width: 100%"
+              :disabled="detailViem">
+              <el-option v-for="data in resultTableOptions" :key="data.value" :label="data.name" :value="data.value" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="加工变量" class="el-col-24" prop="variableId" v-show="variableIdShow">
+            <treeselect v-model="form.variableId" :options="variableCenter" :multiple="true" id="variableId"
+              @select="variableCenterSelect" @deselect="variableCenterDeSelect" :disableBranchNodes="true"
+              :showCount="true" :clearable="false" placeholder="请选择加工变量" :disabled="detailViem" />
+          </el-form-item>
+          <el-form-item label="原始变量" class="el-col-24">
+            <el-select v-model="form.originalVariable" placeholder="请选择原始变量" multiple clearable no-data-text="未选择变量分类"
+              style="width: 100%" :disabled="detailViem">
+              <el-option-group :label="dataSourceName">
+                <el-option v-for="data in dataSourcFields" :key="data.value" :label="data.label" :value="data.value"
+                  :type="data.type" />
               </el-option-group>
-            </div>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="备注" prop="description" class="el-col-24">
-          <el-input v-model="form.description" type="textarea" placeholder="请输入备注" :disabled="detailViem" />
-        </el-form-item>
+              <div v-for="dataAll in listDimension">
+                <el-option-group :label="dataAll.name" size="medium">
+                  <el-option v-for="data in dataAll.dimensionRelationOptions" :key="data.value" :label="data.label"
+                    :value="data.value" />
+                </el-option-group>
+              </div>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="备注" prop="description" class="el-col-24">
+            <el-input v-model="form.description" type="textarea" placeholder="请输入备注" :disabled="detailViem" />
+          </el-form-item>
+        </div>
       </el-form>
-      <div slot="footer" class="dialog-footer" style="float: right">
+      <div slot="footer" class="dialog-footer" style="float: right" :style="{opacity: updateLoading ? '0' : '1'}">
         <el-button type="primary" @click="testRun" v-show="testButton">调  试</el-button>
         <el-button type="primary" @click="submitForm" v-show="submitButton" :disabled="detailViem">确 定</el-button>
         <el-button @click="cancel">取 消</el-button>
@@ -237,7 +234,7 @@
                 </div>
               </el-tab-pane>
             </el-tabs>
-            <div style="margin-left: 790px;margin-top:10px">
+            <div style="margin-top: 30px;display: flex;justify-content: flex-end;">
               <el-button type="primary" @click="confirmTest">开 始</el-button>
               <el-button @click="cancelTest">关 闭</el-button>
             </div>
@@ -359,6 +356,8 @@
       return {
         // 遮罩层
         loading: true,
+        // 变量包更新加载
+        updateLoading: false,
         // 选中数组
         ids: [],
         names: undefined,
@@ -1436,6 +1435,7 @@
         this.title = "查看变量包管理";
         this.layoutOne = false;
         this.versionNumShow = true;
+        this.updateLoading = true;
         this.UnAllowedUpdate = true;
         this.detailDiv = false;
         this.addDiv = true;
@@ -1450,6 +1450,8 @@
           this.selectVariableNote = JSON.parse(this.form.selectVariableNoteForm);
           this.form.originalVariable = JSON.parse(this.form.originalVariable);
           this.variableClassificationChange(this.form.variableClassification);
+        }).then(res => {
+          this.updateLoading = false;
         });
       },
       // 测试按钮
@@ -1467,7 +1469,6 @@
           this.$message.error("该数据是"+row.createBy+"创建的，您不能修改！");
           return false;
         }
-
         this.submitButton = true;
         this.testButton = false;
         this.detailViem = false;
@@ -1478,6 +1479,7 @@
       // 测试和修改共用
       testAndUpdate(row) {
         this.reset();
+        this.updateLoading = true;
         this.layoutOne = false;
         this.versionNumShow = true;
         this.UnAllowedUpdate = true;
@@ -1505,9 +1507,9 @@
               }
             });
           }, 300);
+        }).then(res => {
+          this.updateLoading = false;
         });
-
-
       },
       /** 提交按钮 */
       submitForm: function() {
