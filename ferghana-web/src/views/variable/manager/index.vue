@@ -897,11 +897,10 @@
                       </div>
                     </el-tab-pane>
                   </el-tabs>
-                  <div style="margin-left: 790px;margin-top:10px">
-
-                    <el-button type="primary" @click="confirmTest">开 始</el-button>
-                    <el-button @click="cancelTest">关 闭</el-button>
-                  </div>
+                 <div style="margin-top: 30px;display: flex;justify-content: flex-end;">
+                   <el-button type="primary" @click="confirmTest">开 始</el-button>
+                   <el-button @click="cancelTest">关 闭</el-button>
+                 </div>
                 </el-dialog>
               </div>
             </template>
