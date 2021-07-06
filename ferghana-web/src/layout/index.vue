@@ -9,7 +9,7 @@
           <sidebar v-show="!menuLayout" class="sidebar-container"/>  <!-- 嵌套修改-->
           <div class="main-container" :class="(menuLayout ? 'hide-sidebar' : 'show-sidebar')">
             <tags-view v-if="needTagsView" />
-            <app-main />
+            <app-main/>
           </div>
         </div>
       </div>

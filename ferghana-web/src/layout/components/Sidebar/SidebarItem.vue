@@ -221,4 +221,9 @@
     display: flex;
     align-items: center;
   }
+  .submenu-box {
+    height: 50px;
+	  display: flex;
+	  align-items: center;
+  }
 </style>
