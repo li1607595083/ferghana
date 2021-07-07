@@ -9,6 +9,8 @@ import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.table.expressions.Expression;
 import org.apache.flink.types.Row;
 
+import java.util.Properties;
+
 import static org.apache.flink.table.api.Expressions.$;
 
 public class MainAppSlefFunTest {
@@ -16,7 +18,7 @@ public class MainAppSlefFunTest {
     public static void main(String[] args) throws Exception {
 
         StreamExecutionEnvironment dbEnv = FlinkUtils.dbEnv();
-        StreamTableEnvironment dbTableEnv = FlinkUtils.dbTableEnv(dbEnv);
+        StreamTableEnvironment dbTableEnv = FlinkUtils.dbTableEnv(dbEnv, new Properties());
 
         dbTableEnv.executeSql("CREATE TEMPORARY SYSTEM FUNCTION IF NOT EXISTS  ifFalseSetNull  AS 'com.skyon.selfudf.TestNiceForObject' LANGUAGE JAVA");
 //        dbTableEnv.createTemporarySystemFunction("ifFalseSetNull", new NullForObject());

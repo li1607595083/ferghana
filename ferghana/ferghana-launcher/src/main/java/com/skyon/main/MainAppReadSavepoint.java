@@ -2,7 +2,7 @@ package com.skyon.main;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import com.skyon.app.AppDealOperation;
+import com.skyon.app.AppPerFormOperations;
 import com.skyon.utils.MySqlUtils;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.DataSet;
@@ -162,12 +162,12 @@ public class MainAppReadSavepoint {
             String k = next.getKey().trim();
             if (k.equals("variableSqls") || k.equals("originalVariableSql")){
                 for (String sql_1 : next.getValue().toString().split(";")) {
-                    uidSet = uidSet + AppDealOperation.getUid("deSqlSet",sql_1) + ";";
+                    uidSet = uidSet + AppPerFormOperations.getUid("deSqlSet",sql_1) + ";";
                 }
             } else if (k.equals("deVariableSqls")){
                 for (String sql_2 : next.getValue().toString().split("[|]")) {
                     for (String sql_3 : sql_2.split("@")[0].split(";")) {
-                        uidSet = uidSet + AppDealOperation.getUid("deVariableSqls", sql_3) + ";";
+                        uidSet = uidSet + AppPerFormOperations.getUid("deVariableSqls", sql_3) + ";";
                     }
                 }
 

@@ -8,6 +8,8 @@ import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.types.Row;
 
+import java.util.Properties;
+
 public class MainAppTmpMySql {
 
     public static void main(String[] args) throws Exception {
@@ -20,7 +22,7 @@ public class MainAppTmpMySql {
         dbEnv.setParallelism(4);
 
         // Flink table 运行环境
-        StreamTableEnvironment dbTableEnv = FlinkUtils.dbTableEnv(dbEnv);
+        StreamTableEnvironment dbTableEnv = FlinkUtils.dbTableEnv(dbEnv, new Properties());
 
         dbTableEnv.executeSql("CREATE TABLE products ("
                 + "productId STRING,"

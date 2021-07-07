@@ -1,12 +1,15 @@
 package com.skyon.utils;
 
-import com.skyon.app.AppDealOperation;
+import com.skyon.bean.DimensionType;
+import com.skyon.bean.ParameterConfigName;
+import com.skyon.bean.ParameterConfigValue;
 import com.skyon.type.TypeTrans;
+import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
-import org.apache.hadoop.hbase.client.Table;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.IndicesClient;
 import org.elasticsearch.client.RequestOptions;
@@ -15,16 +18,13 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.*;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentType;
-import scala.Tuple2;
 import java.io.IOException;
 import java.sql.*;
 import java.util.*;
 
 public class StoreUtils {
-    public ArrayList<String> msVarcherFieldNmae = new ArrayList<String>();
     public String metate;
     public String fieldStr;
-    public String jdbcPk;
 
     public StoreUtils() {}
 
@@ -142,96 +142,46 @@ public class StoreUtils {
      * @return
      * @throws IOException
      */
-    public   org.apache.hadoop.hbase.client.Connection hbaseConnection() throws IOException {
+    public   org.apache.hadoop.hbase.client.Connection hbaseConnection() throws Exception {
         HashMap<String, String> serverHashMap = getMeta();
-        Configuration hbaseConfig = HBaseConfiguration.create();
-        hbaseConfig.set("hbase.zookeeper.quorum", serverHashMap.get("zookeeper.quorum"));
-        return ConnectionFactory.createConnection(hbaseConfig);
+        return HBaseUtil.getHbaseConnection(serverHashMap.get(ParameterConfigName.ZK_QUORUM), ParameterConfigValue.ZK_CLIENT_PORT);
+
     }
 
     /**
-     * Check whether the Namespace of Hbase exists, and create it if it does not
-     * @param nameSpacheAndTableName
-     * @param admin
+     * @desc 创建或者更新 hbase 表
      * @throws IOException
      */
-    private  void hbaseNameSpaceOperator(String nameSpacheAndTableName, Admin admin) throws IOException {
-        if (nameSpacheAndTableName.contains(":")){
-            String[] nata = nameSpacheAndTableName.split(":");
-            String namespace = nata[0];
-            boolean flag = true;
-            for (NamespaceDescriptor descriptor : admin.listNamespaceDescriptors()) {
-                if (descriptor.getName().equals(namespace)){
-                    flag = false;
-                }
-            }
-            if (flag){
-                NamespaceDescriptor namespaceDescriptor = NamespaceDescriptor.create(namespace).build();
-                admin.createNamespace(namespaceDescriptor);
-            }
+    public void  createOrUpdateHbaseTABLE() throws Exception {
+        HashMap<String, String> serverHashMap = getMeta();
+        org.apache.hadoop.hbase.client.Connection conn = hbaseConnection();
+        Admin admin = HBaseUtil.getHbaseAdmin(conn);
+        String nameSpacheAndTableName = serverHashMap.get(ParameterConfigName.TABLE_NAME);
+        HBaseUtil.createNamespace(nameSpacheAndTableName.split(":",2)[1], admin);
+        List<String> hbaseFamily = getHbaseFamily();
+        TableName tableName = TableName.valueOf(nameSpacheAndTableName);
+        if (!admin.tableExists(tableName)){
+            HBaseUtil.createTable(admin, tableName, hbaseFamily);
+        } else {
+            HBaseUtil.updateTable(admin,tableName, hbaseFamily);
         }
+        HBaseUtil.closeAdmin(admin);
+        HBaseUtil.closeConn(conn);
     }
 
-    /**
-     * Operate on the Hbaes Table
-     * @param tableName
-     * @param admin
-     * @throws IOException
-     */
-    private void hbaseTableOperator(TableName tableName, Admin admin, org.apache.hadoop.hbase.client.Connection conn) throws IOException {
+    private List<String> getHbaseFamily(){
         ArrayList<String> familyName = new ArrayList<>();
         for (String s : fieldStr.split(",")) {
             if (s.trim().contains("ROW")){
                 familyName.add(s.trim().split("\\s+")[0].trim());
             }
         }
-        if (!admin.tableExists(tableName)){
-            HTableDescriptor hTableDescriptor = new HTableDescriptor(tableName);
-            for (String s : familyName) {
-                HColumnDescriptor hColumnDescriptor = new HColumnDescriptor(s);
-                hTableDescriptor.addFamily(hColumnDescriptor);
-            }
-            admin.createTable(hTableDescriptor);
-        } else {
-            HTableDescriptor tableDescriptor = admin.getTableDescriptor(tableName);
-            for(HColumnDescriptor fdescriptor : tableDescriptor.getColumnFamilies()){
-                familyName.remove(fdescriptor.getNameAsString());
-            }
-            if (familyName.size() > 0){
-                admin.disableTable(tableName);
-                for (String fam : familyName) {
-                    HColumnDescriptor hColumnDescriptor=new HColumnDescriptor(fam);
-                    tableDescriptor.addFamily(hColumnDescriptor);
-                    admin.modifyTable(tableName, tableDescriptor);
-                }
-                admin.enableTable(tableName);
-            }
-        }
-        if (admin != null){
-            admin.close();
-        }
-        if (conn != null){
-            conn.close();
-        }
-    }
-
-    /**
-     * Hbase table creation
-     * @throws IOException
-     */
-    public void  createHbaseTABLE() throws IOException {
-        HashMap<String, String> serverHashMap = getMeta();
-        org.apache.hadoop.hbase.client.Connection conn = hbaseConnection();
-        Admin admin = conn.getAdmin();
-        String nameSpacheAndTableName = serverHashMap.get("table-name");
-        hbaseNameSpaceOperator(nameSpacheAndTableName, admin);
-        TableName tableName = TableName.valueOf(nameSpacheAndTableName);
-        hbaseTableOperator(tableName, admin,conn);
+        return familyName;
     }
 
 
     /**
-     *  Gets metadata information about the connection to MySql
+     * @desc 获取创建表的连接信息
      * @return
      */
     public HashMap<String, String> getMeta() {
@@ -244,36 +194,38 @@ public class StoreUtils {
     }
 
     /**
-     * Get a connection to MySql
+     * @desc 创建 jdbc 连接
      * @return
      * @throws Exception
      */
-    public Connection mySqlConnection() throws Exception {
+    public Connection jdbcConnection() throws Exception {
         HashMap<String, String> metaHashMap = getMeta();
-        String mysql_url = metaHashMap.get("url");
-        String mysql_user = metaHashMap.get("username");
-        String mysql_password = metaHashMap.get("password");
-        return DriverManager.getConnection(mysql_url, mysql_user, mysql_password);
+        String url = metaHashMap.get(ParameterConfigName.TABLE_URL);
+        String user = metaHashMap.get(ParameterConfigName.TABLE_USERNAME);
+        String password = metaHashMap.get(ParameterConfigName.TABLE_PASSWORD);
+        String driver = metaHashMap.get(ParameterConfigName.TABLE_DRIVER);
+        Class.forName(driver);
+        return DriverManager.getConnection(url, user, password);
     }
 
 
     /**
-     * Get the schema for the table
+     * @desc 获取创建表的 schema 信息
      * @param fieldStr
      * @param msHash
      * @return
      */
-    private Tuple2<HashMap<String, String>, String> sqlSchema(String fieldStr, HashMap<String, String> msHash){
+    private Tuple3<HashMap<String, String>, ArrayList<String>, String> sqlSchema(String fieldStr, HashMap<String, String> msHash){
+        Tuple3<HashMap<String,String>, ArrayList<String>, String> tp4 = Tuple3.of(null, null ,null);
         HashMap<String, String> nameAndType = new HashMap<>();
-        String pk = null;
+        ArrayList<String> msVarcherFieldNmae = new ArrayList<>();
         String dealField = fieldStr;
         while (dealField.length() > 0){
             String[] split = dealField.split("\\s+", 2);
             if (split[0].toUpperCase().equals("PRIMARY")){
                 String[] va = split[1].split("\\s+");
-                pk = split[0] + " " + va[0] + " " + va[1];
+                tp4.f2 = va[1].replace("(", "").replace(")", "").trim();
                 dealField = "";
-                jdbcPk = va[1].replace("(", "").replace(")", "").trim();
             } else {
                 String name = split[0].replaceAll("`", "");
                 String type = TypeTrans.getType(split[1]);
@@ -286,122 +238,124 @@ public class StoreUtils {
                 dealField = dealField.split(name, 2)[1].trim().substring(type.length()).split(",", 2)[1].trim();
             }
         }
-        return Tuple2.apply(nameAndType, pk);
+        tp4.f0 = nameAndType;
+        tp4.f1 = msVarcherFieldNmae;
+        return tp4;
     }
 
     /**
-     * Create or update MySql table
+     * @desc 创建或更新表
      * @param table_name
      * @param mySqlSchema
      * @throws Exception
      */
-    private void mySqlTableOperator(String table_name, Tuple2<HashMap<String, String>, String> mySqlSchema, String jdbcType) throws Exception {
-        Connection conn = mySqlConnection();
+    public void createOrUpdateJdbcTable(String table_name, Tuple2<HashMap<String, String>, String> mySqlSchema, String jdbcType) throws Exception {
+        Connection conn = jdbcConnection();
         ResultSet ifExists = conn.getMetaData().getTables(null, null, table_name, null);
-        HashMap<String, String> nameAndType = mySqlSchema._1;
-        String pk = mySqlSchema._2;
+        HashMap<String, String> nameAndType = mySqlSchema.f0;
+        String primaryKey = mySqlSchema.f1;
         if (ifExists.next()){
-            String sql_query = "";
-            if ("oracle".equals(jdbcType.toLowerCase())){
-                sql_query = "SELECT * FROM "+ table_name + " WHERE rownum=1";
-            } else if ("mysql".equals(jdbcType.toLowerCase())){
-                sql_query = "SELECT * FROM " + table_name + " LIMIT 1";
-            }
-            ResultSetMetaData metaData = conn.prepareStatement(sql_query).getMetaData();
-            int columnCount = metaData.getColumnCount();
-            for (int i = 1; i <= columnCount; i++){
-                String name = metaData.getColumnName(i);
-                if (nameAndType.get(name) != null){
-                    nameAndType.remove(name);
-                }
-            }
+            getAddField(table_name, jdbcType, conn, nameAndType);
             if (!nameAndType.isEmpty()){
                 Iterator<Map.Entry<String, String>> iterator = nameAndType.entrySet().iterator();
                 while (iterator.hasNext()){
-                    Map.Entry<String, String> next = iterator.next();
-                    String key = next.getKey();
-                    String value = next.getValue();
-                    String sql_add = "";
-                    if ("oracle".equals(jdbcType.toLowerCase())){
-                        sql_add =  "ALTER TABLE " + table_name + " ADD " + "(\"" + key + "\" " + value + ")";
-                    } else if ("mysql".equals(jdbcType.toLowerCase())){
-                        sql_add = "ALTER TABLE " + table_name + " ADD COLUMN " + "`" + key + "`" + " " + value;
-                    }
-                    conn.prepareStatement(sql_add).execute();
+                    updateJdbcTable(table_name, jdbcType, conn, iterator);
                 }
             }
-
         } else {
-            String fieldNameAndType = "";
-            String sqlCreateTable = "CREATE TABLE ";
-            Iterator<Map.Entry<String, String>> iterator = nameAndType.entrySet().iterator();
-            while (iterator.hasNext()){
-                Map.Entry<String, String> next = iterator.next();
-                String name = next.getKey();
-                String type = next.getValue();
-                if ("oracle".equals(jdbcType.toLowerCase())){
-                    if (type.equals("TIMESTAMP")){
-                        type = "TIMESTAMP(3)";
-                    }
-                    fieldNameAndType = fieldNameAndType  + "\"" + name + "\"" + " " + type + ",";
-                } else if ("mysql".equals(jdbcType.toLowerCase())){
-                    if (type.equals("DATETIME")){
-                        type = "DATETIME(3)";
-                    }
-                    fieldNameAndType = fieldNameAndType  + "`" + name + "`" + " " + type + ",";
-                }
-            }
-            fieldNameAndType = fieldNameAndType + pk;
-            Statement statement = conn.createStatement();
-            sqlCreateTable = sqlCreateTable + " "  + table_name   + "(" + fieldNameAndType + ")";
-            statement.execute(sqlCreateTable);
-            if (statement != null){
-                statement.close();
-            }
-            if (statement != null){
-                conn.close();
-            }
+            createJdbcTable(table_name, jdbcType, conn, nameAndType, primaryKey);
         }
+        MySqlUtils.closeConnection(conn);
     }
 
-
     /**
-     * MySql table creation
-     * @throws Exception
+     * @desc 更新表
+     * @param table_name
+     * @param jdbcType
+     * @param conn
+     * @param nameAndType
+     * @param primaryKey
+     * @throws SQLException
      */
-    public void createSqlTable(String jdbcTypes) throws Exception{
-        HashMap<String, String> msHash;
-        if ("mysql".equals(jdbcTypes.toLowerCase())){
-            msHash = TypeTrans.typeAsMySql();
-        } else {
-            msHash = TypeTrans.typeAsOracle();
+    private void createJdbcTable(String table_name, String jdbcType, Connection conn, HashMap<String, String> nameAndType, String primaryKey) throws SQLException {
+        StringBuilder stringBuilder = new StringBuilder("CREATE TABLE ").append(table_name).append("(");
+        Iterator<Map.Entry<String, String>> iterator = nameAndType.entrySet().iterator();
+        while (iterator.hasNext()){
+            Map.Entry<String, String> next = iterator.next();
+            String name = next.getKey();
+            String type = next.getValue();
+            if (DimensionType.DIM_JDBC_ORACLE.equals(jdbcType.toLowerCase())){
+                if (type.equals("TIMESTAMP")){
+                    type = "TIMESTAMP(3)";
+                }
+                stringBuilder.append("\"" + name + "\"" + " " + type + ",");
+            } else if (DimensionType.DIM_JDBC_MYSQL.equals(jdbcType.toLowerCase())){
+                if (type.equals("DATETIME")){
+                    type = "DATETIME(3)";
+                }
+                stringBuilder.append( "`" + name + "`" + " " + type + ",");
+            }
         }
-        mySqlTableOperator(getMeta().get("table-name"), sqlSchema(fieldStr, msHash), jdbcTypes);
+        stringBuilder.append("PRIMARY " +  "KEY " + "("+ primaryKey + ")");
+        conn.prepareStatement(stringBuilder.toString()).execute();
     }
 
     /**
-     * Split the SQL statement to get chemA and meta (connection information)
+     * @desc 更新表
+     * @param table_name
+     * @param jdbcType
+     * @param conn
+     * @param iterator
+     * @throws SQLException
+     */
+    private void updateJdbcTable(String table_name, String jdbcType, Connection conn, Iterator<Map.Entry<String, String>> iterator) throws SQLException {
+        Map.Entry<String, String> next = iterator.next();
+        String key = next.getKey();
+        String value = next.getValue();
+        String sql_add = jdbcType.toLowerCase().equals(DimensionType.DIM_JDBC_ORACLE) ? "ALTER TABLE " + table_name + " ADD " + "(\"" + key + "\" " + value + ")" : "ALTER TABLE " + table_name + " ADD COLUMN " + "`" + key + "`" + " " + value;
+        conn.prepareStatement(sql_add).execute();
+    }
+
+    /**
+     * @desc 获取更新表的字段
+     * @param table_name
+     * @param jdbcType
+     * @param conn
+     * @param nameAndType
+     * @throws SQLException
+     */
+    private void getAddField(String table_name, String jdbcType, Connection conn, HashMap<String, String> nameAndType) throws SQLException {
+        String sql_query = jdbcType.toLowerCase().equals(DimensionType.DIM_JDBC_ORACLE) ? "SELECT * FROM "+ table_name + " WHERE rownum=1" : "SELECT * FROM " + table_name + " LIMIT 1";
+        ResultSetMetaData metaData = conn.prepareStatement(sql_query).getMetaData();
+        int columnCount = metaData.getColumnCount();
+        for (int i = 1; i <= columnCount; i++){
+            String name = metaData.getColumnName(i);
+            if (nameAndType.get(name) != null){
+                nameAndType.remove(name);
+            }
+        }
+    }
+
+
+    /**
+     * @desc 获取表的字段信息，其中 Tuple3.of(字段名和字段类型, 写入数据时需要特殊处理的字段, 主键)
+     */
+    public  Tuple3<HashMap<String, String>, ArrayList<String>, String> getTableSchema(String jdbcTypes) {
+        HashMap<String, String> msHash = DimensionType.DIM_JDBC_MYSQL.equals(jdbcTypes) ? TypeTrans.typeAsMySql() : TypeTrans.typeAsOracle();
+        return sqlSchema(fieldStr, msHash);
+    }
+
+    /**
+     * @desc 拆分创建表语句，获取连接信息和字段信息
      * @param sql
      * @return
      */
     private void schemaAndMetate(String sql) {
         String[] scheAndMeta = sql.split("WITH", 2);
-        String metateInit = scheAndMeta[1].trim();
+        String metateInit = ParameterUtils.removeTailLastSpecialSymbol(scheAndMeta[1], ")", true).trim();
         metate = metateInit.substring(1, metateInit.length() - 1).trim();
         String fieldStrInit = scheAndMeta[0].split("\\(", 2)[1].trim();
         fieldStr = fieldStrInit.substring(0, fieldStrInit.length() - 1).trim();
-    }
-
-    public Map<String, String> getField(String fieldAndName,String sym) {
-        String[] fieldAndNames = fieldAndName.replaceAll("'", "").split(",");
-        Map<String, String> results = new HashMap<>();
-        for (String fields : fieldAndNames) {
-            String[] result = fields.split(sym,2);
-            if (!result[0].startsWith("PRIMARY")) {//PRIMARY KEY是标识主键
-                results.put(result[0].trim(), result[1].trim());
-            }
-        }
-        return results;
     }
 
 }

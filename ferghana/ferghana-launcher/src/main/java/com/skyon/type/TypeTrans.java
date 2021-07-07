@@ -59,7 +59,7 @@ public class TypeTrans {
     }
 
     /**
-     * Flink as MySql
+     * @desc 类型转换
      * @return
      */
     public static HashMap<String, String> typeAsMySql() {
@@ -75,6 +75,10 @@ public class TypeTrans {
         return msMap;
     }
 
+    /**
+     * @desc 类型转换
+     * @return
+     */
     public static HashMap<String, String> typeAsOracle() {
         HashMap<String, String> msMap = new HashMap<>();
         msMap.put("INT", "DECIMAL");
@@ -261,7 +265,7 @@ public class TypeTrans {
     }
 
     /**
-     * Used to get the Flink Type
+     * @desc 后去 flink 内置类型，去掉特殊符号
      * @param type
      * @return
      */
@@ -278,7 +282,7 @@ public class TypeTrans {
     }
 
     /**
-     * Further processing of the type
+     * @desc 处理 flink 内置的类型
      * @param unsolType
      * @return
      */

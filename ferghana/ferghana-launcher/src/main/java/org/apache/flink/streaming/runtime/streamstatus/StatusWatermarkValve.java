@@ -28,15 +28,20 @@ import static org.apache.flink.util.Preconditions.checkArgument;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
- * @Change 添加了一个成员变量(time_out), inputStreamStatus(....) 给新增参数,
- * findAndOutputMaxWatermarkAcrossAllChannels(...) 方法会使用此参数
+ * A {@code StatusWatermarkValve} embodies the logic of how {@link Watermark} and {@link StreamStatus} are propagated to
+ * downstream outputs, given a set of one or multiple input channels that continuously receive them. Usages of this
+ * class need to define the number of input channels that the valve needs to handle, as well as provide a implementation of
+ * {@link DataOutput}, which is called by the valve only when it determines a new watermark or stream status can be propagated.
  */
 @Internal
 public class StatusWatermarkValve {
 
-    /** Add 成员变量 */
-    private long time_out;
+    private boolean twostreamjoin;
+    private long timeout;
+    private long twostreamjoindelaytime;
     private final DataOutput output;
+    public long lastMaxWaterMark;
+
 
     // ------------------------------------------------------------------------
     //	Runtime state for watermark & stream status output determination
@@ -69,9 +74,11 @@ public class StatusWatermarkValve {
             channelStatuses[i].streamStatus = StreamStatus.ACTIVE;
             channelStatuses[i].isWatermarkAligned = true;
         }
-        this.output = checkNotNull(output);
 
+        this.output = checkNotNull(output);
+        this.lastOutputWatermark = -1;
         this.lastOutputWatermark = Long.MIN_VALUE;
+        this.lastMaxWaterMark = Long.MIN_VALUE;
         this.lastOutputStreamStatus = StreamStatus.ACTIVE;
     }
 
@@ -83,6 +90,7 @@ public class StatusWatermarkValve {
      * @param channelIndex the index of the channel that the fed watermark belongs to (index starting from 0)
      */
     public void inputWatermark(Watermark watermark, int channelIndex) throws Exception {
+        this.twostreamjoin = watermark.isTwostreamjoin();
         // ignore the input watermark if its input channel, or all input channels are idle (i.e. overall the valve is idle).
         if (lastOutputStreamStatus.isActive() && channelStatuses[channelIndex].streamStatus.isActive()) {
             long watermarkMillis = watermark.getTimestamp();
@@ -103,11 +111,16 @@ public class StatusWatermarkValve {
     }
 
     /**
-     * @Change 会根据 StreamStatus 来给变量 time_out 赋值
+     * Feed a {@link StreamStatus} into the valve. This may trigger the valve to output either a new Stream Status,
+     * for which {@link DataOutput#emitStreamStatus(StreamStatus)} will be called, or a new Watermark,
+     * for which {@link DataOutput#emitWatermark(Watermark)} will be called.
+     *
+     * @param streamStatus the stream status to feed to the valve
+     * @param channelIndex the index of the channel that the fed stream status belongs to (index starting from 0)
      */
     public void inputStreamStatus(StreamStatus streamStatus, int channelIndex) throws Exception {
-        // 触发发参数
-        this.time_out = streamStatus.TIME_OUT;
+        this.timeout = streamStatus.getTimeout();
+        this.twostreamjoindelaytime = streamStatus.getTwostreamjoindelay();
         // only account for stream status inputs that will result in a status change for the input channel
         if (streamStatus.isIdle() && channelStatuses[channelIndex].streamStatus.isActive()) {
             // handle active -> idle toggle for the input channel
@@ -172,19 +185,41 @@ public class StatusWatermarkValve {
         // from some remaining aligned channel, and is also larger than the last output watermark
         if (hasAlignedChannels && newMinWatermark > lastOutputWatermark) {
             lastOutputWatermark = newMinWatermark;
-            output.emitWatermark(new Watermark(lastOutputWatermark));
+            if (lastOutputWatermark > lastMaxWaterMark){
+                lastMaxWaterMark = lastOutputWatermark;
+                output.emitWatermark(new Watermark(lastOutputWatermark));
+            }
         }
     }
 
     private void findAndOutputMaxWatermarkAcrossAllChannels() throws Exception {
         long maxWatermark = Long.MIN_VALUE;
-        for (InputChannelStatus channelStatus : channelStatuses) {
-            maxWatermark = Math.max(channelStatus.watermark, maxWatermark);
+        if (!twostreamjoin) {
+            for (int i = 0; i < channelStatuses.length; i++) {
+                if (channelStatuses[i].watermark > maxWatermark) {
+                    maxWatermark = channelStatuses[i].watermark;
+                }
+            }
+            if (maxWatermark >= lastOutputWatermark) {
+                    lastOutputWatermark = maxWatermark;
+                    if (maxWatermark > 0){
+                        lastMaxWaterMark = maxWatermark + timeout + twostreamjoindelaytime;
+                    } else {
+                        lastMaxWaterMark = maxWatermark;
+                    }
+                    output.emitWatermark(new Watermark(lastMaxWaterMark, -1));
+            }
+        } else {
+            for (InputChannelStatus channelStatus : channelStatuses) {
+                maxWatermark = Math.max(channelStatus.watermark, maxWatermark);
+            }
+            if (maxWatermark > lastOutputWatermark){
+                lastOutputWatermark = maxWatermark;
+                lastMaxWaterMark = maxWatermark;
+                output.emitWatermark(new Watermark(lastMaxWaterMark, -1));
+            }
         }
-        if (maxWatermark >= lastOutputWatermark && maxWatermark > 0) {
-            lastOutputWatermark = maxWatermark;
-            output.emitWatermark(new Watermark(lastOutputWatermark + time_out));
-        }
+
     }
 
     /**
