@@ -144,6 +144,12 @@
                 <el-option v-for="data in dataSourcFields" :key="data.value" :label="data.label" :value="data.value"
                   :type="data.type" />
               </el-option-group>
+              <div>
+                <el-option-group :label="twoDataSourceName" v-if="isTwoJoin">
+                  <el-option v-for="data in twoDataSourcFields" :key="data.value" :label="data.label" :value="data.value"
+                    :type="data.type" />
+                </el-option-group>
+              </div>
               <div v-for="dataAll in listDimension">
                 <el-option-group :label="dataAll.name" size="medium">
                   <el-option v-for="data in dataAll.dimensionRelationOptions" :key="data.value" :label="data.label"
@@ -430,6 +436,8 @@
         jobMemoryConfigure: "",
         // 测试按钮show
         testButton:true,
+        // 变量分类是否为双流join
+        isTwoJoin: false,
 
         // 资源配置单选框
         resourceForm: {
@@ -446,6 +454,10 @@
         dataSourceName: undefined,
         // 数据源表字段
         dataSourcFields: [],
+        // 数据源表(二)表名
+        twoDataSourceName: undefined,
+        // 数据源表(二)字段
+        twoDataSourcFields: [],
         // 数据维表
         listDimension: [],
         // variableNum 该变量包的变量个数
@@ -906,8 +918,6 @@
       },
       // 切换变量分类
       sourceDataChange(value) {
-        console.log("--1");
-        console.log(value);
         setTimeout(_ => {
           let that = this;
           const baseUrl = process.env.VUE_APP_BASE_API;
@@ -924,7 +934,7 @@
           }).then(function(resp) {
             console.log("--");
             console.log(resp);
-            that.dataSourceName = "数据源表：" + value;
+            that.dataSourceName = (that.isTwoJoin ? '数据源表(一)：' : '数据源表：') + value;
             that.dataSourcFields = [];
             for (let j = 0; j < resp.data.rows[0].length; j++) {
               that.dataSourcFields.push({
@@ -940,7 +950,37 @@
 
         }, 300);
       },
+      sourceTwoDataChange(value) {
+        setTimeout(_ => {
+          let that = this;
+          const baseUrl = process.env.VUE_APP_BASE_API;
+          axios({
+            method: 'get',
+            url: baseUrl + '/source/manage/querySchema',
+            headers: {
+              'Authorization': 'Bearer ' + getToken()
+            },
+            responseType: 'json',
+            params: {
+              dataSourceName: value
+            }
+          }).then(function(resp) {
+            that.twoDataSourceName = "数据源表(二)：" + value;
+            that.twoDataSourcFields = [];
+            for (let j = 0; j < resp.data.rows[0].length; j++) {
+              that.twoDataSourcFields.push({
+                label: value + "." + resp.data.rows[0][j].key, // 表名.字段
+                value: value + "." + resp.data.rows[0][j].key,
+                type: resp.data.rows[0][j].value, // 类型
+              });
+            }
 
+          }).catch(resp => {
+            console.log('获取数据源表请求失败!' + resp);
+          });
+
+        }, 300);
+      },
       // 查询所有的变量
       getVariableCenter(value) {
         let that = this;
@@ -1278,6 +1318,8 @@
               sourceTableName: resp.data.rows[i].sourceDabRelation,
               dimensionRelation: resp.data.rows[i].dimensionRelation,
               connectorType: resp.data.rows[i].connectorType,
+              isTwoJoin: resp.data.rows[i].sourceTwoDabRelation !== null,
+              sourceTwoDabRelation: resp.data.rows[i].sourceTwoDabRelation
             });
           }
         }).catch(resp => {
@@ -1292,9 +1334,9 @@
         console.log("--2");
         console.log(value);
         console.log(this.variableClassificationOptions);
-
         this.variableClassificationOptions.map((data, i) => {
           if (data.value === value) {
+            this.isTwoJoin = data.isTwoJoin;
             // 如果数据源表是oracle-cdc
             this.variableIdShow = true;
             this.rules.variableId[0].required = true;
@@ -1308,6 +1350,9 @@
               this.form.variablePackType = data.connectorType;
             }
             this.sourceDataChange(data.sourceTableName);
+            if(data.isTwoJoin){
+              this.sourceTwoDataChange(data.sourceTwoDabRelation)
+            }
             this.getDimensionRelationFild(data.dimensionRelation);
             // 数据源表赋值
             this.form.sourceTableName = data.sourceTableName;

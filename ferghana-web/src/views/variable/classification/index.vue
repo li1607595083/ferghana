@@ -85,14 +85,14 @@
         <!-- 数据源表选择框 -->
         <div class="el-col-24">
           <!-- 第一个数据源表 -->
-          <el-form-item :label="(sourceTwoDabItem ? '数据源表(一)' : '数据源表')" prop="sourceDabRelation" class="el-col-20">
+          <el-form-item :label="(sourceTwoDabItem ? '数据源表(一)' : '数据源表')" prop="sourceDabRelation" :class="{'el-col-20': !judgeCdc, 'el-col-24': judgeCdc}">
             <el-select v-model="form.sourceDabRelation" placeholder="请选择数据源表" @change="sourceDabRelationChange"
               style="width: 100%" :disabled="detailViem">
-              <el-option v-for="data in sourceDataOptions" :key="data.value" :label="data.name" :value="data.value" />
+              <el-option v-for="data in sourceDataOptions" :key="data.value" :label="data.name" :value="data.id" />
             </el-select>
           </el-form-item>
 
-          <el-form-item class="el-col-4 elementStyle">
+          <el-form-item class="el-col-4 elementStyle" v-if="!judgeCdc">
             <span>
               <!-- 第一个数据源表只能加操作 -->
               <el-button @click="sourceAddItem" :disabled="detailViem">
@@ -143,19 +143,19 @@
 
           <el-form-item label="关联时间范围" class="el-col-24" v-if="sourceTwoDabItem" :rules="[{ required: true}]">
             <el-form-item class="el-col-11" :prop="sourceTwoDabItem ? 'sourceRelation.lowScope' : ''" v-if="sourceTwoDabItem">
-              <el-input-number v-model="form.sourceRelation.lowScope" controls-position="right" :min="0" style="width: 100%;" :validate-event="true" :disabled="detailViem"/>
+              <el-input-number v-model="form.sourceRelation.lowScope" controls-position="right" style="width: 100%;" :validate-event="true" :disabled="detailViem"/>
             </el-form-item>
             <el-form-item class="el-col-2" v-if="sourceTwoDabItem">
               <el-col class="line" style="text-align: center;">-</el-col>
             </el-form-item>
             <el-form-item class="el-col-11" :prop="sourceTwoDabItem ? 'sourceRelation.highScope' : ''" v-if="sourceTwoDabItem">
-              <el-input-number v-model="form.sourceRelation.highScope" controls-position="right" :min="0" style="width: 100%;" :validate-event="true" :disabled="detailViem"/>
+              <el-input-number v-model="form.sourceRelation.highScope" controls-position="right" style="width: 100%;" :validate-event="true" :disabled="detailViem"/>
             </el-form-item>
           </el-form-item>
 
         </div>
 
-        <div v-for="(item, index) in form.dimensionRelation" :key="index">
+        <div v-for="(item, index) in form.dimensionRelation" :key="index" v-if="!judgeCdc">
           <div class="el-col-24">
             <el-form-item label="关联数据维表" class="el-col-10" :rules="(item.sourceDabField == '' && item.dimensionName == '' ? rules.dimensionRelation.dimensionName : rules.dimensionRelationNotNull.dimensionName)"
               :prop="'dimensionRelation.'+index+'.dimensionName'">
@@ -306,6 +306,8 @@
         sourceTwoDabFieldOptions: [],
         // 数据维表关联字段options
         dimensionDabFieldOptions: [],
+        // 数据元标配(一)类型
+        sourceDabRelationType: undefined,
         detailViem: false,
         // 查询参数
         queryParams: {
@@ -421,6 +423,15 @@
       ...mapGetters([
         'name'
       ]),
+      // 数据源表是否为cdc类型
+      judgeCdc(){
+        if(this.sourceDabRelationType){
+          if(this.sourceDabRelationType === '02' || this.sourceDabRelationType === '03')
+            return true;
+          return false;
+        }
+        return false;
+      }
     },
     watch:{
       sourceTwoDabItem(newVal){
@@ -500,16 +511,23 @@
       },
       // 数据源表切换
       sourceDabRelationChange(value) {
-        this.form.sourceDabField = value;
+        let type = null;
         let that = this;
         if (value && value !== "") {
           // 不能选择两个相同的数据源表相关联
           this.sourceTwoDataOptions = [];
-          for(let i=0;i<this.sourceDataOptions.length;i++){
-            if(this.sourceDataOptions[i].value !== value){
-              this.sourceTwoDataOptions.push(this.sourceDataOptions[i])
+          this.sourceDataOptions.forEach(item => {
+            if(item.id !== value){
+              if(item.type !== '02' && item.type !== '03')
+                this.sourceTwoDataOptions.push(item);
             }
-          }
+            else {
+              value = item.value;
+              this.sourceDabRelationType = item.type;
+            }
+          })
+          this.form.sourceDabRelation = value;
+          this.form.sourceDabField = value;
           const baseUrl = process.env.VUE_APP_BASE_API;
           axios({
             method: 'get',
@@ -698,6 +716,8 @@
             that.sourceDataOptions.push({
               value: resp.data.rows[i].tableName,
               name: resp.data.rows[i].tableName,
+              type: resp.data.rows[i].connectorType,
+              id: resp.data.rows[i].dataSourceId
             });
           }
         }).catch(resp => {

@@ -2981,14 +2981,17 @@
         }).then(function (resp) {
           that.variableClassificationOptions = [];
           for (let i = 0; i < resp.data.rows.length; i++) {
-            that.variableClassificationOptions.push({
-              value: resp.data.rows[i].variableClassificationId,
-              name: resp.data.rows[i].variableClassificationName,
-              sourceDabRelation: resp.data.rows[i].sourceDabRelation,
-              sourceTwoDabRelation: resp.data.rows[i].sourceTwoDabRelation,
-              dimensionRelation: resp.data.rows[i].dimensionRelation,
-              sourceFieldSchema: resp.data.rows[i].schemaDefine,
-            });
+            // 不展示cdc
+            if(resp.data.rows[i].connectorType !== '02' && resp.data.rows[i].connectorType !== '03' ){
+              that.variableClassificationOptions.push({
+                value: resp.data.rows[i].variableClassificationId,
+                name: resp.data.rows[i].variableClassificationName,
+                sourceDabRelation: resp.data.rows[i].sourceDabRelation,
+                sourceTwoDabRelation: resp.data.rows[i].sourceTwoDabRelation,
+                dimensionRelation: resp.data.rows[i].dimensionRelation,
+                sourceFieldSchema: resp.data.rows[i].schemaDefine,
+              });
+            }
           }
         }).catch(resp => {
           console.log('获取变量分类请求失败：' + resp.status + ',' + resp.statusText);
