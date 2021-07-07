@@ -7,6 +7,8 @@ import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.types.Row;
 
+import java.util.Properties;
+
 public class MainAppRsOutPutEs {
 
     public static void main(String[] args) throws Exception {
@@ -19,7 +21,7 @@ public class MainAppRsOutPutEs {
         dbEnv.setParallelism(1);
 
         // Flink table 运行环境
-        StreamTableEnvironment dbTableEnv = FlinkUtils.dbTableEnv(dbEnv);
+        StreamTableEnvironment dbTableEnv = FlinkUtils.dbTableEnv(dbEnv, new Properties());
 
         dbTableEnv.executeSql("CREATE TABLE order_source_topic("
                 + "user_id STRING,"

@@ -29,7 +29,7 @@
 +--------------------+------------+----------+----------+---------------------------------------------------------------------------------------------------------------------------------------------+
 |connectorType       |   不需要   |   需要   |   需要   |输出到外部存储系统的类型,01,02,03,04分别表示kafka,mysql,hbase,es,eg:"connectorType":"01"                                                     |
 +--------------------+------------+----------+----------+---------------------------------------------------------------------------------------------------------------------------------------------+
-|kafkaTopic          |            |          |          |输出到kafka的topic名字,eg:"kafkaTopic":"sink_kafka"                                                                                          |
+|kafkaTopic          |            |          |          | 注意:此参数已经省略 ;// 输出到kafka的topic名字,eg:"kafkaTopic":"sink_kafka"                                                                 |
 |kafkaAddress        |   不需要   |   可选   |   可选   |输出到kafka集群地址和端口号,多个以逗号(,)拼接g:"kafkaAddress":"master:9092,slave:9092"                                                       |
 |kafkaZK             |            |          |          |输出kafka集群所依赖的zookeeper地址,多个以逗号(,)进行分割,eg:"kafkaZK":"master:2181,slave:2181"                                               |
 +--------------------+------------+----------+----------+---------------------------------------------------------------------------------------------------------------------------------------------+
@@ -101,17 +101,21 @@ testOracleDriver=oracle.jdbc.driver.OracleDriver
 json_ignore_parse_errors=true
 #数据源检测时间, -1表示不检测, 单位毫秒
 idleTimeout=-1
-#测试CDC同步mysql时url
-testCdcMysqlUrl=jdbc:mysql://master:3306/test?characterEncoding=UTF-8&useSSL=false
-#测试CDC同步mysql时的IP地址
-testCdcMysqlHostname=192.168.4.95
-#测试CDC同步mysql时的IP端口号
-testCdcMysqlPort=3306
-#测试CDC同步mysql时的用户名
-testCdcMysqlUsername=root
-#测试CDC同步mysql时的用户密码
-testCdcMysqlPassword=Skyon@1234
-#测试CDC同步mysql时的数据库
-testCdcMysqlDatabase=test
-#测试CDC同步mysql时的驱动
-testCdcMysqlDriver=com.mysql.cj.jdbc.Driver
+#Flink waterMark 发送间隔时间，单位毫秒
+waterMarkInterval=50
+#Flink 检查点触发间隔时间, 单位毫秒
+checkpointInterval=60000
+#Flink 检查点超时时间, 单位毫秒
+checkpointTimeOut=60000
+#Flink 检查点之间最小间隔时间
+BetweenCheckpointInterval=30000
+#Flink 允许checkpoint失败的次数
+checkpointFailureNumber=3
+#Flink 任务失败重启次数
+restartStrategyNumber=3
+#Flink 延迟重启时间，单位秒
+restartStrategyDealyTime=20
+#Flink 状态的最小空闲时间，单位小时, 0 表示不清除空闲状态
+idleStateMinRetentionTime=0
+#Flink 状态的最大空闲时间，单位小时, 0 表示不清除空闲状态
+idleStateMaxRetentionTime=0

@@ -18,17 +18,8 @@
 
 package org.apache.flink.streaming.runtime.streamstatus;
 
-import jdk.nashorn.internal.objects.NativeUint8Array;
 import org.apache.flink.annotation.Internal;
-import org.apache.flink.streaming.api.operators.StreamSource;
-import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.StreamElement;
-import org.apache.flink.streaming.runtime.tasks.SourceStreamTask;
-import org.apache.flink.streaming.runtime.tasks.StreamTask;
-import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
-import org.omg.CORBA.PUBLIC_MEMBER;
-
-import java.util.stream.Stream;
 
 /**
  * A Stream Status element informs stream tasks whether or not they should continue to expect records and watermarks
@@ -89,22 +80,43 @@ public final class StreamStatus extends StreamElement {
 
     public static final int IDLE_STATUS = -1;
     public static final int ACTIVE_STATUS = 0;
-    /** Add WaterMark 的超时时间 */
-    public static long init_time_out = 0L;
-
-    /**
-     * @Add 给 init_time_out 赋值
-     */
-    public static void set_init_time_out(long time_out){
-        init_time_out = time_out;
-    }
 
     public static final StreamStatus IDLE = new StreamStatus(IDLE_STATUS);
     public static final StreamStatus ACTIVE = new StreamStatus(ACTIVE_STATUS);
 
     public final int status;
     /** Add WaterMark 的超时时间 */
-    public final long TIME_OUT;
+    public final long timeout;
+    /** Add 双流 JOIN 注册延迟时间 */
+    public final long twostreamjoindelay;
+    /** Add 判断数据是否来自数据源 */
+    public final boolean source;
+
+    /**
+     * @add 新增构造方法
+     */
+    public StreamStatus(int status, long inittimeout,long inittwostreamjoin_delaytime, boolean source) {
+        if (status != IDLE_STATUS && status != ACTIVE_STATUS) {
+            throw new IllegalArgumentException("Invalid status value for StreamStatus; " +
+                    "allowed values are " + ACTIVE_STATUS + " (for ACTIVE) and " + IDLE_STATUS + " (for IDLE).");
+        }
+        this.status = status;
+        this.timeout = inittimeout;
+        this.twostreamjoindelay = inittwostreamjoin_delaytime;
+        this.source = source;
+    }
+
+    /**
+     * @add 新增构造方法
+     * @param status
+     * @param source
+     */
+    public StreamStatus(int status, boolean source){
+        this.status = status;
+        this.timeout = 0;
+        this.twostreamjoindelay = 0;
+        this.source = source;
+    }
 
     /**
      * @Change 给 TIME_OUT 赋值
@@ -115,12 +127,13 @@ public final class StreamStatus extends StreamElement {
                     "allowed values are " + ACTIVE_STATUS + " (for ACTIVE) and " + IDLE_STATUS + " (for IDLE).");
         }
         this.status = status;
-        if (status == -1){
-            this.TIME_OUT = init_time_out;
-        } else {
-            this.TIME_OUT = 0L;
-        }
+        this.timeout = 0;
+        this.twostreamjoindelay = 0;
+        this.source = false;
+    }
 
+    public boolean isSource(){
+        return source;
     }
 
     public boolean isIdle() {
@@ -133,6 +146,14 @@ public final class StreamStatus extends StreamElement {
 
     public int getStatus() {
         return status;
+    }
+
+    public long getTimeout(){
+        return timeout;
+    }
+
+    public long getTwostreamjoindelay(){
+        return twostreamjoindelay;
     }
 
     @Override

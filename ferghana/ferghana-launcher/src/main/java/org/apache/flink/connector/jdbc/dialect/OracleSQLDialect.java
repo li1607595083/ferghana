@@ -30,7 +30,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * @Add 新增加的一个类，使用 Flink SQL 支持 Oracel  维表
+ * @desc 新增加的一个类，使用 Flink SQL 支持 Oracel  维表
  */
 public class OracleSQLDialect extends AbstractDialect {
 

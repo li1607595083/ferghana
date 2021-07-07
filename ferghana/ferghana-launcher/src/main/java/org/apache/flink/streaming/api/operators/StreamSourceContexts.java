@@ -27,17 +27,17 @@ import org.apache.flink.streaming.runtime.tasks.ProcessingTimeCallback;
 import org.apache.flink.streaming.runtime.tasks.ProcessingTimeService;
 import org.apache.flink.util.Preconditions;
 
+import java.text.ParseException;
 import java.util.concurrent.ScheduledFuture;
 
 /**
- * @Change 重载了 getSourceContext(... ) 方法, 主要是为了添加参数 delayTime 吃参数
- *  以及修改了 markAsTemporarilyIdle(...) 方法, 详情请看相应方法的说明
+ * @desc 重载了 getSourceContext(... ) 方法, 重载了 ManualWatermarkContext(....) 构造方法，以及 WatermarkContext(....) 构造方法
  */
 public class StreamSourceContexts {
 
     /**
      * Depending on the {@link TimeCharacteristic}, this method will return the adequate
-     * {@link org.apache.flink.streaming.api.functions.source.SourceFunction.SourceContext}. That is:
+     * {@link SourceFunction.SourceContext}. That is:
      * <ul>
      *     <li>{@link TimeCharacteristic#IngestionTime} = {@code AutomaticWatermarkContext}</li>
      *     <li>{@link TimeCharacteristic#ProcessingTime} = {@code NonTimestampContext}</li>
@@ -85,7 +85,7 @@ public class StreamSourceContexts {
 
 
     /**
-     * @Add 方法重载，添加了delayTime此参数，相应的 ManualWatermarkContext 类，
+     * @Add 方法重载，添加了delayTime和twoStreamJoinDelayTime参数，相应的 ManualWatermarkContext 类，
      * 也添加了相应的构造方法, 同时相应 WatermarkContext  类，也涉及到构造的添加，
      * 参数的添加;
      */
@@ -97,19 +97,23 @@ public class StreamSourceContexts {
             Output<StreamRecord<OUT>> output,
             long watermarkInterval,
             long idleTimeout,
-            String delayTime
+            long delayTime,
+            long twoStreamJoinDelayTime
             ) {
 
         final SourceFunction.SourceContext<OUT> ctx;
         switch (timeCharacteristic) {
             case EventTime:
+                // 新增构造方法
                 ctx = new ManualWatermarkContext<>(
                         output,
                         processingTimeService,
                         checkpointLock,
                         streamStatusMaintainer,
                         idleTimeout,
-                        Long.parseLong(delayTime));
+                        delayTime,
+                        twoStreamJoinDelayTime
+                        );
 
                 break;
             case IngestionTime:
@@ -350,7 +354,7 @@ public class StreamSourceContexts {
         }
 
         /**
-         * @Add 新增构造方法
+         * @desc 新增构造方法
          */
         private ManualWatermarkContext(
                 final Output<StreamRecord<T>> output,
@@ -358,10 +362,12 @@ public class StreamSourceContexts {
                 final Object checkpointLock,
                 final StreamStatusMaintainer streamStatusMaintainer,
                 final long idleTimeout,
-                final long delayTime
+                final long delayTime,
+                final long twoStreamJoinDelayTime
         ) {
 
-            super(timeService, checkpointLock, streamStatusMaintainer, idleTimeout, delayTime);
+            // 新增父类构造方法
+            super(timeService, checkpointLock, streamStatusMaintainer, idleTimeout, delayTime, twoStreamJoinDelayTime);
 
             this.output = Preconditions.checkNotNull(output, "The output cannot be null.");
             this.reuse = new StreamRecord<>(null);
@@ -372,8 +378,9 @@ public class StreamSourceContexts {
             output.collect(reuse.replace(element));
         }
 
+
         @Override
-        protected void processAndCollectWithTimestamp(T element, long timestamp) {
+        protected void processAndCollectWithTimestamp(T element, long timestamp) throws ParseException {
             output.collect(reuse.replace(element, timestamp));
         }
 
@@ -409,8 +416,10 @@ public class StreamSourceContexts {
         protected final Object checkpointLock;
         protected final StreamStatusMaintainer streamStatusMaintainer;
         protected final long idleTimeout;
-        /** Add 延迟触发时间*/
+        /** 新增 waterMark 延迟触发时间*/
         protected final long delayTime;
+        /** 新增双流 join 延迟触发时间 */
+        protected final long twoStreamJoinDelayTime;
 
         private ScheduledFuture<?> nextCheck;
 
@@ -446,18 +455,20 @@ public class StreamSourceContexts {
             }
             this.idleTimeout = idleTimeout;
             this.delayTime = 0L;
+            this.twoStreamJoinDelayTime = 0L;
             scheduleNextIdleDetectionTask();
         }
 
         /**
-         * @Add 新增构造方法
+         * @desc 新增构造方法
          */
         public WatermarkContext(
                 final ProcessingTimeService timeService,
                 final Object checkpointLock,
                 final StreamStatusMaintainer streamStatusMaintainer,
                 final long idleTimeout,
-                final long delayTime
+                final long delayTime,
+                final long twoStreamJoinDelayTime
                 ) {
 
             this.timeService = Preconditions.checkNotNull(timeService, "Time Service cannot be null.");
@@ -468,7 +479,11 @@ public class StreamSourceContexts {
                 Preconditions.checkArgument(idleTimeout >= 1, "The idle timeout cannot be smaller than 1 ms.");
             }
             this.idleTimeout = idleTimeout;
+            // 新增 waterMark 延迟触发时间
             this.delayTime = delayTime;
+            // 新增双流 join 延迟触发时间
+            this.twoStreamJoinDelayTime = twoStreamJoinDelayTime;
+
             scheduleNextIdleDetectionTask();
         }
 
@@ -487,18 +502,26 @@ public class StreamSourceContexts {
             }
         }
 
+        /**
+         * @desc 标名数据的来源是否来自数据源，后续好从源头把迟到的数据给过滤掉
+         * @param element
+         * @param timestamp
+         */
         @Override
         public void collectWithTimestamp(T element, long timestamp) {
             synchronized (checkpointLock) {
-                streamStatusMaintainer.toggleStreamStatus(StreamStatus.ACTIVE);
-
+                streamStatusMaintainer.toggleStreamStatus(new StreamStatus(0, true));
                 if (nextCheck != null) {
                     this.failOnNextCheck = false;
                 } else {
                     scheduleNextIdleDetectionTask();
                 }
 
-                processAndCollectWithTimestamp(element, timestamp);
+                try {
+                    processAndCollectWithTimestamp(element, timestamp);
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
             }
         }
 
@@ -512,20 +535,18 @@ public class StreamSourceContexts {
                     } else {
                         scheduleNextIdleDetectionTask();
                     }
-
                     processAndEmitWatermark(mark);
                 }
             }
         }
 
         /**
-         * @Change 对 StreamStatus 类传入 delayTime  值;
+         * @desc 对 StreamStatus 类传入 delayTime,  twoStreamJoinDelayTime 值, 以及数据源的状态;
          */
         @Override
         public void markAsTemporarilyIdle() {
             synchronized (checkpointLock) {
-                StreamStatus.set_init_time_out(this.delayTime);
-                streamStatusMaintainer.toggleStreamStatus(StreamStatus.IDLE);
+                streamStatusMaintainer.toggleStreamStatus(new StreamStatus(-1, this.delayTime, this.twoStreamJoinDelayTime, false));
             }
         }
 
@@ -584,7 +605,7 @@ public class StreamSourceContexts {
         protected abstract void processAndCollect(T element);
 
         /** Process and collect record with timestamp. */
-        protected abstract void processAndCollectWithTimestamp(T element, long timestamp);
+        protected abstract void processAndCollectWithTimestamp(T element, long timestamp) throws ParseException;
 
         /** Whether or not a watermark should be allowed. */
         protected abstract boolean allowWatermark(Watermark mark);

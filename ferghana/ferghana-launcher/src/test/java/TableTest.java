@@ -13,6 +13,8 @@ import org.apache.flink.table.types.DataType;
 import org.apache.flink.table.types.logical.DateType;
 import org.apache.flink.types.Row;
 
+import java.util.Properties;
+
 import static org.apache.flink.table.api.Expressions.$;
 import static org.apache.flink.table.api.Expressions.nullOf;
 
@@ -21,7 +23,7 @@ public class TableTest {
     public static void main(String[] args) throws Exception {
 
         StreamExecutionEnvironment dbEnv = FlinkUtils.dbEnv();
-        StreamTableEnvironment dbTableEnv = FlinkUtils.dbTableEnv(dbEnv);
+        StreamTableEnvironment dbTableEnv = FlinkUtils.dbTableEnv(dbEnv, new Properties());
 
         Row row = new Row(5);
         row.setField(0, "001");

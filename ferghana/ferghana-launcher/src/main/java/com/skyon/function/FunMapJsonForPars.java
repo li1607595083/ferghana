@@ -13,17 +13,15 @@ public class FunMapJsonForPars extends RichMapFunction<String, Row> {
     private LinkedHashMap<String, String> singleFieldTypeHashMap;
     private ArrayList<String> arr;
     private Integer fieldCounts;
-    private String timeStampFiled;
 
     private FunMapJsonForPars(){}
 
-    private FunMapJsonForPars(LinkedHashMap<String, String> singleFieldTypeHashMap,String timeStampFiled){
+    private FunMapJsonForPars(LinkedHashMap<String, String> singleFieldTypeHashMap){
         this.singleFieldTypeHashMap = singleFieldTypeHashMap;
-        this.timeStampFiled = timeStampFiled;
     }
 
-    public static FunMapJsonForPars of(LinkedHashMap<String, String> singleFieldTypeHashMap,String timeStampFiled){
-        return new FunMapJsonForPars(singleFieldTypeHashMap, timeStampFiled);
+    public static FunMapJsonForPars of(LinkedHashMap<String, String> singleFieldTypeHashMap){
+        return new FunMapJsonForPars(singleFieldTypeHashMap);
     }
 
 
@@ -41,16 +39,12 @@ public class FunMapJsonForPars extends RichMapFunction<String, Row> {
     }
 
     @Override
-    public Row map(String value) throws Exception {
+    public Row map(String value) {
         HashMap hashMap = JSON.parseObject(value, HashMap.class);
         Row row = new Row(fieldCounts);
         int count = 0;
         for (String s : arr) {
-            if (s.equals(timeStampFiled)){
-                row.setField(count, Timestamp.valueOf(hashMap.get(s).toString()));
-            } else {
-                row.setField(count, hashMap.get(s));
-            }
+            row.setField(count, hashMap.get(s));
             count++;
         }
         return row;

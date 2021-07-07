@@ -29,7 +29,7 @@ public class HbaseSink extends RichSinkFunction<String> implements CheckpointedF
     private Table table;
     private String rowkey;
     private ArrayList<ArrayList<String>> hashFamAndField;
-    List<Put> puts;
+    private List<Put> puts;
     private Integer bathSize;
     private Integer maxRetries = 3;
     private Logger LOG;
