@@ -51,13 +51,8 @@ public class EsSink {
                 }
         );
 
-        // configuration for the bulk requests; this instructs the sink to emit after every element, otherwise they would be buffered
         esSinkBuilder.setBulkFlushMaxActions(numMaxActions);
 
-        // provide a RestClientFactory for custom configuration on the internally created REST client
-//        esSinkBuilder.setRestClientFactory(
-//                restClientBuilder -> {}
-//        );
         return esSinkBuilder;
     }
 }

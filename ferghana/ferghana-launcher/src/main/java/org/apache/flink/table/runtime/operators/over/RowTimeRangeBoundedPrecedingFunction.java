@@ -25,7 +25,6 @@ import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.typeutils.ListTypeInfo;
-import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
 import org.apache.flink.table.data.JoinedRowData;
@@ -35,16 +34,18 @@ import org.apache.flink.table.runtime.generated.AggsHandleFunction;
 import org.apache.flink.table.runtime.generated.GeneratedAggsHandleFunction;
 import org.apache.flink.table.runtime.typeutils.RowDataTypeInfo;
 import org.apache.flink.table.types.logical.LogicalType;
-import org.apache.flink.types.parser.LongParser;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.*;
+
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Iterator;
+import java.util.List;
 
 /**
- * @Change 新增了成员变量 twoStreamJoinDelaySendTime，以及修改了此类的构造方法，open(...), processElement(...)
- * , onTimer(...) 以及registerCleanupTimer(...) 方法 进行相应的修改；
+ * @desc 修改了此类的构造方法，open(...), onTimer(...)  进行相应的修改；
  */
 public class RowTimeRangeBoundedPrecedingFunction<K> extends KeyedProcessFunction<K, RowData, RowData> {
     private static final long serialVersionUID = 1L;
@@ -58,7 +59,6 @@ public class RowTimeRangeBoundedPrecedingFunction<K> extends KeyedProcessFunctio
     private final int rowTimeIdx;
     private FastDateFormat instance;
     private final String type;
-    private long twoStreamJoinDelaySendTime = 0;
 
     private transient JoinedRowData output;
 
@@ -80,7 +80,7 @@ public class RowTimeRangeBoundedPrecedingFunction<K> extends KeyedProcessFunctio
     private transient AggsHandleFunction function;
 
     /**
-     * @Change 增加了窗口统计方式
+     * @desc 增加了窗口统计方式
      */
     public RowTimeRangeBoundedPrecedingFunction(
             GeneratedAggsHandleFunction genAggsHandler,
@@ -108,14 +108,10 @@ public class RowTimeRangeBoundedPrecedingFunction<K> extends KeyedProcessFunctio
     }
 
     /**
-     * @Change 新增加了两部分, 1.如果是双流join的,那么计算触发时间会被延迟
-     *                          2.通过窗口计算类型，来创建相应的 FastDateFormat 实例
+     * @desc 通过窗口计算类型，来创建相应的 FastDateFormat 实例
      */
     @Override
     public void open(Configuration parameters) throws Exception {
-        //  如果是双流join，需要对注册时间延后，且延后触发时间放在taskName里面
-        ParameterTool globalJobParameters = (ParameterTool) getRuntimeContext().getExecutionConfig().getGlobalJobParameters();
-        this.twoStreamJoinDelaySendTime = Long.parseLong(globalJobParameters.getProperties().getProperty("TWO_STREAM_JOIN_DELAY_TIME", "0"));
         switch (type){
             // 以日为统计的窗口时间
             case "01": instance = FastDateFormat.getInstance("yyyy-MM-dd");break;
@@ -154,13 +150,10 @@ public class RowTimeRangeBoundedPrecedingFunction<K> extends KeyedProcessFunctio
         this.cleanupTsState = getRuntimeContext().getState(cleanupTsStateDescriptor);
     }
 
-    /**
-     * @Change 对触发计算时间进行延迟, 如果是非双流 JOIN 操作, 那么延迟触发时间就为0
-     */
     @Override
     public void processElement(
             RowData input,
-            KeyedProcessFunction<K, RowData, RowData>.Context ctx,
+            Context ctx,
             Collector<RowData> out) throws Exception {
         // triggering timestamp for trigger calculation
         long triggeringTs = input.getLong(rowTimeIdx);
@@ -168,7 +161,6 @@ public class RowTimeRangeBoundedPrecedingFunction<K> extends KeyedProcessFunctio
         if (lastTriggeringTs == null) {
             lastTriggeringTs = 0L;
         }
-
         // check if the data is expired, if not, save the data and register event time timer
         if (triggeringTs > lastTriggeringTs) {
             List<RowData> data = inputState.get(triggeringTs);
@@ -181,17 +173,15 @@ public class RowTimeRangeBoundedPrecedingFunction<K> extends KeyedProcessFunctio
                 inputState.put(triggeringTs, data);
                 // register event time timer
                 // 增加延迟触发时间
-                ctx.timerService().registerEventTimeTimer(triggeringTs + twoStreamJoinDelaySendTime);
+                ctx.timerService().registerEventTimeTimer(triggeringTs);
             }
+            ctx.timerService().currentWatermark();
             registerCleanupTimer(ctx, triggeringTs);
         }
     }
 
-    /**
-     * @Change 对清除过期转态时间进行延迟, 如果是非双流 JOIN 操作, 那么延迟触发时间就为0
-     */
     private void registerCleanupTimer(
-            KeyedProcessFunction<K, RowData, RowData>.Context ctx,
+            Context ctx,
             long timestamp) throws Exception {
         // calculate safe timestamp to cleanup states
         long minCleanupTimestamp = timestamp + precedingOffset + 1;
@@ -202,7 +192,7 @@ public class RowTimeRangeBoundedPrecedingFunction<K> extends KeyedProcessFunctio
             // we don't delete existing timer since it may delete timer for data processing
             // TODO Use timer with namespace to distinguish timers
             // 增加延迟触发时间
-            ctx.timerService().registerEventTimeTimer(maxCleanupTimestamp + twoStreamJoinDelaySendTime);
+            ctx.timerService().registerEventTimeTimer(maxCleanupTimestamp);
             cleanupTsState.update(maxCleanupTimestamp);
         }
     }
@@ -213,10 +203,8 @@ public class RowTimeRangeBoundedPrecedingFunction<K> extends KeyedProcessFunctio
     @Override
     public void onTimer(
             long timestamp,
-            KeyedProcessFunction<K, RowData, RowData>.OnTimerContext ctx,
+            OnTimerContext ctx,
             Collector<RowData> out) throws Exception {
-        // 恢复原本实际的时间, 避免影响计算
-        timestamp = timestamp - twoStreamJoinDelaySendTime;
         Long cleanupTimestamp = cleanupTsState.value();
         // if cleanupTsState has not been updated then it is safe to cleanup states
         if (cleanupTimestamp != null && cleanupTimestamp <= timestamp) {

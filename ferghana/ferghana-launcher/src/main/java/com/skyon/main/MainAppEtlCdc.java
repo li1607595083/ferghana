@@ -11,6 +11,7 @@ import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.types.Row;
 
 import java.util.HashMap;
+import java.util.Properties;
 
 public class MainAppEtlCdc {
 
@@ -18,7 +19,7 @@ public class MainAppEtlCdc {
 
         StreamExecutionEnvironment dbEnv = FlinkUtils.dbEnv();
         dbEnv.setParallelism(4);
-        StreamTableEnvironment dbTableEnv = FlinkUtils.dbTableEnv(dbEnv);
+        StreamTableEnvironment dbTableEnv = FlinkUtils.dbTableEnv(dbEnv, new Properties());
         ParameterTool parameterTool = ParameterTool.fromMap(new HashMap<String, String>());
         dbEnv.getConfig().setGlobalJobParameters(parameterTool);
 

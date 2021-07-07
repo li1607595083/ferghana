@@ -2,10 +2,12 @@ package com.skyon.utils;
 
 import java.sql.*;
 
+/**
+ * @DESCIBE MySQL 工具类
+ */
 public class MySqlUtils {
     /**
-     * Get MySQL connection
-     * @return
+     * @return 创建 MySQL 连接，并返回；
      * @throws Exception
      */
     public static Connection getConnection(String url, String username, String password, String driver) throws Exception {
@@ -15,10 +17,17 @@ public class MySqlUtils {
 
 
     /**
-     * Read the table data
-     * @param connection
-     * @param sql
-     * @return
+     * @return 创建 MySQL 连接，并返回；
+     * @throws Exception
+     */
+    public static Connection getConnection(String url, String username, String password) throws Exception {
+        return DriverManager.getConnection(url, username, password);
+    }
+
+    /**
+     * @param connection MySql 连接
+     * @param sql 查询语句
+     * @return 查询 MySQL 中表的数据，并返回查询结果
      * @throws Exception
      */
     public static ResultSet selectData(Connection connection, String sql) throws Exception {
@@ -27,8 +36,19 @@ public class MySqlUtils {
     }
 
     /**
-     * Close MySQL connection
-     * @param connection
+     * @desc 关闭 Statement
+     * @param statement
+     * @throws SQLException
+     */
+    public static void  colseStatement(Statement statement) throws SQLException {
+        if (statement != null){
+            statement.close();
+        }
+    }
+
+    /**
+     * @desc  关闭MySQL 连接
+     * @param connection MySql 连接
      */
     public static void closeConnection(Connection connection) {
         if (connection != null){

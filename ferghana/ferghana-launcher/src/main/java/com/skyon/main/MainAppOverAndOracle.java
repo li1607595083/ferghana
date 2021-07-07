@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 import java.sql.Types;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 public class MainAppOverAndOracle {
 
@@ -28,7 +29,7 @@ public class MainAppOverAndOracle {
         StreamExecutionEnvironment dbEnv = FlinkUtils.dbEnv();
         dbEnv.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 //        dbEnv.setParallelism(1);
-        StreamTableEnvironment dbTableEnv = FlinkUtils.dbTableEnv(dbEnv);
+        StreamTableEnvironment dbTableEnv = FlinkUtils.dbTableEnv(dbEnv, new Properties());
         Map<String, String> stringLongHashMap = new HashMap<>();
 //        stringLongHashMap.put("waterMark", 5000 + "");
 //        stringLongHashMap.put("oracle_table","FLINK_ORACLE_TEST_001");
@@ -220,7 +221,7 @@ public class MainAppOverAndOracle {
 //                        .build()));
 //        Properties properties = new Properties();
 //        properties.put("joinSql", sql_join);
-//        MianAppProcesTest.soureAndDimConcat(properties, dbTableEnv, AppDealOperation.of());
+//        AppPerFormOperations.soureAndDimConcat(properties, dbTableEnv, AppPerFormOperations.of());
 //        Table table = dbTableEnv.sqlQuery("SELECT * FROM oracel_dimtable_test");
 //        DataStream<Row> rowDataStream = dbTableEnv.toAppendStream(table, Row.class);
 //        rowDataStream.print();

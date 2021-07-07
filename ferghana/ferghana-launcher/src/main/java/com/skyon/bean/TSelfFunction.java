@@ -2,6 +2,9 @@ package com.skyon.bean;
 
 import java.util.Date;
 
+/**
+ * 自定义函数的结构信息，详细信息请查看，表的定义
+ */
 public class TSelfFunction {
 
     private Long self_function_id;

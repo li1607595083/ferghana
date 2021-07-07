@@ -16,7 +16,7 @@ public class KafkaSink {
      * @param topic
      * @return
      */
-    public static FlinkKafkaProducer011<String> transaction(String topic, String brokelist, String kafkaProducersPoolSize) {
+    public static FlinkKafkaProducer011<String> transaction(String topic, String brokelist) {
         Properties properties = new Properties();
         properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, brokelist);
         properties.setProperty(ProducerConfig.TRANSACTION_TIMEOUT_CONFIG, 3*60*1000+"");
@@ -25,7 +25,7 @@ public class KafkaSink {
         properties.setProperty(ProducerConfig.RETRIES_CONFIG, "5");
         properties.setProperty(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, "1");
         StringKeyedSerializationSchema stringKeyedSerializationSchema = new StringKeyedSerializationSchema();
-        FlinkKafkaProducer011<String> output = new FlinkKafkaProducer011<String>(topic, stringKeyedSerializationSchema,properties, Optional.empty(),FlinkKafkaProducer011.Semantic.EXACTLY_ONCE, Integer.parseInt(kafkaProducersPoolSize) + 3);
+        FlinkKafkaProducer011<String> output = new FlinkKafkaProducer011<String>(topic, stringKeyedSerializationSchema,properties, Optional.empty(),FlinkKafkaProducer011.Semantic.EXACTLY_ONCE, 5);
         return output;
     }
 

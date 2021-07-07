@@ -21,6 +21,7 @@ import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.types.Row;
 
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 public class MianAppCheckpoint {
@@ -38,7 +39,7 @@ public class MianAppCheckpoint {
         env.getCheckpointConfig().enableUnalignedCheckpoints();
         env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, Time.of(10, TimeUnit.SECONDS)));
 
-        StreamTableEnvironment tableEnv = FlinkUtils.dbTableEnv(env);
+        StreamTableEnvironment tableEnv = FlinkUtils.dbTableEnv(env, new Properties());
 //        tableEnv.executeSql("CREATE TABLE SOURCE("
 //                + "STR STRING,"
 //                + "TRAN_TIME TIMESTAMP,"
@@ -93,7 +94,7 @@ public class MianAppCheckpoint {
 
         sum.print();
 
-        sum.addSink(KafkaSink.transaction("OUTPUT", "master:9092", 5 + ""));
+        sum.addSink(KafkaSink.transaction("OUTPUT", "master:9092"));
 
         env.execute();
     }

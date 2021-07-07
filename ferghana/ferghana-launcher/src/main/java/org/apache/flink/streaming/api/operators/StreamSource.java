@@ -17,6 +17,7 @@
 
 package org.apache.flink.streaming.api.operators;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.configuration.Configuration;
@@ -35,7 +36,7 @@ import org.apache.flink.streaming.runtime.tasks.ProcessingTimeService;
 import java.util.concurrent.ScheduledFuture;
 
 /**
- * @Change 详细说明请看  run(...) 方法，其中对添加行进行了的说明
+ * @desc 对 run(...) 方法，其中对添加行进行了的说明
  */
 @Internal
 public class StreamSource<OUT, SRC extends SourceFunction<OUT>> extends AbstractUdfStreamOperator<OUT, SRC> {
@@ -54,8 +55,10 @@ public class StreamSource<OUT, SRC extends SourceFunction<OUT>> extends Abstract
         this.chainingStrategy = ChainingStrategy.HEAD;
     }
 
+
+
     /**
-     * @Change 相应的改变，请看代码注释 //....
+     * @desc 相应的改变，请看代码注释 //....
      */
     public void run(final Object lockingObject,
                     final StreamStatusMaintainer streamStatusMaintainer,
@@ -91,13 +94,15 @@ public class StreamSource<OUT, SRC extends SourceFunction<OUT>> extends Abstract
 
         // 获取参数类(ParameterTool)
         ParameterTool parameterTool = (ParameterTool) getRuntimeContext().getExecutionConfig().getGlobalJobParameters();
-        // idleTimeout: 表示如果数据源没有新的记录，那么将触发发出新的WaterMark，其中 -1 表示不开启此机制
+        // idleTimeout: 表示如果数据源没有新的记录，那么将触发发出新的 WaterMark，其中 -1 表示不开启此机制
         long idleTimeout = Long.parseLong(parameterTool.get("idleTimeout", -1 + ""));
+        // 此时间为双流join时，注册延迟触发时间
+        long twoStreamJoinDelayTime = Long.parseLong(parameterTool.get("two_stream_join_delay_time", 0 + ""));
         // delayTime: WaterMark的延迟触发时间，当数据源的没有产生新的记录时,
-        // 那么新产生的WaterMarkd也就是最大的时间戳(lastOutputWatermark + idleTimeout)
-        String delayTime = parameterTool.get("delayTime");
+        // 新发出的 WaterMark 必定会触发所有的计算
+        long delayTime = getDelayTime();
 
-        if(delayTime == null && Long.parseLong(delayTime) > 0){
+        if(delayTime == 0 && twoStreamJoinDelayTime == 0){
             this.ctx = StreamSourceContexts.getSourceContext(
                     timeCharacteristic,
                     getProcessingTimeService(),
@@ -116,7 +121,9 @@ public class StreamSource<OUT, SRC extends SourceFunction<OUT>> extends Abstract
                     collector,
                     watermarkInterval,
                     idleTimeout,
-                    delayTime);
+                    delayTime,
+                    twoStreamJoinDelayTime
+                    );
         }
 
 
@@ -139,6 +146,24 @@ public class StreamSource<OUT, SRC extends SourceFunction<OUT>> extends Abstract
                 latencyEmitter.close();
             }
         }
+    }
+
+    /**
+     * @desc 获取 WaterMark 延迟触发时间，从人物名中，获取 waterMark 参数值
+     * @return
+     */
+    private long getDelayTime() {
+        String delayTime = 0 + "";
+        for (String s : this.getContainingTask().getName().split("->")) {
+            s = s.trim();
+            if (s.startsWith("WatermarkAssigner")){
+                String s1 = s.split(",", 2)[1]
+                        .split(":INTERVAL SECOND")[0];
+                String outTime = StringUtils.reverse(s1).split("\\s+", 2)[0];
+                delayTime = StringUtils.reverse(outTime);
+            }
+        }
+        return Long.parseLong(delayTime);
     }
 
     public void advanceToEndOfEventTime() {
