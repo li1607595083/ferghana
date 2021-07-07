@@ -47,10 +47,10 @@ Vue.prototype.msgInfo = function (msg) {
 }
 
 // 全局组件挂载
-Vue.component('Pagination', Pagination)
-Vue.component(VeLine.name, VeLine)
+Vue.component('Pagination', Pagination);
+Vue.component(VeLine.name, VeLine);
 
-Vue.use(permission)
+Vue.use(permission);
 
 /**
  * If you don't want to use mock-server
