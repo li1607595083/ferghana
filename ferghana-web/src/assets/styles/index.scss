@@ -5,6 +5,29 @@
 @import './sidebar.scss';
 @import './btn.scss';
 
+@font-face {
+  font-family: PuHuiTi;
+  src: url('../fonts/Alibaba-PuHuiTi-Regular.ttf');
+}
+
+@font-face {
+  font-family: ChuQianTi;
+  src: url('../fonts/ChuQIanTi.ttf');
+}
+
+* {
+  font-family: PuHuiTi;
+}
+
+::-webkit-scrollbar {
+  width: 0 !important;
+}
+
+::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0;
+}
+
 body {
   height: 100%;
   -moz-osx-font-smoothing: grayscale;

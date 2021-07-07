@@ -1,11 +1,13 @@
 <template>
-  <section class="app-main">
-    <transition name="fade-transform" mode="out-in">
-      <keep-alive :include="cachedViews">
-        <router-view :key="key" />
-      </keep-alive>
-    </transition>
-  </section>
+  <el-scrollbar class="app-main" :style="{height: 'calc(100vh - '+(tagsView ? '84px' : '50px')+')'}">
+    <section>
+      <transition name="fade-transform" mode="out-in">
+        <keep-alive :include="cachedViews">
+          <router-view :key="key" />
+        </keep-alive>
+      </transition>
+    </section>
+  </el-scrollbar>
 </template>
 
 <script>
@@ -16,11 +18,14 @@ export default {
       console.log("---------");
       console.log(this);
       console.log(this.$store.state.tagsView.cachedViews);
-      return this.$store.state.tagsView.cachedViews
+      return this.$store.state.tagsView.cachedViews;
     },
     key() {
       console.log(this.$route.path);
-      return this.$route.path
+      return this.$route.path;
+    },
+    tagsView() {
+      return this.$store.state.settings.tagsView;
     }
   }
 }
@@ -29,7 +34,7 @@ export default {
 <style lang="scss" scoped>
 .app-main {
   /* 50= navbar  50  */
-  min-height: calc(100vh - 50px);
+  // min-height: calc(100vh - 50px);
   width: 100%;
   position: relative;
   overflow: hidden;
@@ -39,16 +44,17 @@ export default {
   padding-top: 50px;
 }
 
-.hasTagsView {
-  .app-main {
-    /* 84 = navbar + tags-view = 50 + 34 */
-    min-height: calc(100vh - 84px);
-  }
+// .hasTagsView {
+//   .app-main {
+//     /* 84 = navbar + tags-view = 50 + 34 */
+//     // min-height: calc(100vh - 84px);
+//     height: calc(100vh - 50px);
+//   }
 
-  .fixed-header+.app-main {
-    padding-top: 84px;
-  }
-}
+//   .fixed-header+.app-main {
+//     padding-top: 84px;
+//   }
+// }
 </style>
 
 <style lang="scss">
