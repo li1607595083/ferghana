@@ -809,7 +809,7 @@
                       <!--  数据源表                   -->
                       <el-form ref="form" :model="form" :rules="testRules" label-width="120px" class="el-col-24">
                         <div v-show="sourceTableValueItem">
-                          <el-scrollbar>
+                          <el-scrollbar class="el-scrollbar-show">
                             <span style="font-size: 16px;font-weight: bold">{{dataSourceName}}</span>
 
                             <el-table :data="form.sourceTableValue" border ref="multipleTable" tooltip-effect="dark"
@@ -840,9 +840,45 @@
                             </el-table>
                           </el-scrollbar>
                         </div>
+
+                        <!--  数据源表(二)                   -->
+                        <div v-show="twoSourceTableValueItem" style="margin-top: 10px">
+                          <el-scrollbar class="el-scrollbar-show">
+                            <span style="font-size: 16px;font-weight: bold">{{dataSourceTwoName}}</span>
+
+                            <el-table :data="form.twoSourceTableValue" border ref="multipleTable" tooltip-effect="dark"
+                                      style="width: 100%; margin-top: 10px"
+                                      empty-text="未选择输入参数表">
+                              <template v-for='(col,index) in twoSourceTableCol'>
+                                <el-table-column :show-overflow-tooltip="true"
+                                                 :prop="col.dataItem" align="center" :label="col.dataName" :key="index"
+                                                 width="300px">
+                                  <template scope="scope">
+                                    <el-form-item label-width="0px" :prop="col.dataName.indexOf('主键') > 0 ? 'twoSourceTableValue.'+scope.$index+'.' + col.dataItem :
+                                                     col.dataName.indexOf('水印') > 0 ? 'twoSourceTableValue.'+scope.$index+'.' + col.dataItem : ''"
+                                                  :rules="col.dataName.indexOf('主键') > 0 ? testRules.twoPrimaryKey :
+                                                     col.dataName.indexOf('水印') > 0 ? testRules.twoWaterMark :[{ required: false }]">
+                                      <el-input v-model="scope.row[col.dataItem]" placeholder="请输入内容" />
+                                    </el-form-item>
+                                  </template>
+                                </el-table-column>
+                              </template>
+                              <el-table-column label="操作" width="200px" align="center"
+                                               class-name="small-padding fixed-width">
+                                <template slot-scope="scope">
+                                  <el-button @click="addInputTwoSource"><i class="el-icon-plus"/>
+                                  </el-button>
+                                  <el-button @click="removeInputTwoSource(scope)"><i class="el-icon-minus"/></el-button>
+                                </template>
+                              </el-table-column>
+                            </el-table>
+                          </el-scrollbar>
+                        </div>
+
+
                         <!--  数据维表                   -->
                         <div v-show="dimensionTableValueItem" style="margin-top: 10px">
-                          <el-scrollbar>
+                          <el-scrollbar class="el-scrollbar-show">
                             <div v-for="(dataAll,indexList) in listResultDimension" style="margin-top: 10px">
                               <span style="font-size: 16px;font-weight: bold">{{dataAll.name}}</span>
                                 <el-table :data="listResultDimension[indexList].dimensionTableValue" border ref="multipleTable"
@@ -856,8 +892,7 @@
                                       <template scope="scope">
     <!--                                      <el-form-item label-width="0px" :prop="col.dataName.indexOf('主键') > 0 ? 'listResultDimension['+indexList+'].dimensionTableValue.'+scope.$index+'.' + col.dataItem : ''"-->
     <!--                                                    :rules="col.dataName.indexOf('主键') > 0 ? {required: true, message:'主键不能为空', trigger: 'blur'} : [{ required: false }]">-->
-                                          <el-input v-model="scope.row[col.dataItem]" placeholder="请输入内容"
-                                                  :disabled="detailViem"/>
+                                          <el-input v-model="scope.row[col.dataItem]" placeholder="请输入内容"/>
     <!--                                      </el-form-item>-->
                                       </template>
                                     </el-table-column>
@@ -1027,6 +1062,28 @@
     name: "Center",
     components: {Treeselect},
     data() {
+      var validatePrimaryKey = (rule, value, callback) => {
+        let split = rule.field.split(".");
+        let index = parseInt(split[1]);
+        let field = split[2];
+        if(this.form.twoSourceTableValue && this.form.twoSourceTableValue.length > 0){
+          if(this.form.twoSourceTableValue[index][field] && this.form.twoSourceTableValue[index][field] !== ""){
+            callback();
+          }
+        }
+        callback(new Error('主键不能为空'));
+      };
+      var validateWaterMark = (rule, value, callback) => {
+        let split = rule.field.split(".");
+        let index = parseInt(split[1]);
+        let field = split[2];
+        if(this.form.twoSourceTableValue && this.form.twoSourceTableValue.length > 0){
+          if(this.form.twoSourceTableValue[index][field] && this.form.twoSourceTableValue[index][field] !== ""){
+            callback();
+          }
+        }
+        callback(new Error('水印不能为空'));
+      };
       return {
         // 遮罩层
         loading: true,
@@ -1153,10 +1210,16 @@
 
         // 数据源表头列
         sourceTableCol: [],
+        // 数据源表(二)头列
+        twoSourceTableCol: [],
         // 测试时数据源表的主键和水印字段
         sourceTwoCol: [],
+        // 测试时数据源表(二)的主键和水印字段
+        twoSourceTwoCol: [],
         // 控制数据维表列是否展示
         dimensionTableValueItem: false,
+        // 控制数据源表(二)列是否展示
+        twoSourceTableValueItem: false,
         sourceTableValueItem: false,
         //tabs标签页的初始页
         activeName: 'first',
@@ -1228,6 +1291,8 @@
           deriveEngineTable: [],
           processOutputTable: [],
           sourceTableValue: [],
+          // 数据源表(二)输入字段
+          twoSourceTableValue: [],
           testSourceTableCol: [],
           statisticsGroupItem:[{
             groupField:"",
@@ -1264,6 +1329,12 @@
           relationField: [
             {required: true, message: "关联字段不能为空", trigger: "blur"}
           ],
+          twoPrimaryKey: [
+            {validator: validatePrimaryKey, trigger: "blur"}
+          ],
+          twoWaterMark: [
+            {validator: validateWaterMark, trigger: "blur"}
+          ]
         },
         // 表单校验
         rules: {
@@ -1635,6 +1706,18 @@
         this.form.sourceTableValue.splice(scope.$index, 1);
       },
       // 新增输入行
+      addInputTwoSource() {
+        this.form.twoSourceTableValue.push({})
+      },
+      // 移除输入行
+      removeInputTwoSource(scope) {
+        if (this.form.twoSourceTableValue.length === 1) {
+          this.$alert("不能全部删除！", {type: 'warning'});
+          return;
+        }
+        this.form.twoSourceTableValue.splice(scope.$index, 1);
+      },
+      // 新增输入行
       addInputDimension(data) {
         for (let i = 0; i < this.listResultDimension.length; i++) {
           if (this.listResultDimension[i].name === data) {
@@ -1760,7 +1843,9 @@
       cancelTest() {
         this.open = false;
         this.sourceTableCol = [];
+        this.twoSourceTableCol = [];
         this.form.sourceTableValue = [];
+        this.form.twoSourceTableValue = [];
         this.listResultDimension = [];
         this.dimensionTableValueItem = false;
         this.sourceTableValueItem = false;
@@ -1782,6 +1867,14 @@
           dataItem: this.sourceTwoCol[0],
           dataName: this.sourceTwoCol[0] + "-水印",
         })
+        this.twoSourceTableCol.push({
+          dataItem: this.twoSourceTwoCol[1],
+          dataName: this.twoSourceTwoCol[1] + "-主键",
+        })
+        this.twoSourceTableCol.push({
+          dataItem: this.twoSourceTwoCol[0],
+          dataName: this.twoSourceTwoCol[0] + "-水印",
+        })
         if ("01" === this.form.variableModelType) { // 普通查询
           // redis key
           for (let i = 0; i < this.variableFactorOptions.length; i++) {
@@ -1796,6 +1889,20 @@
               }
             }
           }
+          // redist key 数据源表(二)
+          this.variableFactorTwoOptions.forEach((item, index) => {
+            if(item.label === this.form.redisKey){
+              this.twoSourceTableValueItem = true;
+              let split = this.form.redisKey.split(".");
+              // twoSourceTableCol
+              if (this.twoSourceTableCol[0].dataItem !== split[1] && this.twoSourceTableCol[1].dataItem !== split[1]) { // 去重
+                this.twoSourceTableCol.push({
+                  dataItem: this.form.redisKey,
+                  dataName: this.form.redisKey,
+                });
+              }
+            }
+          })
 
           for (let i = 0; i < this.listDimension.length; i++) {
             for (let j = 0; j < this.listDimension[i].dimensionRelationOptions.length; j++) {
@@ -1840,6 +1947,25 @@
                   }
                   if (flag === true) {
                     this.sourceTableCol.push({
+                      dataItem: this.form.conditionTable[i].field,
+                      dataName: this.form.conditionTable[i].field,
+                    });
+                  }
+                }
+              }
+              //statisticsfieldTwoOptions
+              for (let j = 0; j < this.statisticsfieldTwoOptions.length; j++) {
+                if (this.form.conditionTable[i].field === this.statisticsfieldTwoOptions[j].value) {
+                  let flag = true;
+                  this.twoSourceTableValueItem = true;
+                  for (let k = 0; k < this.twoSourceTableCol.length; k++) {
+                    let split1 = this.form.conditionTable[i].field.split(".");
+                    if (this.twoSourceTableCol[k].dataItem === split1[1] || this.twoSourceTableCol[k].dataItem === this.form.conditionTable[i].field) {   // 去重
+                      flag = false;
+                    }
+                  }
+                  if(flag === true){
+                    this.twoSourceTableCol.push({
                       dataItem: this.form.conditionTable[i].field,
                       dataName: this.form.conditionTable[i].field,
                     });
@@ -1927,6 +2053,20 @@
             }
           }
 
+          for (let i = 0; i < this.variableFactorTwoOptions.length; i++) {
+            if (this.variableFactorTwoOptions[i].label === this.form.variableFactor) {
+              this.twoSourceTableValueItem = true;
+              let split = this.form.variableFactor.split(".");
+              if (this.twoSourceTableCol[0].dataItem !== split[1] && this.twoSourceTableCol[1].dataItem !== split[1]) { // 去重
+                this.twoSourceTableCol.push({
+                  dataItem: this.form.variableFactor,
+                  dataName: this.form.variableFactor,
+                });
+                break;
+              }
+            }
+          }
+
           for (let i = 0; i < this.listDimension.length; i++) {
             for (let j = 0; j < this.listDimension[i].dimensionRelationOptions.length; j++) {
               if (this.listDimension[i].dimensionRelationOptions[j].label === this.form.variableFactor) {
@@ -1969,6 +2109,28 @@
                   }
                   if (flag === true) {
                     this.sourceTableCol.push({
+                      dataItem: this.form.statisticsGroupItem[j].groupField,
+                      dataName: this.form.statisticsGroupItem[j].groupField,
+                    });
+                  }
+
+                }
+              }
+            }
+            // statisticsGroupTwoOptions
+            for (let i = 0; i < this.statisticsGroupTwoOptions.length; i++) {
+              for (let j = 0; j < this.form.statisticsGroupItem.length; j++) {
+                if (this.statisticsGroupTwoOptions[i].name === this.form.statisticsGroupItem[j].groupField) {
+                  let flag = true;
+                  this.twoSourceTableValueItem = true;
+                  for (let k = 0; k < this.twoSourceTableCol.length; k++) {
+                    let split1 = this.form.statisticsGroupItem[j].groupField.split(".");
+                    if (this.twoSourceTableCol[k].dataItem === split1[1] || this.twoSourceTableCol[k].dataItem === this.form.statisticsGroupItem[j].groupField) {   // 去重
+                      flag = false;
+                    }
+                  }
+                  if (flag === true) {
+                    this.twoSourceTableCol.push({
                       dataItem: this.form.statisticsGroupItem[j].groupField,
                       dataName: this.form.statisticsGroupItem[j].groupField,
                     });
@@ -2058,6 +2220,26 @@
                   }
                   if (flag === true) {
                     this.sourceTableCol.push({
+                      dataItem: this.form.conditionTable[i].field,
+                      dataName: this.form.conditionTable[i].field,
+                    });
+                  }
+                }
+              }
+
+              //statisticsGroupTwoOptions
+              for (let j = 0; j < this.statisticsGroupTwoOptions.length; j++) {
+                if (this.form.conditionTable[i].field === this.statisticsGroupTwoOptions[j].value) {
+                  let flag = true;
+                  this.twoSourceTableValueItem = true;
+                  for (let k = 0; k < this.twoSourceTableCol.length; k++) {
+                    let split1 = this.form.conditionTable[i].field.split(".");
+                    if (this.twoSourceTableCol[k].dataItem === split1[1] || this.twoSourceTableCol[k].dataItem === this.form.conditionTable[i].field) {   // 去重
+                      flag = false;
+                    }
+                  }
+                  if(flag === true){
+                    this.twoSourceTableCol.push({
                       dataItem: this.form.conditionTable[i].field,
                       dataName: this.form.conditionTable[i].field,
                     });
@@ -2374,7 +2556,7 @@
 
       // 关联字段
       relationField(callback) {
-
+        console.log("=================[]===================")
         if (this.listResultDimension.length > 0) {
           // 解决测试时，关联的数据维没有选择时，则不需要在数据源表中有关联字段
           let tableName = [];
@@ -2387,32 +2569,107 @@
           this.variableClassificationOptions.map((data) => {
             if (data.value === this.form.variableClassification) {
               let parse = JSON.parse(data.dimensionRelation);
+              console.log("===========parse==============")
+              console.log(data)
+              console.log(parse)
+
+              if(data.sourceRelation){
+                let sourceRelation = JSON.parse(data.sourceRelation)
+                let flag = true;
+                this.sourceTableCol.forEach(item => {
+                  let split = item.dataItem.split(".");
+                  if(item.dataItem === sourceRelation.sourceDabField || split[1] === sourceRelation.sourceDabField){
+                    flag = false;
+                  }
+                })
+                if(flag){
+                  this.sourceTableCol.push({
+                    dataItem: sourceRelation.sourceDabField,
+                    dataName: sourceRelation.sourceDabField + "-" + data.sourceTwoDabRelation + "关联字段",
+                  })
+                }
+                flag = true;
+                this.twoSourceTableCol.forEach(item => {
+                  let split = `${item.dataItem}`.split(".");
+                  if(item.dataItem === sourceRelation.sourceTwoDabField || split[1] === sourceRelation.sourceTwoDabField){
+                    flag = false;
+                  }
+                })
+                if(flag){
+                  this.twoSourceTableCol.push({
+                    dataItem: sourceRelation.sourceTwoDabField,
+                    dataName: sourceRelation.sourceTwoDabField + "-" + data.sourceDabRelation + "关联字段",
+                  })
+                }
+              }
+
               // 字段中没有关联字段时，需增加
               let tmpArr = [];
+              let tmpArr2 = [];
+
               for (let j = 0; j < parse.length; j++) {
-                let flag = true;
-                for (let i = 0; i < this.sourceTableCol.length; i++) {
-                  let tmp = this.sourceTableCol[i].dataItem;
-                  if (parse[j].relation){
-                    flag = true;
+                if(!parse[j].sourceTwoDabField){
+                  let flag = true;
+                  for (let i = 0; i < this.sourceTableCol.length; i++) {
+                    let tmp = this.sourceTableCol[i].dataItem;
+                    if (parse[j].relation){
+                      flag = true;
+                    }
+                    if (flag !== true && tmp === parse[j].sourceDabField) {
+                      flag = false;
+                      if (this.sourceTableCol[i].dataName.indexOf("主键") <= 0) { // 主键不修改
+                        this.sourceTableCol[i].dataName = parse[j].sourceDabField + "-" + parse[j].dimensionName +
+                          "关联字段";
+                      }
+                    }
                   }
-                  if (flag !== true && tmp === parse[j].sourceDabField) {
-                    flag = false;
-                    if (this.sourceTableCol[i].dataName.indexOf("主键") <= 0) { // 主键不修改
-                      this.sourceTableCol[i].dataName = parse[j].sourceDabField + "-" + parse[j].dimensionName +
-                        "关联字段";
+                  this.sourceTableCol.forEach(item => {
+                    let split_1 = item.dataItem.split(".");
+                    if(split_1[1] === parse[j].sourceDabField || item.dataItem === parse[j].sourceDabField){
+                      flag = false;
+                    }
+                  })
+                  if (flag === true) {
+                    if(tableName.indexOf(parse[j].dimensionName) > -1){
+                      tmpArr.push({
+                        dataItem: parse[j].sourceDabField,
+                        dataName: parse[j].sourceDabField + "-" + parse[j].dimensionName + "关联字段",
+                      })
                     }
                   }
                 }
-                if (flag === true) {
-                  if(tableName.indexOf(parse[j].dimensionName) > -1){
-                    tmpArr.push({
-                      dataItem: parse[j].sourceDabField,
-                      dataName: parse[j].sourceDabField + "-" + parse[j].dimensionName + "关联字段",
-                    })
+                else{
+                  let flag = true;
+                  for (let i = 0; i < this.twoSourceTableCol.length; i++) {
+                    let tmp = this.twoSourceTableCol[i].dataItem;
+                    if (parse[j].relation){
+                      flag = true;
+                    }
+                    if (flag !== true && tmp === parse[j].sourceTwoDabField) {
+                      flag = false;
+                      if (this.twoSourceTableCol[i].dataName.indexOf("主键") <= 0) { // 主键不修改
+                        this.twoSourceTableCol[i].dataName = parse[j].sourceTwoDabField + "-" + parse[j].dimensionName +
+                          "关联字段";
+                      }
+                    }
+                  }
+                  this.twoSourceTableCol.forEach(item => {
+                    let split_1 = item.dataItem.split(".");
+                    if(split_1[1] === parse[j].sourceTwoDabField || item.dataItem === parse[j].sourceTwoDabField){
+                      flag = false;
+                    }
+                  })
+                  if (flag === true) {
+                    if(tableName.indexOf(parse[j].dimensionName) > -1){
+                      tmpArr2.push({
+                        dataItem: parse[j].sourceTwoDabField,
+                        dataName: parse[j].sourceTwoDabField + "-" + parse[j].dimensionName + "关联字段",
+                      })
 
+                    }
                   }
                 }
+
                 // 如果有关联es表，那么分别提取数据源表与之关联的字段
                 // else if(flag === true){
                 //   for (let k = 0; k < parse[j].relation.length; k++) {
@@ -2439,6 +2696,7 @@
                 // }
               }
               this.sourceTableCol = this.sourceTableCol.concat(tmpArr);
+              this.twoSourceTableCol = this.twoSourceTableCol.concat(tmpArr2);
             }
           });
         }
@@ -2593,9 +2851,7 @@
               } else if(this.form.deriveVariableModelType === "03"){ // 逻辑运算
                 this.getBaseVariableTestCol(this.variableArray);
               }
-
             }
-
             // 添加关联字段
             setTimeout(_ => {
               this.relationField(()=>{
@@ -2611,6 +2867,12 @@
               this.sourceTableValueItem = true;
               this.form.sourceTableValue.push({})
             }
+
+            // 若测试的数据源表(二)有字段，展示
+            if (this.twoSourceTableCol.length > 0) {
+              this.form.twoSourceTableValue.push({})
+            }
+
             // 给测试的结果列赋值表头    主键 和 变量英文名称
             // testResultCol
             this.testResultCol = [];
@@ -2990,6 +3252,7 @@
                 sourceTwoDabRelation: resp.data.rows[i].sourceTwoDabRelation,
                 dimensionRelation: resp.data.rows[i].dimensionRelation,
                 sourceFieldSchema: resp.data.rows[i].schemaDefine,
+                sourceRelation: resp.data.rows[i].sourceRelation
               });
             }
           }
@@ -3135,6 +3398,7 @@
       },
       // 改变数据加工的模板，查询相对应的输入字段
       querySelfSchemaUpdate(val) {
+        console.log(val)
         let that = this;
         const baseUrl = process.env.VUE_APP_BASE_API;
         axios({
@@ -3162,7 +3426,7 @@
                   lengthNum: parse[i].lengthNum
                 });
           }
-          that.$forceUpdate();
+          // that.$forceUpdate();
         }).catch(resp => {
           console.log('querySelfSchemaUpdate获取自定义函数的输入字段id' + val + '请求失败!' + resp);
         });
@@ -3319,7 +3583,7 @@
               }
             }
             else if(valueTwo === "true"){
-              that.dataSourceTwoName = "数据源表："+value;
+              that.dataSourceTwoName = "数据源表(二)："+value;
               that.variableFactorTwoOptions = [];
               that.statisticsGroupTwoOptions = [];
               that.statisticsfieldTwoOptions = [];
@@ -3341,18 +3605,16 @@
                   type: resp.data.rows[0][j].value,
                 });
               }
-              // that.sourceTwoCol = [];
-              // for (let i = 0; i < resp.data.rows[1].length; i++) {
-              //   that.sourceTwoCol = that.sourceTwoCol.concat(resp.data.rows[1][i]);
-              // }
+              that.twoSourceTwoCol = [];
+              for (let i = 0; i < resp.data.rows[1].length; i++) {
+                that.twoSourceTwoCol = that.twoSourceTwoCol.concat(resp.data.rows[1][i]);
+              }
             }
-
-
           }).catch(resp => {
             console.log('获取数据源表id' + val + '请求失败!' + resp);
           });
 
-        }, 300);
+        }, 0);
       },
 
       // 切换数据维表
@@ -3537,6 +3799,8 @@
           deriveVariableSql: "",
           // 数据源表输入字段
           sourceTableValue: [],
+          // 数据源表(二)输入字段
+          twoSourceTableValue: [],
           // 数据源表主键
           sourceKey: undefined,
           // 数据源表的类型
@@ -3777,6 +4041,7 @@
           this.variableTmp = response.data;
           this.form.conditionTable = [];
           this.form.sourceTableValue = [];
+          this.form.twoSourceTableValue = [];
           this.form.processTable = [];
 
           this.form.conditionTable = JSON.parse(this.form.statisticsConditionOption);
@@ -3821,6 +4086,7 @@
           }
 
           //变量分类的切换
+          // this.variableClassificationChange(this.form.variableClassification, "test");
           setTimeout(()=>{
             this.variableClassificationChange(this.form.variableClassification, "test");
           },600);

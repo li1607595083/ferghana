@@ -87,3 +87,13 @@
 .el-notification__title {
   display: inline-block;
 }
+
+.el-scrollbar__wrap {
+  overflow-x: hidden;
+}
+
+.el-scrollbar-show {
+  .el-scrollbar__wrap {
+    overflow-x: scroll;
+  }
+}

@@ -181,7 +181,7 @@
 
               <el-tab-pane label="测试数据" name="first">
                 <div v-show="sourceTableValueItem">
-                  <el-scrollbar>
+                  <el-scrollbar class="el-scrollbar-show">
                     <span style="font-size: 16px;font-weight: bold">数据源表字段</span>
                     <el-table :data="form.sourceTableValue" border ref="multipleTable" tooltip-effect="dark"
                       style="width: 100%; margin-top: 10px" empty-text="未选择输入参数表">
@@ -203,7 +203,7 @@
                   </el-scrollbar>
                 </div>
                 <div v-show="dimensionTableValueItem">
-                  <el-scrollbar>
+                  <el-scrollbar class="el-scrollbar-show">
                     <div v-for="dataAll in listResultDimension" style="margin-top: 10px">
                       <span style="font-size: 16px;font-weight: bold">{{dataAll.name}}</span>
                       <el-table :data="dataAll.dimensionTableValue" border ref="multipleTable" tooltip-effect="dark"
