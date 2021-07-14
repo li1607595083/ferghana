@@ -1,8 +1,9 @@
 package com.skyon.sink;
 
-import com.skyon.app.AppPerFormOperations;
 import com.skyon.bean.*;
+import com.skyon.function.FunMapValueMoveTypeAndFieldNmae;
 import com.skyon.type.TypeTrans;
+import com.skyon.utils.DataStreamToTable;
 import com.skyon.utils.KafkaUtils;
 import com.skyon.utils.StoreUtils;
 import kafka.utils.ZkUtils;
@@ -14,14 +15,19 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.streaming.api.scala.OutputTag;
+import org.apache.flink.table.api.StatementSet;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableSchema;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.table.types.DataType;
+import org.apache.flink.types.Row;
 import org.apache.flink.util.Collector;
 
 import java.io.IOException;
 import java.util.*;
+
+import static com.skyon.app.AppPerFormOperations.getUid;
+import static com.skyon.utils.ParameterUtils.removeTailLastSpecialSymbol;
 
 public class StoreSink {
 
@@ -31,10 +37,12 @@ public class StoreSink {
     private String selesql;
     /*Result table creation statement*/
     private String resultTable;
+    // 测流输出表
+    private String sideOutputTable;
     /*parameter configuration*/
     private Properties properties;
     /*table execution environment*/
-    private  StreamTableEnvironment dbTableEnv;
+    private StreamTableEnvironment dbTableEnv;
     private LinkedHashMap<String, String> nt;
     private HashMap<String, String> indexfieldNameAndType;
 
@@ -54,14 +62,15 @@ public class StoreSink {
      * @param sinkSql
      */
     private void initPre(String sinkSql){
-        String[] sp = sinkSql.trim().substring(0, sinkSql.length() - 1).split("\\(", 2);
+        String[] sp = removeTailLastSpecialSymbol(sinkSql, ")", true).split("\\(", 2);
         selesql = sp[1].trim();
-        if (!"01".equals(properties.getProperty("connectorType"))){
-            rstbname = sp[0].trim().split("\\s+")[2];
-            resultTable = "CREATE TABLE " +  rstbname +" (";
-            if (properties.getProperty("connectorType").equals("03")){
-                resultTable = "CREATE TABLE " +  rstbname.split(":")[1] +" (";
-            }
+        rstbname = sp[0].trim().split("\\s+")[2];
+        resultTable = "CREATE TABLE " +  rstbname +" (";
+        if (properties.getProperty(ParameterName.SINK_TYPE).equals(SinkType.SINK_HBASE)){
+            resultTable = "CREATE TABLE " +  rstbname.split(":")[1] +" (";
+        }
+        if (RunMode.TEST_MODE.equals(properties.getProperty(ParameterName.RUM_MODE))){
+            sideOutputTable = "CREATE TABLE " +  "sink_" + properties.getProperty(ParameterName.TEST_TOPIC_NAME) +" (";
         }
     }
 
@@ -106,6 +115,9 @@ public class StoreSink {
                 fieldType = indexfieldNameAndType.getOrDefault(fieldName, fieldType);
             }
             resultTable = resultTable + fieldName + " " + fieldType  + ",";
+            if (RunMode.TEST_MODE.equals(properties.getProperty(ParameterName.RUM_MODE))){
+                sideOutputTable = sideOutputTable + fieldName + fieldType + ",";
+            }
             nt.put(fieldName, fieldType);
         }
         if (selesql.contains("ROW")){
@@ -122,13 +134,19 @@ public class StoreSink {
      */
     public void sinkTable(Boolean sideOut) throws Exception {
         SingleOutputStreamOperator<String> stringDataStream;
+        StatementSet statementSet = dbTableEnv.createStatementSet();
         if (sideOut){
-            stringDataStream = resultSideOut();
+            stringDataStream = resultSideOut(statementSet);
         } else {
-            stringDataStream = AppPerFormOperations.resultToString(dbTableEnv, selesql, ParameterName.SINK_SQL);
+            stringDataStream = resultToString(rstbname, ParameterName.SINK_SQL);
         }
+        String outputSql = "INSERT INTO " + rstbname + " SELECT * FROM result_table";
+        DataStreamToTable.registerTable(dbTableEnv, stringDataStream,"result_table", false, nt);
         if (properties.getProperty(ParameterName.SINK_TYPE).equals(SinkType.SINK_KAFKA)) {
-            sinkKafa(stringDataStream);
+            createOutPutTopic();
+            dbTableEnv.executeSql(getKafkaCreateTable());
+            statementSet.addInsertSql(outputSql).execute();
+            //sinkKafa(stringDataStream);
         } else if (properties.getProperty(ParameterName.SINK_TYPE).equals(SinkType.SINK_JDBC)) {
             String type = getMySqlCreateTable();
             StoreUtils storeUtils = StoreUtils.of(resultTable);
@@ -169,9 +187,16 @@ public class StoreSink {
         return esAddress;
     }
 
-    private SingleOutputStreamOperator<String> resultSideOut() {
+    public SingleOutputStreamOperator<String> resultToString(String resultTable, String uidPrefix) {
+        String uid = getUid(uidPrefix, resultTable);
+        Table table = dbTableEnv.sqlQuery(selesql);
+        return dbTableEnv.toAppendStream(table, Row.class, uid)
+                .map(FunMapValueMoveTypeAndFieldNmae.of(table.getSchema().getFieldNames()));
+    }
+
+    private SingleOutputStreamOperator<String> resultSideOut(StatementSet statementSet) {
         SingleOutputStreamOperator<String> stringDataStream;
-        DataStream<String> splitDataStream = AppPerFormOperations.resultToString(dbTableEnv, selesql, "sinkSql");
+        DataStream<String> splitDataStream = resultToString(selesql, "sinkSql");
         OutputTag<String> outputTag = new OutputTag<String>(ParameterValue.SIDE_OUTPUT, Types.STRING){};
         stringDataStream = splitDataStream.process(new ProcessFunction<String, String>() {
             @Override
@@ -181,12 +206,16 @@ public class StoreSink {
             }
         });
         DataStream<String> sideOutput = stringDataStream.getSideOutput(outputTag);
-        sideOutput.addSink(KafkaSink.untransaction(properties.getProperty(ParameterName.TEST_TOPIC_NAME), properties.getProperty(ParameterName.TEST_BROKER_LIST)));
+        String sideOutputSql = "INSERT INTO " + "sink_" + properties.getProperty(ParameterName.TEST_TOPIC_NAME) + " SELECT * FROM sideout_result_table";
+        DataStreamToTable.registerTable(dbTableEnv, sideOutput,"sideout_result_table", false, nt);
+        dbTableEnv.executeSql(getSideOutputCreateTable());
+        statementSet.addInsertSql(sideOutputSql);
+//        sideOutput.addSink(KafkaSink.untransaction(properties.getProperty(ParameterName.TEST_TOPIC_NAME), properties.getProperty(ParameterName.TEST_BROKER_LIST)));
         return stringDataStream;
     }
 
     private void getHbaseCreateTable() {
-        if ("02".equals(properties.getProperty("runMode"))){
+        if (RunMode.START_MODE.equals(properties.getProperty(ParameterName.RUM_MODE))){
             resultTable = resultTable + " PRIMARY KEY  (" + properties.getProperty(ParameterName.SOURCE_PRIMARY_KEY) + ") NOT ENFORCED"
                     + ") WITH ("
                     + "'connector' = 'hbase-1.4',"
@@ -201,6 +230,40 @@ public class StoreSink {
                     + "'zookeeper.quorum' = '" + properties.getProperty(ParameterName.TEST_ZK) + "'"
                     + ")";
         }
+    }
+
+    private String getSideOutputCreateTable(){
+        return removeTailLastSpecialSymbol(sideOutputTable,",", false)
+                + ") WITH ("
+                + "'connector' = 'kafka-0.11',"
+                + "'topic' = '" + properties.getProperty(ParameterName.TEST_TOPIC_NAME) + "',"
+                + "'properties.bootstrap.servers' = '" + properties.getProperty(ParameterName.TEST_BROKER_LIST) + "',"
+                + "'properties.group.id' = '" + "gp_" + properties.getProperty(ParameterName.TEST_TOPIC_NAME) + "',"
+                + "'format' = 'json'"
+                + ")";
+    }
+
+    private String getKafkaCreateTable(){
+        if (RunMode.START_MODE.equals(properties.getProperty(ParameterName.RUM_MODE))){
+            resultTable = removeTailLastSpecialSymbol(resultTable,",", false)
+                    + ") WITH ("
+                    + "'connector' = 'kafka-0.11',"
+                    + "'topic' = '" + rstbname + "',"
+                    + "'properties.bootstrap.servers' = '" + properties.getProperty(ParameterName.KAFKA_ADDRESS) + "',"
+                    + "'properties.group.id' = '" + "gp_" + rstbname + "',"
+                    + "'format' = 'json'"
+                    + ")";
+        } else {
+            resultTable = resultTable
+                    + ") WITH ("
+                    + "'connector' = 'kafka-0.11',"
+                    + "'topic' = '" + rstbname + "',"
+                    + "'properties.bootstrap.servers' = '" + properties.getProperty(ParameterName.TEST_BROKER_LIST) + "'"
+                    + "'properties.group.id' = '" + "gp_" + rstbname + "',"
+                    + "'format' = 'json'"
+                    + ")";
+        }
+        return resultTable;
     }
 
     private String getMySqlCreateTable() {
@@ -255,19 +318,6 @@ public class StoreSink {
     }
 
     private void sinkKafa(DataStream<String> stringDataStream){
-        ZkUtils zkUtils;
-        if (RunMode.START_MODE.equals(properties.getProperty(ParameterName.RUM_MODE))){
-            zkUtils = KafkaUtils.getZkUtils(properties.getProperty(ParameterName.KAFKA_ZK));
-        } else {
-            zkUtils = KafkaUtils.getZkUtils(properties.getProperty(ParameterName.TEST_ZK));
-        }
-        // 副本作为配置文件参数
-        if (RunMode.START_MODE.equals(properties.getProperty(ParameterName.RUM_MODE))){
-            KafkaUtils.createKafkaTopic(zkUtils, rstbname, Integer.parseInt(properties.getProperty(ParameterName.KAFKA_PARTITION)), Integer.parseInt(properties.getProperty(ParameterName.TOPIC_REPLICATION)));
-        } else {
-            KafkaUtils.createKafkaTopic(zkUtils, rstbname, Integer.parseInt(properties.getProperty(ParameterName.KAFKA_PARTITION)), 1);
-        }
-        KafkaUtils.clostZkUtils(zkUtils);
         if (RunMode.START_MODE.equals(properties.getProperty(ParameterName.RUM_MODE))){
             if (SourceType.MYSQL_CDC.equals(properties.getProperty(ParameterName.SOURCE_TYPE))){
                 stringDataStream.addSink(KafkaSink.untransaction(rstbname, properties.getProperty(ParameterName.KAFKA_ADDRESS))).name("SINK_OUTPUT_RESUTL");
@@ -278,6 +328,22 @@ public class StoreSink {
             stringDataStream.addSink(KafkaSink.untransaction(rstbname, properties.getProperty(ParameterName.TEST_BROKER_LIST))).name("SINK_OUTPUT_RESUTL");
         }
 
+    }
+
+    private void createOutPutTopic() {
+        ZkUtils zkUtils;
+        if (RunMode.START_MODE.equals(properties.getProperty(ParameterName.RUM_MODE))){
+            zkUtils = KafkaUtils.getZkUtils(properties.getProperty(ParameterName.KAFKA_ZK));
+        } else {
+            zkUtils = KafkaUtils.getZkUtils(properties.getProperty(ParameterName.TEST_ZK));
+        }
+        // 副本作为配置文件参数
+        if (RunMode.START_MODE.equals(properties.getProperty(ParameterName.RUM_MODE))){
+            KafkaUtils.createKafkaTopic(zkUtils, rstbname, Integer.parseInt(properties.getProperty(ParameterName.KAFKA_PARTITION)), Integer.parseInt(properties.getProperty(ParameterName.TOPIC_REPLICATION, "1")));
+        } else {
+            KafkaUtils.createKafkaTopic(zkUtils, rstbname, Integer.parseInt(properties.getProperty(ParameterName.KAFKA_PARTITION)), 1);
+        }
+        KafkaUtils.clostZkUtils(zkUtils);
     }
 
     private void sinkJdbc(DataStream<String> stringDataStream){

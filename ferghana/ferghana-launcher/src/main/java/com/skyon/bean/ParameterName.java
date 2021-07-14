@@ -15,7 +15,7 @@ public class ParameterName {
     // topic 副本数
     public static String TOPIC_REPLICATION = "topic_replication";
     // kafka 所依赖的 zk
-    public  static String KAFKA_ZK = "hbaseZK";
+    public  static String KAFKA_ZK = "kafkaZK";
     // 输出到 es 地址
     public static String ES_ADDRESS = "esAddress";
     // 测试输出到 es 地址

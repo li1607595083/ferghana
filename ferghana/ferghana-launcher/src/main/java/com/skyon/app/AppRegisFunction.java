@@ -35,7 +35,7 @@ public class AppRegisFunction {
         // dbTableEnv.createTemporarySystemFunction("redis_query", new RedisQueryFunction());
         // dbTableEnv.createTemporarySystemFunction("age_function", new AgeFunction());
         // dbTableEnv.createTemporarySystemFunction("timestamp_to_string_ymd", new TimestampToStringYMD());
-        // 获取 MySQL 连接
+         //获取 MySQL 连接
         Connection connection = MySqlUtils.getConnection(parameterProperties.getProperty(ParameterName.REGIS_FUN_URL), parameterProperties.getProperty(ParameterName.TEST_USER_NAME), parameterProperties.getProperty(ParameterName.TEST_PASSWORD), parameterProperties.getProperty(ParameterName.TEST_DRIVER));
         // 扫描全表数据
         ResultSet resultSet = MySqlUtils.selectData(connection, scanSql);

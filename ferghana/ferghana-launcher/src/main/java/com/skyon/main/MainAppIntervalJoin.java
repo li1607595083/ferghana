@@ -5,9 +5,9 @@ import com.skyon.utils.FlinkUtils;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.table.api.StatementSet;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
-import org.apache.flink.types.Row;
 
 import java.util.HashMap;
 import java.util.Properties;
@@ -83,16 +83,28 @@ public class MainAppIntervalJoin {
                 + "AND interval_join_001.order_time BETWEEN interval_join_002.trade_time + INTERVAL '-1' SECOND AND interval_join_002.trade_time + INTERVAL '3' SECOND";
 
 
-        String jiSunSql = "SELECT trade_amount, product_no, count(product_no)  over(PARTITION BY product_no ORDER BY order_time RANGE BETWEEN INTERVAL '30' MINUTE preceding AND CURRENT ROW)  AS trade_amount_sum_per_type_001_003  FROM interval_join_001_interval_join_002";
+        String jiSunSql = "INSERT INTO MyUserTable_test SELECT trade_amount, product_no, count(product_no)  over(PARTITION BY product_no ORDER BY order_time RANGE BETWEEN INTERVAL '30' MINUTE preceding AND CURRENT ROW)  AS trade_amount_sum_per_type_001_003  FROM interval_join_001_interval_join_002";
         dbTableEnv.executeSql(source_001);
         dbTableEnv.executeSql(source_002);
         Table table = dbTableEnv.sqlQuery(join_sql);
 
         dbTableEnv.createTemporaryView("interval_join_001_interval_join_002", table);
-        Table table4 = dbTableEnv.sqlQuery(jiSunSql);
-        dbTableEnv.toAppendStream(table4, Row.class, "qewer").print("qer\t\t:");
 
-        dbEnv.execute();
+        String sinkTable = "CREATE TABLE MyUserTable_test (" +
+                "  trade_amount DOUBLE," +
+                "  product_no STRING," +
+                "  trade_amount_sum_per_type_001_003 BIGINT," +
+                "  PRIMARY KEY (product_no) NOT ENFORCED" +
+                ") WITH (" +
+                "   'connector' = 'jdbc'," +
+                "   'url' = 'jdbc:mysql://master:3306/test'," +
+                "   'table-name' = 'MyUserTable_test'," +
+                "   'username' = 'ferghana'," +
+                "   'password' = 'Ferghana@1234'" +
+                ")";
+        dbTableEnv.executeSql(sinkTable);
+        StatementSet statementSet = dbTableEnv.createStatementSet();
+        statementSet.addInsertSql(jiSunSql).execute();
     }
 
 }

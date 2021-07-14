@@ -239,7 +239,7 @@ public class StreamSource<OUT, SRC extends SourceFunction<OUT>> extends Abstract
                             } catch (Throwable t) {
                                 // we catch the Throwables here so that we don't trigger the processing
                                 // timer services async exception handler
-                                LOG.warn("Error while emitting latency marker.", t);
+                                AbstractStreamOperator.LOG.warn("Error while emitting latency marker.", t);
                             }
                         }
                     },

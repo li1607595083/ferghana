@@ -8,8 +8,10 @@ import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.Collector;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Set;
 
 public class FunMapValueAddTypeAadFieldName extends ProcessFunction<Row, Tuple2<String, String>> {
 

@@ -1,6 +1,7 @@
 package com.skyon.function;
 
 import com.alibaba.fastjson.JSONObject;
+import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.flink.api.common.state.*;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
@@ -23,6 +24,7 @@ public class FunKeyedProValCon extends KeyedProcessFunction<String, Tuple2<Strin
     private transient ValueState<Long> timer_state;
     private final  int field_counts;
     private String timeField;
+    private FastDateFormat fastDateFormat;
 
     private FunKeyedProValCon(int field_counts, String timeField) {
         this.field_counts  = field_counts;
@@ -53,6 +55,7 @@ public class FunKeyedProValCon extends KeyedProcessFunction<String, Tuple2<Strin
 
         vm_state = getRuntimeContext().getState(value_map_desc);
         timer_state = getRuntimeContext().getState(registerTimer);
+        fastDateFormat = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS");
     }
 
     @Override
@@ -73,7 +76,9 @@ public class FunKeyedProValCon extends KeyedProcessFunction<String, Tuple2<Strin
                 String vv = next.getValue();
                 map.put(kk, vv);
                 if (timer_state.value() == null && kk.equals(timeField)){
-                    ctx.timerService().registerEventTimeTimer(Long.parseLong(vv));
+                    long time = fastDateFormat.parse(vv.split("&")[2].replaceAll("T", " ")).getTime();
+                    timer_state.update(time);
+                    ctx.timerService().registerEventTimeTimer(time);
                 }
 
             }
@@ -90,12 +95,14 @@ public class FunKeyedProValCon extends KeyedProcessFunction<String, Tuple2<Strin
 
     @Override
     public void onTimer(long timestamp, OnTimerContext ctx, Collector<String> out) throws Exception {
-        if (!vm_state.value().isEmpty()){
-            Map<String, String> value = vm_state.value();
-            String result = JSONObject.toJSON(value).toString();
-            out.collect(result);
+        if (vm_state.value() != null){
+            if (!vm_state.value().isEmpty()){
+                Map<String, String> value = vm_state.value();
+                String result = JSONObject.toJSON(value).toString();
+                out.collect(result);
+            }
+            vm_state.clear();
+            timer_state.clear();
         }
-        vm_state.clear();
-        timer_state.clear();
     }
 }

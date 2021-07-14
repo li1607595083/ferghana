@@ -2,14 +2,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <artifactId>ferghana</artifactId>
-        <groupId>com.skyon</groupId>
-        <version>1.0-SNAPSHOT</version>
-    </parent>
     <modelVersion>4.0.0</modelVersion>
-
+    <groupId>com.skyon</groupId>
     <artifactId>ferghana-launcher</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <flink.version>1.11.1</flink.version>
@@ -23,6 +21,8 @@
         <kafka.version>0.11.0.2</kafka.version>
         <zokeeper.version>3.4.6</zokeeper.version>
         <redis.version>3.1.0</redis.version>
+        <flink.cdc.mysql>1.1.1</flink.cdc.mysql>
+        <mysql.version>8.0.16</mysql.version>
     </properties>
 
     <repositories>
@@ -40,6 +40,52 @@
     </repositories>
 
     <dependencies>
+        <!-- https://mvnrepository.com/artifact/org.apache.flink/flink-metrics-influxdb -->
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-metrics-influxdb_2.12</artifactId>
+            <version>1.11.1</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.jetbrains.kotlin/kotlin-stdlib -->
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-stdlib</artifactId>
+            <version>1.5.10</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.influxdb/influxdb-java -->
+        <dependency>
+            <groupId>org.influxdb</groupId>
+            <artifactId>influxdb-java</artifactId>
+            <version>2.21</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.twitter</groupId>
+            <artifactId>chill-protobuf</artifactId>
+            <version>0.7.6</version>
+            <!-- exclusions for dependency conversion -->
+            <exclusions>
+                <exclusion>
+                    <groupId>com.esotericsoftware.kryo</groupId>
+                    <artifactId>kryo</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!-- We need protobuf for chill-protobuf -->
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <version>3.7.0</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>connect-json</artifactId>
+            <version>${kafka.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-state-processor-api_2.11</artifactId>
@@ -176,7 +222,7 @@
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
-            <version>8.0.13</version>
+            <version>${mysql.version}</version>
         </dependency>
 
         <dependency>
@@ -245,6 +291,28 @@
             <artifactId>flink-statebackend-rocksdb_2.11</artifactId>
             <version>${flink.version}</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.ververica</groupId>
+            <artifactId>flink-connector-mysql-cdc</artifactId>
+            <version>${flink.cdc.mysql}</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>org.apache.kafka</artifactId>
+                    <groupId>common.security</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.ververica</groupId>
+            <artifactId>flink-connector-postgres-cdc</artifactId>
+            <version>1.1.1</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/com.alibaba.ververica/flink-format-changelog-json -->
+        <dependency>
+            <groupId>com.alibaba.ververica</groupId>
+            <artifactId>flink-format-changelog-json</artifactId>
+            <version>1.1.1</version>
         </dependency>
     </dependencies>
 

@@ -144,7 +144,7 @@ public class AppInputTestData {
             inputKafka(topic[0], brokerList, zk, data[0]);
             // 双流 join
         } else if (sourcetype.equals(SourceType.TWO_STREAM_JOIN)) {
-            for (int i = 0; i < 2; i++) {
+            for (int i = 0; i < data.length; i++) {
                 inputKafka(topic[i], brokerList, zk, data[i]);
             }
         }

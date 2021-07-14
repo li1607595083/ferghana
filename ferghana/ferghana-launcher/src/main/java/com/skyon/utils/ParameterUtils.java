@@ -79,17 +79,21 @@ public class ParameterUtils {
             String sinkSql = properties.getProperty(ParameterName.SINK_SQL);
             StringBuilder stringBuilder = new StringBuilder();
             // 注意，测试模式统一使用使用测试环境;
+            String before = removeTailFirstSpecialSymbol(sinkSql, "(", true);
+            // 如果是测试模式，需要修改输出的表名;
             if (properties.getProperty(ParameterName.RUM_MODE).equals(RunMode.TEST_MODE)){
-                String[] split = removeTailFirstSpecialSymbol(sinkSql, "(", true).split("\\s+");
-                // 如果是测试模式，需要修改输出的表名;
-                stringBuilder.append(split[0] + " " + split[1]  + " " + "sink_" + split[2]);}
+                String[] split = before.split("\\s+");
+                stringBuilder.append(split[0] + " " + split[1] + " " + "sink_" + split[2]);
+            } else {
+                stringBuilder.append(before);
+            }
             // eg: INSERT INTO index_table1(SELECT name, age, count, id FROM tmp_table);
             // 其中 id 是主键，需要进行位置调整，放到首位；
             // 由于前端生成的 sinkSql 主键放在了后面的位置，因此需要进行调整,主键需要在首位;
             String[] fieldAndTable = removeBeforeFirstSpecialSymbol(sinkSql, "(", true)
                     .replaceAll("from", "FROM").split("FROM", 2);
             // 获取字段，取出主键
-            String indexField = removeTailLastSpecialSymbol(fieldAndTable[0], ",", false);
+            String indexField = removeTailLastSpecialSymbol(fieldAndTable[0].split("\\s+", 2)[1], ",", false);
             // 重新拼接
             stringBuilder
                     .append("(")

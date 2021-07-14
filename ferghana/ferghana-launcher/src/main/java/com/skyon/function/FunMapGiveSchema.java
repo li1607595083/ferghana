@@ -22,6 +22,7 @@ import redis.clients.jedis.Tuple;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Set;
 
 public class FunMapGiveSchema extends ProcessFunction<Row, Tuple2<String, String>> {
 

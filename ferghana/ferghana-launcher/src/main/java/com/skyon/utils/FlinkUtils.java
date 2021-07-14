@@ -1,21 +1,17 @@
 package com.skyon.utils;
 
-import com.skyon.bean.ParameterConfigName;
 import com.skyon.bean.ParameterName;
 import com.skyon.bean.ParameterValue;
 import com.skyon.bean.RunMode;
-import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.common.time.Time;
-import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.environment.CheckpointConfig;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
-import java.util.HashMap;
-import java.util.Map;
+
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
@@ -68,7 +64,7 @@ public class FlinkUtils {
         // 开启checkpoint,并指定checkpoint的触发间隔,以及checkpoint的模式
         env.enableCheckpointing(Integer.parseInt(properties.getProperty(ParameterName.CHECKPOINT_INTERVAL,2 * 60 * 1000 + "")), CheckpointingMode.EXACTLY_ONCE);
         // 设置checkpoint超时时间
-        env.getCheckpointConfig().setCheckpointTimeout(Integer.parseInt(properties.getProperty(ParameterName.CHECKPOINT_TIME_OUT, 60 * 1000 + "")));
+        env.getCheckpointConfig().setCheckpointTimeout(Integer.parseInt(properties.getProperty(ParameterName.CHECKPOINT_TIME_OUT, 2 * 60 * 1000 + "")));
         // 设置checkpoint之间的最小间隔时间
         env.getCheckpointConfig().setMinPauseBetweenCheckpoints(Integer.parseInt(properties.getProperty(ParameterName.BETWEEN_CHECKPOINT_INTERVAL, 60 * 1000 + "")));
         // 设置checkpoint的最大并行度

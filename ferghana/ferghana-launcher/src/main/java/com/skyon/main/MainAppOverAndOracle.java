@@ -1,22 +1,13 @@
 package com.skyon.main;
 
 import com.skyon.utils.FlinkUtils;
-import com.skyon.utils.StoreUtils;
 import org.apache.flink.api.java.utils.ParameterTool;
-import org.apache.flink.connector.jdbc.JdbcConnectionOptions;
-import org.apache.flink.connector.jdbc.JdbcExecutionOptions;
-import org.apache.flink.connector.jdbc.JdbcSink;
 import org.apache.flink.streaming.api.TimeCharacteristic;
-import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.Table;
-import org.apache.flink.table.api.TableResult;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.types.Row;
 
-import java.math.BigDecimal;
-import java.sql.Types;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;

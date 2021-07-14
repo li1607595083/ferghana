@@ -187,12 +187,16 @@ public final class StreamTaskNetworkInput<T> implements StreamTaskInput<T> {
     private void processElement(StreamElement recordOrMark, DataOutput<T> output) throws Exception {
         // 对迟到的数据过滤
         if (recordOrMark.isRecord()){
-            RowData rowData = (RowData) recordOrMark.asRecord().getValue();
-            if (source && (rowData.getLong(rowData.getArity() -  1) > statusWatermarkValve.lastMaxWaterMark || rowData.getLong(rowData.getArity() -  1) < 0)){
-                output.emitRecord(recordOrMark.asRecord());
-            } else if (!source){
-                output.emitRecord(recordOrMark.asRecord());
-            }
+           if (recordOrMark.asRecord().getValue() instanceof RowData){
+               RowData rowData = (RowData) recordOrMark.asRecord().getValue();
+               if (source && (rowData.getLong(rowData.getArity() -  1) > statusWatermarkValve.lastMaxWaterMark || rowData.getLong(rowData.getArity() -  1) < 0)){
+                   output.emitRecord(recordOrMark.asRecord());
+               } else if (!source){
+                   output.emitRecord(recordOrMark.asRecord());
+               }
+           } else {
+               output.emitRecord(recordOrMark.asRecord());
+           }
         } else if (recordOrMark.isWatermark()) {
                 statusWatermarkValve.inputWatermark(recordOrMark.asWatermark(), lastChannel);
         } else if (recordOrMark.isLatencyMarker()) {

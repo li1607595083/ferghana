@@ -3,7 +3,7 @@ package com.skyon.main;
 import com.skyon.app.AppPerFormOperations;
 import com.skyon.app.AppRegisFunction;
 import com.skyon.bean.ParameterName;
-import com.skyon.bean.ParameterValue;
+import com.skyon.bean.RunMode;
 import com.skyon.bean.SourceType;
 import com.skyon.utils.FlinkUtils;
 import com.skyon.utils.ParameterUtils;
@@ -12,6 +12,7 @@ import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
+
 import java.util.*;
 
 import static com.skyon.utils.ParameterUtils.parseStrToProperties;
@@ -28,8 +29,8 @@ public class MianAppProcesTest {
         // System.setProperty("oracle.jdbc.J2EE13Compliant", "true");
         // 获取 Flink datastream 运行环境
         StreamExecutionEnvironment dbEnv = FlinkUtils.dbEnv(properties);
-        // 输出到 kafka 的时候，如果 topic 不存在，则创建一个分区数等于病病毒的 topic
-        properties.getProperty(ParameterName.KAFKA_PARTITION, dbEnv.getParallelism() + "");
+        // 输出到 kafka 的时候，如果 topic 不存在，则创建一个分区数等于并行度的 topic
+        properties.put(ParameterName.KAFKA_PARTITION, dbEnv.getParallelism() + "");
         // 获取 Flink table 运行环境
         StreamTableEnvironment dbTableEnv = FlinkUtils.dbTableEnv(dbEnv, properties);
         // 注册条件函数
@@ -38,26 +39,29 @@ public class MianAppProcesTest {
         Map gloabParameter = parseStrToProperties(properties.getProperty(ParameterName.GLOAB_PARAMETER));
         dbEnv.getConfig().setGlobalJobParameters(ParameterTool.fromMap(gloabParameter));
         // 创建一个 AppPerFormOperations 实例
-        AppPerFormOperations appOneStreamOver = AppPerFormOperations.of(properties);
+        AppPerFormOperations appOneStreamOver = AppPerFormOperations.of(properties, dbTableEnv);
         // 创建数据源表，包括单个数据源(kafka,mysql,oracle),双流join(两个topic)
-        appOneStreamOver.createSource(dbTableEnv, dbEnv.getConfig());
+        appOneStreamOver.createSource();
         // 执行数据维维表创建语句
-        appOneStreamOver.createDimTabl(dbTableEnv);
+        appOneStreamOver.createDimTabl();
         // 指定数据原表与维表拼接语句，使用的是left join, 并将查询结果组成成一张表
-        appOneStreamOver.soureAndDimConcat(properties, dbTableEnv, appOneStreamOver);
+        appOneStreamOver.soureAndDimConcat();
+        // 双流 join 将两个数据流连接起来
+        appOneStreamOver.twoStreamConcat();
         // 用于计算部分
-        if (properties.getProperty(ParameterName.SOURCE_TYPE).equals(SourceType.MYSQL_CDC)) {
-            appOneStreamOver.deVariableExec(dbTableEnv);
-            Tuple2<SingleOutputStreamOperator<String>, LinkedHashMap<String, String>> resutl = appOneStreamOver.variableExec(dbTableEnv);
+        if (properties.getProperty(ParameterName.SOURCE_TYPE).equals(SourceType.ONE_STREAM) || properties.getProperty(ParameterName.SOURCE_TYPE).equals(SourceType.TWO_STREAM_JOIN)) {
+            appOneStreamOver.deVariableExec();
+            Tuple2<SingleOutputStreamOperator<String>, LinkedHashMap<String, String>> resutl = appOneStreamOver.variableExec();
             // 创建测试使用的topic, 用于存储计算结果，以便前端读取
-            appOneStreamOver.testMOde(properties, dbTableEnv, resutl);
+            appOneStreamOver.testMOde(resutl);
             // 非测试模式
-            appOneStreamOver.runMode(properties, dbTableEnv, resutl);
-        } else {
-            appOneStreamOver.cdcMySqlAsyncResult(dbTableEnv);
+            appOneStreamOver.runMode(resutl);
+        } else if (properties.getProperty(ParameterName.SOURCE_TYPE).equals(SourceType.MYSQL_CDC)){
+            appOneStreamOver.cdcMySqlAsyncResult();
         }
-        // 程序执行
-        dbEnv.execute(properties.getProperty(ParameterName.VARIABLE_PACK_EN, ParameterValue.JOB_NAME));
+        if (properties.getProperty(ParameterName.SINK_SQL) == null && RunMode.TEST_MODE.equals(properties.getProperty(ParameterName.RUM_MODE))){
+            dbEnv.execute("test");
+        }
     }
 
 

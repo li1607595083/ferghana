@@ -1,6 +1,5 @@
 package com.skyon.main;
 
-import com.skyon.udf.NullForObject;
 import com.skyon.utils.FlinkUtils;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;

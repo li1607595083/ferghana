@@ -1,16 +1,10 @@
 import com.skyon.udf.NullForObject;
 import com.skyon.utils.FlinkUtils;
-import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.table.api.DataTypes;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.table.expressions.Expression;
-import org.apache.flink.table.planner.expressions.Null;
-import org.apache.flink.table.planner.expressions.Null$;
-import org.apache.flink.table.types.DataType;
-import org.apache.flink.table.types.logical.DateType;
 import org.apache.flink.types.Row;
 
 import java.util.Properties;
