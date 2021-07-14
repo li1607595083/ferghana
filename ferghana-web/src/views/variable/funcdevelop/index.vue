@@ -19,14 +19,20 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="函数描述" prop="selfFunctionDesc">
-        <el-input
-          v-model="queryParams.selfFunctionDesc"
-          placeholder="请输入函数描述"
+      <el-form-item label="函数类型" prop="functionType">
+        <el-select
+          v-model="queryParams.functionType"
+          placeholder="请选择函数类型"
           clearable
           size="small"
-          @keyup.enter.native="handleQuery"
-        />
+        >
+          <el-option
+            v-for="dict in functionTypeOptions"
+            :key="dict.dictValue"
+            :label="dict.dictLabel"
+            :value="dict.dictValue"
+          />
+        </el-select>
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
@@ -41,17 +47,8 @@
           icon="el-icon-plus"
           size="mini"
           @click="handleAdd"
+          v-hasPermi="['variable:funcdevelop:add']"
         >新增
-        </el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          icon="el-icon-edit"
-          size="mini"
-          :disabled="single"
-          @click="handleUpdate"
-        >修改
         </el-button>
       </el-col>
       <el-col :span="1.5">
@@ -61,48 +58,52 @@
           size="mini"
           :disabled="multiple"
           @click="handleDelete"
-        >删除
+          v-hasPermi="['variable:funcdevelop:remove']"
+        >批量删除
         </el-button>
       </el-col>
     </el-row>
 
-    <el-table v-loading="loading" :data="functionList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center"/>
-      <el-table-column label="函数中文名" align="center" prop="selfFunctionNameCn"/>
-      <el-table-column label="函数英文名" align="center" prop="functionName"/>
-      <el-table-column label="函数类型" align="center" prop="functionType" :formatter="functionTypeFormat"/>
-      <el-table-column label="函数描述" align="center" prop="selfFunctionDesc"/>
-      <el-table-column label="创建时间" align="center" prop="createTime" width="180">
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.createTime) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="修改时间" align="center" prop="updateTime" width="180">
+    <el-table v-loading="loading" :data="functionList" @selection-change="handleSelectionChange"
+              @row-dblclick="handleDetail">
+      <el-table-column type="selection" width="45" align="center"/>
+      <el-table-column label="函数中文名" align="left" prop="selfFunctionNameCn"/>
+      <el-table-column label="函数英文名" align="left" prop="functionName"/>
+      <el-table-column label="函数类型" align="left" prop="functionType" :formatter="functionTypeFormat"/>
+      <el-table-column label="函数描述" align="left" prop="selfFunctionDesc"/>
+      <el-table-column label="操作人" align="center" width="130" prop="createBy"/>
+      <el-table-column label="操作时间" align="center" prop="updateTime" width="170">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.updateTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column
+        label="操作"
+        align="center"
+        width="250"
+        class-name="small-padding fixed-width"
+      >
         <template slot-scope="scope">
           <el-button
             size="mini"
             type="text"
-            icon="el-icon-view"
             @click="handleDetail(scope.row)"
+            v-hasPermi="['variable:funcdevelop:query']"
           >详情
           </el-button>
           <el-button
             size="mini"
             type="text"
-            icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
+            v-hasPermi="['variable:funcdevelop:edit']"
           >修改
           </el-button>
           <el-button
+            v-if="scope.row.userId !== 1"
             size="mini"
             type="text"
-            icon="el-icon-delete"
             @click="handleDelete(scope.row)"
+            v-hasPermi="['variable:funcdevelop:remove']"
           >删除
           </el-button>
         </template>
@@ -255,6 +256,7 @@
     checkJar
   } from "@/api/taskdevelop/function.js";
   import{isLegitimateName} from "@/utils/validate.js";
+  import {mapGetters} from "vuex";
 
   export default {
     name: "Function",
@@ -264,6 +266,7 @@
         loading: true,
         // 选中数组
         ids: [],
+        names: undefined,
         // 非单个禁用
         single: true,
         // 非多个禁用
@@ -298,7 +301,8 @@
           selfFunctionNameCn: undefined,
           moduleType: undefined,
           functionName: undefined,
-          selfFunctionDesc: undefined
+          selfFunctionDesc: undefined,
+          functionType: undefined
         },
         // 表单参数
         form: {inputParam: undefined},
@@ -365,6 +369,13 @@
       this.getDicts("sys_function_field_type").then(response => {
         this.sysFieldTypeTypes = response.data;
       });
+    },
+    // 计算属性
+    computed:{
+      // 登录人的名
+      ...mapGetters([
+        'name'
+      ]),
     },
     methods: {
       // 增加行
@@ -498,6 +509,8 @@
       // 多选框选中数据
       handleSelectionChange(selection) {
         this.ids = selection.map(item => item.selfFunctionId);
+        let nameTmp = selection.map(item => item.createBy);
+        this.names = new Set(nameTmp);
         this.single = selection.length !== 1;
         this.multiple = !selection.length
       },
@@ -509,6 +522,11 @@
       },
       /** 修改按钮操作 */
       handleUpdate(row) {
+        // 只有自己能修改
+        if (row.createBy !== this.name){
+          this.$message.error("该数据是"+row.createBy+"创建的，您不能修改！");
+          return false;
+        }
         this.reset();
         const selfFunctionId = row.selfFunctionId || this.ids;
         getFunction(selfFunctionId).then(response => {
@@ -683,6 +701,19 @@
       },
       /** 删除按钮操作 */
       handleDelete(row) {
+        // 只有自己能删除
+        if (row.selfFunctionId !== undefined) {
+          if (row.createBy !== this.name) {
+            this.$message.error("该数据为" + row.createBy + "创建，您不能删除！");
+            return false;
+          }
+        } else {
+          if (this.names.size > 1 || !this.names.has(this.name)) {
+            this.$message.error("您只能删除自己创建的数据");
+            return false;
+          }
+        }
+
         const selfFunctionIds = row.selfFunctionId || this.ids;
         this.$confirm('是否确认删除自定义函数编号为"' + selfFunctionIds + '"的数据项?', "警告", {
           confirmButtonText: "确定",
@@ -738,4 +769,3 @@
     margin-left: 45px !important;
   }
 </style>
-

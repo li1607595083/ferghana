@@ -26,14 +26,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="esAddress"    column="es_Address"    />
         <result property="description"    column="description"    />
         <result property="createTime"    column="create_time"    />
-        <result property="modifyTime"    column="modify_time"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createId"    column="create_id"    />
+        <result property="updateBy"    column="update_by"    />
     </resultMap>
 
     <sql id="selectTDataResultSourceVo">
         select data_result_source_id, data_source_name, data_source_type, connector_type,
         data_source, topic_name, table_name, consumer_group, consumer_mode, zookeeper_address,
          kafka_address, schema_define, data_base_type,jdbc_url_address,jdbc_drive,jdbc_user_name,jdbc_user_pwd,hbase_ZK_address,es_Address,
-          description, create_time, modify_time from t_data_result_source
+          description, create_time, update_time,create_by,create_id,update_by from t_data_result_source t
     </sql>
 
     <select id="selectTDataResultSourceList" parameterType="TDataResultSource" resultMap="TDataResultSourceResult">
@@ -60,6 +63,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="esAddress != null  and esAddress != ''"> and es_Address = #{esAddress}</if>
 
             <if test="description != null  and description != ''"> and description = #{description}</if>
+            <if test="dataScope != null and dataScope != ''"> ${dataScope}</if>
         </where>
         order by create_time desc
     </select>
@@ -67,6 +71,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectTDataResultSourceById" parameterType="Long" resultMap="TDataResultSourceResult">
         <include refid="selectTDataResultSourceVo"/>
         where data_result_source_id = #{dataResultSourceId}
+    </select>
+
+    <select id="selectTDataResultSourceByName" parameterType="string" resultMap="TDataResultSourceResult">
+        <include refid="selectTDataResultSourceVo"/>
+        where table_name = #{tableName}
     </select>
 
     <insert id="insertTDataResultSource" parameterType="TDataResultSource" useGeneratedKeys="true" keyProperty="dataResultSourceId">
@@ -90,11 +99,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="jdbcUserPwd != null  and jdbcUserPwd != ''">jdbc_user_pwd,</if>
             <if test="hbaseZKAddress != null  and hbaseZKAddress != ''">hbase_ZK_address,</if>
             <if test="esAddress != null  and esAddress != ''">es_Address,</if>
-
-
             <if test="description != null  and description != ''">description,</if>
-            <if test="createTime != null ">create_time,</if>
-            <if test="modifyTime != null ">modify_time,</if>
+            <if test="createBy != null  and createBy != ''">create_by,</if>
+            <if test="createId != null  and createId != ''">create_id,</if>
+            create_time,
+            update_time
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="dataSourceName != null  and dataSourceName != ''">#{dataSourceName},</if>
@@ -116,10 +125,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="jdbcUserPwd != null  and jdbcUserPwd != ''">#{jdbcUserPwd},</if>
             <if test="hbaseZKAddress != null  and hbaseZKAddress != ''">#{hbaseZKAddress},</if>
             <if test="esAddress != null  and esAddress != ''">#{esAddress},</if>
-
             <if test="description != null  and description != ''">#{description},</if>
-            <if test="createTime != null ">#{createTime},</if>
-            <if test="modifyTime != null ">#{modifyTime},</if>
+            <if test="createBy != null  and createBy != ''">#{createBy},</if>
+            <if test="createId != null  and createId != ''">#{createId},</if>
+            sysdate(),
+            sysdate()
         </trim>
     </insert>
 
@@ -148,8 +158,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="esAddress != null  and esAddress != ''">es_Address = #{esAddress},</if>
 
             <if test="description != null  and description != ''">description = #{description},</if>
-            <if test="createTime != null ">create_time = #{createTime},</if>
-            <if test="modifyTime != null ">modify_time = #{modifyTime},</if>
+            <if test="updateBy != null ">update_by = #{updateBy},</if>
+            update_time=sysdate()
         </trim>
         where data_result_source_id = #{dataResultSourceId}
     </update>

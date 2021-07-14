@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.runtime.streamstatus;
+package org_change.org.apache.flink.streaming.runtime.streamstatus;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.streaming.runtime.streamrecord.StreamElement;
@@ -159,7 +159,10 @@ public final class StreamStatus extends StreamElement {
     @Override
     public boolean equals(Object o) {
         return this == o ||
-                o != null && o.getClass() == StreamStatus.class && ((StreamStatus) o).status == this.status;
+                o != null && o.getClass() == StreamStatus.class && ((StreamStatus) o).status == this.status
+                && ((StreamStatus) o).source == this.source
+                && ((StreamStatus) o).timeout == this.timeout
+                && ((StreamStatus) o).twostreamjoindelay == this.twostreamjoindelay;
     }
 
     @Override

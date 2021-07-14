@@ -5,11 +5,7 @@ import org.influxdb.dto.QueryResult;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-
 /**
  *
  */
@@ -74,6 +70,11 @@ public class InFluxdbTest {
                         + " tz('Asia/Shanghai')";
         double avgComputerDuration= getAvg(computerDurationSql, dataBase);
         System.out.println("5分钟内平局计算延迟:\t" + avgComputerDuration);
+
+
+        // jobManager的CPU_Load
+        String computerJobMangerCpuLoad =
+                "SELECT () ";
     }
 
     private double getAvg(String sql, String database) {

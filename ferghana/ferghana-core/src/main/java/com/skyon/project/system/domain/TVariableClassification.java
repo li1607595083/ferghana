@@ -57,6 +57,7 @@ public class TVariableClassification extends BaseEntity
 
     //    private String dimensionName;
     private String schemaDefine;
+    private String connectorType;
 //    private String connectorType;
 //    private String dimensionJdbcSchemaDefine;
 //    private String hbaseSchemaDefine;
@@ -64,6 +65,14 @@ public class TVariableClassification extends BaseEntity
 
     // ----------------------页面参数------------------------------
     private List selfDefineDimensionField;
+
+    public String getConnectorType() {
+        return connectorType;
+    }
+
+    public void setConnectorType(String connectorType) {
+        this.connectorType = connectorType;
+    }
 
     public String getSchemaDefine() {
         return schemaDefine;
@@ -121,10 +130,6 @@ public class TVariableClassification extends BaseEntity
         this.schemaPrimaryKey = schemaPrimaryKey;
     }
 
-    /** 修改时间 */
-    @Excel(name = "修改时间", width = 30, dateFormat = "yyyy-MM-dd")
-    private Date modifyTime;
-
     public void setVariableClassificationId(Long variableClassificationId)
     {
         this.variableClassificationId = variableClassificationId;
@@ -172,15 +177,6 @@ public class TVariableClassification extends BaseEntity
     {
         return description;
     }
-    public void setModifyTime(Date modifyTime)
-    {
-        this.modifyTime = modifyTime;
-    }
-
-    public Date getModifyTime()
-    {
-        return modifyTime;
-    }
 
     @Override
     public String toString() {
@@ -192,7 +188,6 @@ public class TVariableClassification extends BaseEntity
                 ", dimensionRelation='" + dimensionRelation + '\''+
                 ", sourceRelation='" + sourceRelation + '\''+
                 ", description='" + description + '\'' +
-                ", modifyTime=" + modifyTime +
                 '}';
     }
 }

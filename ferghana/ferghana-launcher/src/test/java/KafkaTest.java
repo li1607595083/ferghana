@@ -27,7 +27,7 @@ public class KafkaTest {
 
     @Test
     public void createKafkaTopic() {
-        AdminUtils.createTopic(zkUtils, "sibas", 1, 1, new Properties(), RackAwareMode.Enforced$.MODULE$);
+        AdminUtils.createTopic(zkUtils, "metadata_input_time", 1, 1, new Properties(), RackAwareMode.Enforced$.MODULE$);
     }
 
     //kafka_sink_topic

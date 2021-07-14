@@ -16,19 +16,20 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.runtime.streamstatus;
+package org_change.org.apache.flink.streaming.runtime.streamstatus;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.io.PushingAsyncDataInput.DataOutput;
+import org.apache.flink.streaming.runtime.streamstatus.StreamStatus;
 import org.apache.flink.util.Preconditions;
 
 import static org.apache.flink.util.Preconditions.checkArgument;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
- * A {@code StatusWatermarkValve} embodies the logic of how {@link Watermark} and {@link StreamStatus} are propagated to
+ * A {@code StatusWatermarkValve} embodies the logic of how {@link Watermark} and {@link org.apache.flink.streaming.runtime.streamstatus.StreamStatus} are propagated to
  * downstream outputs, given a set of one or multiple input channels that continuously receive them. Usages of this
  * class need to define the number of input channels that the valve needs to handle, as well as provide a implementation of
  * {@link DataOutput}, which is called by the valve only when it determines a new watermark or stream status can be propagated.
@@ -57,7 +58,7 @@ public class StatusWatermarkValve {
     private long lastOutputWatermark;
 
     /** The last stream status emitted from the valve. */
-    private StreamStatus lastOutputStreamStatus;
+    private org.apache.flink.streaming.runtime.streamstatus.StreamStatus lastOutputStreamStatus;
 
     /**
      * Returns a new {@code StatusWatermarkValve}.
@@ -71,7 +72,7 @@ public class StatusWatermarkValve {
         for (int i = 0; i < numInputChannels; i++) {
             channelStatuses[i] = new InputChannelStatus();
             channelStatuses[i].watermark = Long.MIN_VALUE;
-            channelStatuses[i].streamStatus = StreamStatus.ACTIVE;
+            channelStatuses[i].streamStatus = org.apache.flink.streaming.runtime.streamstatus.StreamStatus.ACTIVE;
             channelStatuses[i].isWatermarkAligned = true;
         }
 
@@ -79,7 +80,7 @@ public class StatusWatermarkValve {
         this.lastOutputWatermark = -1;
         this.lastOutputWatermark = Long.MIN_VALUE;
         this.lastMaxWaterMark = Long.MIN_VALUE;
-        this.lastOutputStreamStatus = StreamStatus.ACTIVE;
+        this.lastOutputStreamStatus = org.apache.flink.streaming.runtime.streamstatus.StreamStatus.ACTIVE;
     }
 
     /**
@@ -111,20 +112,20 @@ public class StatusWatermarkValve {
     }
 
     /**
-     * Feed a {@link StreamStatus} into the valve. This may trigger the valve to output either a new Stream Status,
-     * for which {@link DataOutput#emitStreamStatus(StreamStatus)} will be called, or a new Watermark,
+     * Feed a {@link org.apache.flink.streaming.runtime.streamstatus.StreamStatus} into the valve. This may trigger the valve to output either a new Stream Status,
+     * for which {@link DataOutput#emitStreamStatus(org.apache.flink.streaming.runtime.streamstatus.StreamStatus)} will be called, or a new Watermark,
      * for which {@link DataOutput#emitWatermark(Watermark)} will be called.
      *
      * @param streamStatus the stream status to feed to the valve
      * @param channelIndex the index of the channel that the fed stream status belongs to (index starting from 0)
      */
-    public void inputStreamStatus(StreamStatus streamStatus, int channelIndex) throws Exception {
+    public void inputStreamStatus(org.apache.flink.streaming.runtime.streamstatus.StreamStatus streamStatus, int channelIndex) throws Exception {
         this.timeout = streamStatus.getTimeout();
         this.twostreamjoindelaytime = streamStatus.getTwostreamjoindelay();
         // only account for stream status inputs that will result in a status change for the input channel
         if (streamStatus.isIdle() && channelStatuses[channelIndex].streamStatus.isActive()) {
             // handle active -> idle toggle for the input channel
-            channelStatuses[channelIndex].streamStatus = StreamStatus.IDLE;
+            channelStatuses[channelIndex].streamStatus = org.apache.flink.streaming.runtime.streamstatus.StreamStatus.IDLE;
 
             // the channel is now idle, therefore not aligned
             channelStatuses[channelIndex].isWatermarkAligned = false;
@@ -142,7 +143,7 @@ public class StatusWatermarkValve {
                     findAndOutputMaxWatermarkAcrossAllChannels();
                 }
 
-                lastOutputStreamStatus = StreamStatus.IDLE;
+                lastOutputStreamStatus = org.apache.flink.streaming.runtime.streamstatus.StreamStatus.IDLE;
                 output.emitStreamStatus(lastOutputStreamStatus);
             } else if (channelStatuses[channelIndex].watermark == lastOutputWatermark) {
                 // if the watermark of the channel that just became idle equals the last output
@@ -152,7 +153,7 @@ public class StatusWatermarkValve {
             }
         } else if (streamStatus.isActive() && channelStatuses[channelIndex].streamStatus.isIdle()) {
             // handle idle -> active toggle for the input channel
-            channelStatuses[channelIndex].streamStatus = StreamStatus.ACTIVE;
+            channelStatuses[channelIndex].streamStatus = org.apache.flink.streaming.runtime.streamstatus.StreamStatus.ACTIVE;
 
             // if the last watermark of the input channel, before it was marked idle, is still larger than
             // the overall last output watermark of the valve, then we can set the channel to be aligned already.
@@ -163,7 +164,7 @@ public class StatusWatermarkValve {
             // if the valve was previously marked to be idle, mark it as active and output an active stream
             // status because at least one of the input channels is now active
             if (lastOutputStreamStatus.isIdle()) {
-                lastOutputStreamStatus = StreamStatus.ACTIVE;
+                lastOutputStreamStatus = org.apache.flink.streaming.runtime.streamstatus.StreamStatus.ACTIVE;
                 output.emitStreamStatus(lastOutputStreamStatus);
             }
         }

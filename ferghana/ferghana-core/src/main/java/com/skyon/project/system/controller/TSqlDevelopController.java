@@ -16,7 +16,7 @@ import com.skyon.project.system.domain.TSqlDevelop;
 import com.skyon.project.system.service.ITDataResultSourceService;
 import com.skyon.project.system.service.ITDataSourceService;
 import com.skyon.project.system.service.ITSqlDevelopService;
-import com.skyon.project.system.tuil.KafkaUtil;
+import com.skyon.project.system.util.KafkaUtil;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.flink.sql.parser.impl.FlinkSqlParserImpl;

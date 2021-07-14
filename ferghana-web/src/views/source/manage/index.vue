@@ -10,6 +10,15 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
+      <el-form-item label="数据源英文名" prop="tableName">
+        <el-input
+          v-model="queryParams.tableName"
+          placeholder="请输入数据源英文名"
+          clearable
+          size="small"
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
       <el-form-item label="连接器类型" prop="connectorType" label-width="100px">
         <el-select
           v-model="queryParams.connectorType"
@@ -25,18 +34,10 @@
           />
         </el-select>
       </el-form-item>
-      <el-form-item label="描述" prop="description">
-        <el-input
-          v-model="queryParams.description"
-          placeholder="请输入描述"
-          clearable
-          size="small"
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
+
       <el-form-item style="padding-left: 12px">
-        <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+        <el-button type="primary" icon="el-icon-search" v-hasPermi="['source:manage:query']" size="mini" @click="handleQuery">搜索</el-button>
+        <el-button icon="el-icon-refresh" size="mini" v-hasPermi="['source:manage:query']" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
 
@@ -47,16 +48,8 @@
           icon="el-icon-plus"
           size="mini"
           @click="handleAdd"
+          v-hasPermi="['source:manage:add']"
         >新增
-        </el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          icon="el-icon-edit"
-          size="mini"
-          @click="handleUpdate"
-        >修改
         </el-button>
       </el-col>
       <el-col :span="1.5">
@@ -64,56 +57,58 @@
           type="primary"
           icon="el-icon-delete"
           size="mini"
+          :disabled="multiple"
+          v-hasPermi="['source:manage:remove']"
           @click="handleDelete"
-        >删除
+        >批量删除
         </el-button>
       </el-col>
     </el-row>
 
-    <el-table v-loading="loading" :data="sourceList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center"/>
-      <el-table-column label="序号" width="55" align="center" type="index"/>
-      <el-table-column label="数据源中文名" align="center" prop="dataSourceName"/>
-      <el-table-column label="数据源英文名" align="center" prop="tableName"/>
+    <el-table v-loading="loading" :data="sourceList" @selection-change="handleSelectionChange"  @row-dblclick="handleDetail">
+      <el-table-column type="selection" width="45" align="center"/>
+      <el-table-column label="数据源中文名" align="left" prop="dataSourceName"/>
+      <el-table-column label="数据源英文名" align="left" prop="tableName"/>
       <el-table-column
         label="连接器类型"
         align="center"
         prop="connectorType"
         :formatter="connectorTypeMatter"
       />
-      <el-table-column label="数据来源" align="center" prop="dataSource"/>
-      <el-table-column label="创建时间" align="center" prop="createTime" width="160">
+      <el-table-column label="数据来源" align="left" prop="dataSource"/>
+      <el-table-column label="操作人" align="center" width="130" prop="createBy"/>
+      <el-table-column label="操作时间" align="center" prop="updateTime" width="170">
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.createTime) }}</span>
+          <span>{{ parseTime(scope.row.updateTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="修改时间" align="center" prop="modifyTime" width="160">
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.modifyTime) }}</span>
-        </template>
-      </el-table-column>
-
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column
+        label="操作"
+        align="center"
+        width="250"
+        class-name="small-padding fixed-width"
+      >
         <template slot-scope="scope">
           <el-button
             size="mini"
             type="text"
-            icon="el-icon-view"
             @click="handleDetail(scope.row)"
+            v-hasPermi="['source:manage:query']"
           >详情
           </el-button>
           <el-button
             size="mini"
             type="text"
-            icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
+            v-hasPermi="['source:manage:edit']"
           >修改
           </el-button>
           <el-button
+            v-if="scope.row.userId !== 1"
             size="mini"
             type="text"
-            icon="el-icon-delete"
             @click="handleDelete(scope.row)"
+            v-hasPermi="['source:manage:remove']"
           >删除
           </el-button>
         </template>
@@ -131,7 +126,7 @@
     <!-- 添加或修改数据源表对话框 -->
     <el-dialog :title="title" :visible.sync="open" width="1100px" :close-on-click-modal="false">
       <el-form ref="form" :model="form" :rules="rules" label-width="130px" class="el-col-24">
-        <el-form-item label="数据源中文名" prop="dataSourceName" class="el-col-12">
+        <el-form-item label="数据源中文名" prop="dataSourceName" class="el-col-12" >
           <el-input v-model="form.dataSourceName" placeholder="请输入数据源中文名" :disabled="detailViem"/>
         </el-form-item>
         <el-form-item label="数据源英文名" prop="tableName" class="el-col-12">
@@ -183,11 +178,11 @@
           </el-form-item>
         </div>
         <div v-show="!connShow" class="el-col-24">
-          <el-form-item label="URL地址" prop="myAddress" class="el-col-12">
-            <el-input v-model="form.myAddress" placeholder="请输入URL地址" :disabled="detailViem"/>
+          <el-form-item :label="mysqlIPFlag?'ip地址':'URL地址'" prop="myAddress" class="el-col-12">
+            <el-input v-model="form.myAddress" :placeholder="mysqlIPFlag?'请输入ip地址':'请输入URL地址'" :disabled="detailViem"/>
           </el-form-item>
-            <el-form-item label="端口" prop="port" class="el-col-12">
-            <el-input v-model="form.port" placeholder="请输入端口号" :disabled="detailViem"/>
+          <el-form-item label="端口" prop="port" class="el-col-12" v-show="mysqlPropertyShow">
+            <el-input v-model="form.port" placeholder="请输入端口号"  :disabled="detailViem"/>
           </el-form-item>
           <el-form-item label="用户名" prop="userName" class="el-col-12">
             <el-input v-model="form.userName" placeholder="请输入用户名" :disabled="detailViem"/>
@@ -195,7 +190,7 @@
           <el-form-item label="密码" prop="password" class="el-col-12">
             <el-input v-model="form.password" placeholder="请输入密码" :disabled="detailViem"/>
           </el-form-item>
-          <el-form-item label="数据库" prop="myDatabase" class="el-col-12">
+          <el-form-item label="数据库" prop="myDatabase" class="el-col-12" v-show="mysqlPropertyShow">
             <el-input v-model="form.myDatabase" placeholder="请输入数据库" :disabled="detailViem"/>
           </el-form-item>
           <el-form-item label="表名" prop="myTableName" class="el-col-12">
@@ -225,13 +220,13 @@
                         :prop="'dynamicItem.' + index + '.schemaDefine'"
                         :rules="rules.dynamicItem.schemaDefine">
               <el-input v-model="item.schemaDefine" @change="schemaDefineChange(index)"
-                        placeholder="请输入字段" @mouseover="mouseOver" style="width: 200px" :disabled="item.isUsed === '1'"/>
+                        placeholder="请输入字段" @mouseover="mouseOver" style="width: 200px" :disabled="item.isUsed === '1' || detailViem"/>
           </el-form-item>
           <el-form-item class="el-col-6 elementStyle" style="padding-left: 100px"
                         :prop="'dynamicItem.' + index + '.dataBaseType'"
                         :rules="rules.dynamicItem.dataBaseType">
             <el-select v-model="item.dataBaseType" placeholder="请选择数据类型" clearable style="width: 220px"
-                       :disabled="item.isUsed === '1'">
+                       :disabled="item.isUsed === '1' || detailViem">
               <el-option v-for="dict in sysDataBaseTypes" :key="dict.dictValue" :label="dict.dictLabel" :value="dict.dictValue"/>
             </el-select>
           </el-form-item>
@@ -243,7 +238,7 @@
           <el-form-item class="el-col-2 elementStyle" :prop="'dynamicItem.' + index + '.primaryKey'">
             <el-input v-model="item.primaryKey" :disabled="detailViem" v-show="false"/>
             <el-button @click="primaryKeyCheck(index)" :ref="'ref' + index" :id="'ref' + index"
-                       :disabled="item.isUsed === '1'"  style="padding: 10px; margin-left: 90px">主键
+                       :disabled="item.isUsed === '1' || detailViem"  style="padding: 10px; margin-left: 90px">主键
             </el-button>
           </el-form-item>
           <el-form-item class="el-col-6">
@@ -251,7 +246,7 @@
               <el-button @click="addItem" :disabled="detailViem">
                 <i class="el-icon-plus"/>
               </el-button>
-              <el-button @click="deleteItem(item, index)" :disabled="item.isUsed === '1'">
+              <el-button @click="deleteItem(item, index)" :disabled="item.isUsed === '1' || detailViem || form.dynamicItem.length === 1">
                 <i class="el-icon-minus"/>
               </el-button>
             </span>
@@ -288,6 +283,7 @@
     exportSource
   } from "@/api/source/manage.js";
   import{isLegitimateName,unContainSpace} from "@/utils/validate.js";
+  import {mapGetters} from "vuex";
 
   export default {
     name: "Manage",
@@ -297,6 +293,7 @@
         loading: true,
         // 选中数组
         ids: [],
+        names: undefined,
         // 非单个禁用
         single: true,
         scanAll: undefined,
@@ -318,6 +315,10 @@
         consumerModeOptions: [],
         // 数据类型
         sysDataBaseTypes: [],
+        // mysql-Port展示字段
+        mysqlPropertyShow:false,
+        // 当选择mysql-cdc时为true
+        mysqlIPFlag:true,
 
         // dynamicItem: [{
         //   schemaDefine:"",
@@ -385,7 +386,7 @@
             {required: true, message: "kafka地址不能为空", trigger: "blur"}
           ],
           myAddress: [
-            {required: true, message: "URL地址不能为空", trigger: "blur"}
+            {required: true, message: "地址不能为空", trigger: "blur"}
           ],
           port: [
             {required: true, message: "端口不能为空", trigger: "blur"}
@@ -438,9 +439,17 @@
         this.sysDataBaseTypes = response.data;
       });
     },
+    // 计算属性
+    computed:{
+      ...mapGetters([
+        'name'
+      ]),
+    },
     methods: {
 
       connectorTypeChange(value){
+        console.log("---connectorTypeChange");
+        console.log(value);
         // 控制显示kafka或mysql板块
         this.connShow = value === '01';
         //  控制kafka或mysql板块的必输项
@@ -460,6 +469,7 @@
           this.rules.scanAll[0].required = false;
           this.rules.handleData[0].required = false;
         } else if (value === '02'){
+          this.mysqlPropertyShow = true;
           this.rules.topicName[0].required = false;
           this.rules.topicName[0].validator = false;
           this.rules.consumerGroup[0].required = false;
@@ -474,6 +484,24 @@
           this.rules.myTableName[0].required = true;
           this.rules.scanAll[0].required = true;
           this.rules.handleData[0].required = true;
+          this.mysqlIPFlag = true;
+        } else if (value === '03'){
+          this.mysqlPropertyShow = false;
+          this.rules.topicName[0].required = false;
+          this.rules.topicName[0].validator = false;
+          this.rules.consumerGroup[0].required = false;
+          this.rules.consumerMode[0].required = false;
+          this.rules.kafkaAddress[0].required = false;
+          this.rules.zookeeperAddress[0].required = false;
+          this.rules.myAddress[0].required = true;
+          this.rules.port[0].required = false;
+          this.rules.userName[0].required = true;
+          this.rules.password[0].required = true;
+          this.rules.myDatabase[0].required = false;
+          this.rules.myTableName[0].required = true;
+          this.rules.scanAll[0].required = true;
+          this.rules.handleData[0].required = true;
+          this.mysqlIPFlag = false;
         }
       },
 
@@ -613,6 +641,8 @@
       // 多选框选中数据
       handleSelectionChange(selection) {
         this.ids = selection.map(item => item.dataSourceId);
+        let nameTmp = selection.map(item => item.createBy);
+        this.names = new Set(nameTmp);
         this.single = selection.length !== 1;
         this.multiple = !selection.length;
       },
@@ -627,6 +657,11 @@
       },
       /** 修改按钮操作 */
       handleUpdate(row) {
+        // 只有自己能修改
+        if (row.createBy !== this.name){
+          this.$message.error("该数据是"+row.createBy+"创建的，您不能修改！");
+          return false;
+        }
         this.reset();
         const dataSourceId = row.dataSourceId || this.ids;
         getSource(dataSourceId).then(response => {
@@ -650,6 +685,7 @@
       },
       /** 详情按钮操作 */
       handleDetail(row) {
+        console.log("============");
         this.reset();
         const dataSourceId = row.dataSourceId || this.ids;
         getSource(dataSourceId).then(response => {
@@ -711,6 +747,20 @@
       },
       /** 删除按钮操作 */
       handleDelete(row) {
+
+        // 只有自己能删除
+        if (row.dataSourceId !== undefined) {
+          if (row.createBy !== this.name) {
+            this.$message.error("该数据为" + row.createBy + "创建，您不能删除！");
+            return false;
+          }
+        } else {
+          if (this.names.size > 1 || !this.names.has(this.name)) {
+            this.$message.error("您只能删除自己创建的数据");
+            return false;
+          }
+        }
+
         const dataSourceIds = row.dataSourceId || this.ids;
         this.$confirm("是否确认删除该数据项?", "警告", {
           confirmButtonText: "确定",

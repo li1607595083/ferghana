@@ -11,7 +11,16 @@
             @keyup.enter.native="handleQuery"
           />
         </el-form-item>
-        <el-form-item label="变量分类" prop="variableName">
+        <el-form-item label="变量英文名" prop="variableNameEn">
+          <el-input
+            v-model="queryParams.variableNameEn"
+            placeholder="请输入英文名"
+            clearable
+            size="small"
+            @keyup.enter.native="handleQuery"
+          />
+        </el-form-item>
+        <el-form-item label="变量分类" prop="variableClassificationName">
           <el-select v-model="queryParams.variableClassificationName" placeholder="请选择变量类型" clearable size="small">
             <el-option
               v-for="dict in variableClassificationOptions"
@@ -31,15 +40,6 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="变量备注" prop="description">
-          <el-input
-            v-model="queryParams.description"
-            placeholder="请输入变量备注"
-            clearable
-            size="small"
-            @keyup.enter.native="handleQuery"
-          />
-        </el-form-item>
         <el-form-item>
           <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
           <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
@@ -53,17 +53,8 @@
             icon="el-icon-plus"
             size="mini"
             @click="handleAdd"
+            v-hasPermi="['variable:variable:add']"
           >新增
-          </el-button>
-        </el-col>
-        <el-col :span="1.5">
-          <el-button
-            type="primary"
-            icon="el-icon-edit"
-            size="mini"
-            :disabled="single"
-            @click="handleUpdate"
-          >修改
           </el-button>
         </el-col>
         <el-col :span="1.5">
@@ -73,49 +64,56 @@
             size="mini"
             :disabled="multiple"
             @click="handleDelete"
-          >删除
+          >批量删除
           </el-button>
         </el-col>
       </el-row>
 
-      <el-table v-loading="loading" :data="centerList" @selection-change="handleSelectionChange">
-        <el-table-column type="selection" width="55" align="left" />
-        <el-table-column label="变量中文名" align="left" header-align="center" prop="variableName"/>
-        <el-table-column label="变量英文名"  width="200" align="center" prop="variableNameEn"/>
-        <el-table-column label="变量分类"  width="200" align="center" prop="variableClassificationName"/>
+      <el-table v-loading="loading" :data="centerList" @selection-change="handleSelectionChange" @row-dblclick="versionDetail">
+        <el-table-column type="selection" width="45" align="left" />
+        <el-table-column label="变量中文名" align="left" header-align="left" prop="variableName"/>
+        <el-table-column label="变量英文名"  width="150" align="left" prop="variableNameEn"/>
+        <el-table-column label="变量分类"  width="200" align="left" prop="variableClassificationName"/>
         <el-table-column label="版本号" width="70" align="center" prop="versionNum"/>
         <el-table-column label="变量类型"  width="80" align="center" prop="variableType" :formatter="variableTypeFormat"/>
-        <el-table-column label="创建时间" width="170" align="center" prop="createTime" >
+        <el-table-column label="操作人" align="center" width="130" prop="createBy"/>
+        <el-table-column label="操作时间" align="center" prop="updateTime" width="170">
           <template slot-scope="scope">
-            <span>{{ parseTime(scope.row.createTime) }}</span>
+            <span>{{ parseTime(scope.row.updateTime) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="修改时间" align="center" prop="modifyTime" width="160">
-          <template slot-scope="scope">
-            <span>{{ parseTime(scope.row.modifyTime) }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="170" align="center" class-name="small-padding fixed-width">
+        <el-table-column
+          label="操作"
+          align="center"
+          width="250"
+          class-name="small-padding fixed-width"
+        >
           <template slot-scope="scope">
             <el-button
               size="mini"
               type="text"
-              icon="el-icon-view"
               @click="versionDetail(scope.row)"
             >详情
             </el-button>
             <el-button
               size="mini"
               type="text"
-              icon="el-icon-edit"
               @click="handleUpdate(scope.row)"
+              v-hasPermi="['variable:variable:edit']"
             >修改
             </el-button>
             <el-button
               size="mini"
+               type="text"
+              @click="testVariabel(scope.row)"
+            >测试
+            </el-button>
+            <el-button
+              v-if="scope.row.userId !== 1"
+              size="mini"
               type="text"
-              icon="el-icon-delete"
               @click="handleDelete(scope.row)"
+              v-hasPermi="['variable:variable:remove']"
             >删除
             </el-button>
           </template>
@@ -133,222 +131,162 @@
 
     <!-- 添加或修改变量管理中心对话框 -->
     <div v-show="addDiv">
-      <el-form ref="form" :model="form" :rules="rules" label-width="120px" class="el-col-24">
-        <el-form-item label="变量中文名" prop="variableName" class="el-col-12">
-          <el-input v-model="form.variableName" placeholder="请输入变量中文名" :disabled="UnAllowedUpdate"/>
-        </el-form-item>
-        <el-form-item label="变量英文名" prop="variableNameEn" class="el-col-12">
-          <el-input v-model="form.variableNameEn" placeholder="请输入变量英文名" :disabled="UnAllowedUpdate"/>
-        </el-form-item>
-        <el-form-item label="当前版本" prop="versionNum" class="el-col-12" v-show="versionNumShow">
-          <el-input v-model="form.versionNum" placeholder="请输入变量英文名"  disabled="disabled"/>
-        </el-form-item>
-        <el-form-item label="变量分类" prop="variableClassification" class="el-col-12">
-          <el-select v-model="form.variableClassification" placeholder="请选择变量类型" @change="variableClassificationChange"
-                     clearable style="width: 100%" :disabled="UnAllowedUpdate">
-            <el-option
-              v-for="(data,index) in variableClassificationOptions"
-              :key="index"
-              :label="data.name"
-              :value="data.value"
-              :sourceId="data.sourceDabRelation"
-              :dimensionRelationId="data.dimensionRelation"
-              :dimensionName="data.dimensionName"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="变量类型" prop="variableType" class="el-col-12">
-          <el-select v-model="form.variableType" placeholder="请选择变量类型" @change="variableTypeChange" clearable
-                     style="width: 100%" :disabled="UnAllowedUpdate">
-            <el-option
-              v-for="(dict,index) in variableTypeOptions"
-              :key="index"
-              :label="dict.dictLabel"
-              :value="dict.dictValue"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="模板类型" prop="variableModelType" v-show="variableModelTypeItem" class="el-col-12">
-          <el-select v-model="form.variableModelType" @change="variableModelTypeChange" placeholder="请选择模板类型" clearable
-                     style="width: 100%" :disabled="UnAllowedUpdate">
-            <el-option
-              v-for="dict in modelTypeOptions"
-              :key="dict.dictValue"
-              :label="dict.dictLabel"
-              :value="dict.dictValue"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="变量备注" prop="description" class="el-col-24">
-          <el-input v-model="form.description" type="textarea" placeholder="请输入变量备注" :disabled="detailViem"/>
-        </el-form-item>
-
-        <!--        普通查询展示模块        -->
-        <div v-show="normalDiv">
-          <el-form-item label="集群名" class="el-col-12" prop="clusterName">
-            <el-select v-model="form.clusterName" placeholder="请选择集群名" clearable style="width: 100%" :disabled="detailViem">
+      <el-form ref="form" :model="form" :rules="rules" label-width="120px" class="el-col-24" v-loading="updateLoading" >
+        <div :style="{opacity: updateLoading ? '0' : '1'}">
+          <el-form-item label="变量中文名" prop="variableName" class="el-col-12">
+            <el-input v-model="form.variableName" placeholder="请输入变量中文名" :disabled="UnAllowedUpdate"/>
+          </el-form-item>
+          <el-form-item label="变量英文名" prop="variableNameEn" class="el-col-12">
+            <el-input v-model="form.variableNameEn" placeholder="请输入变量英文名" :disabled="UnAllowedUpdate"/>
+          </el-form-item>
+          <el-form-item label="当前版本" prop="versionNum" class="el-col-12" v-show="versionNumShow">
+            <el-input v-model="form.versionNum" placeholder="请输入变量英文名"  disabled="disabled"/>
+          </el-form-item>
+          <el-form-item label="变量分类" prop="variableClassification" class="el-col-12">
+            <el-select v-model="form.variableClassification" placeholder="请选择变量类型" @change="variableClassificationChange"
+                       clearable style="width: 100%" :disabled="UnAllowedUpdate">
               <el-option
-                v-for="data in dimensionDataOptions"
-                :key="data.value"
-                :label="data.label"
+                v-for="(data,index) in variableClassificationOptions"
+                :key="index"
+                :label="data.name"
                 :value="data.value"
+                :sourceId="data.sourceDabRelation"
+                :dimensionRelationId="data.dimensionRelation"
+                :dimensionName="data.dimensionName"
               />
             </el-select>
           </el-form-item>
-          <el-form-item label="redis方法" class="el-col-12" prop="redisFunction">
-            <el-select v-model="form.redisFunction" @change="redisFunctionChange" placeholder="请选择模板类型" clearable
-                       style="width: 100%" :disabled="detailViem">
+          <el-form-item label="变量类型" prop="variableType" class="el-col-12">
+            <el-select v-model="form.variableType" placeholder="请选择变量类型" @change="variableTypeChange" clearable
+                       style="width: 100%" :disabled="UnAllowedUpdate">
               <el-option
-                v-for="dict in redisFunctionOptions"
+                v-for="(dict,index) in variableTypeOptions"
+                :key="index"
+                :label="dict.dictLabel"
+                :value="dict.dictValue"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="模板类型" prop="variableModelType" v-show="variableModelTypeItem" class="el-col-12">
+            <el-select v-model="form.variableModelType" @change="variableModelTypeChange" placeholder="请选择模板类型" clearable
+                       style="width: 100%" :disabled="UnAllowedUpdate">
+              <el-option
+                v-for="dict in modelTypeOptions"
                 :key="dict.dictValue"
                 :label="dict.dictLabel"
                 :value="dict.dictValue"
               />
             </el-select>
           </el-form-item>
-          <el-form-item label="1" class="el-col-12" v-show="redisFieldItem" id="redisFieldItem">
-            <el-input v-model="form.redisValue" placeholder="请输入field" id="redisField" :disabled="detailViem"/>
-          </el-form-item>
-          <el-form-item label="2" class="el-col-7" v-show="redisKeyItem" id="redisKeyItem">
-            <el-select v-model="form.redisKey" placeholder="请输入key" style="width: 100%" id="redisKey"
-                       no-data-text="未选择变量分类" clearable :disabled="detailViem">
-              <el-option-group :label="dataSourceName">
-                <el-option
-                  v-for="data in variableFactorOptions"
-                  :key="data.value"
-                  :label="data.label"
-                  :value="data.value"
-                />
-              </el-option-group>
-              <el-option-group :label="dataSourceTwoName">
-                <el-option
-                  v-for="data in variableFactorTwoOptions"
-                  :key="data.value"
-                  :label="data.label"
-                  :value="data.value"
-                />
-              </el-option-group>
-              <div v-for="dataAll in listDimension">
-                <el-option-group :label="dataAll.name" v-show="dimensionitem" size="medium">
-                  <el-option
-                    v-for="data in dataAll.dimensionRelationOptions"
-                    :key="data.value"
-                    :label="data.label"
-                    :value="data.value"
-                  />
-                </el-option-group>
-              </div>
-            </el-select>
-          </el-form-item>
-          <el-form-item class="el-col-5" label-width="10px" v-show="redisKeyItem" id="effectFunctionId">
-            <el-select v-model="form.redisSelfFunctionItem.effectFunction" placeholder="是否添加作用函数" clearable
-                       style="width: 100%" @change="redisSelfFunctionChange" :disabled="detailViem">
-              <el-option
-                v-for="data in redisSelfFunctionOptions"
-                :key="data.value"
-                :label="data.label"
-                :value="data.name"
-              />
-            </el-select>
-          </el-form-item>
-          <el-form-item class="el-col-1" label-width="2px" v-show="redisSelfFunctionShow">
-            <el-input v-model="form.redisSelfFunctionItem.beginIndex" placeholder="start" :disabled="detailViem"/>
-          </el-form-item>
-          <el-form-item class="el-col-1" label-width="2px" v-show="redisSelfFunctionShow">
-            <el-input v-model="form.redisSelfFunctionItem.lengthNum" placeholder="len" :disabled="detailViem"/>
+          <el-form-item label="变量备注" prop="description" class="el-col-24">
+            <el-input v-model="form.description" type="textarea" placeholder="请输入变量备注" :disabled="detailViem"/>
           </el-form-item>
 
-
-          <el-form-item label="元素去重" class="el-col-12" label-width="120px" v-show="redisElementDistinctItem">
-            <el-select v-model="form.redisElementDistinct" placeholder="是否去重" clearable
-                       style="width: 100%" :disabled="detailViem">
-              <el-option
-                v-for="dict in redisElementDistinctOptions"
-                :key="dict.dictValue"
-                :label="dict.dictLabel"
-                :value="dict.dictValue"
-              />
-            </el-select>
-          </el-form-item>
-        </div>
-        <!--        统计查询展示模块        -->
-        <div v-show="countDiv">
-          <el-form-item label="变量因子" class="el-col-7" prop="variableFactor">
-            <el-select v-model="form.variableFactor" placeholder="请选择变量因子" clearable no-data-text="未选择变量分类"
-                       style="width: 100%" :disabled="detailViem">
-              <el-option-group :label="dataSourceName">
+          <!--        普通查询展示模块        -->
+          <div v-show="normalDiv">
+            <el-form-item label="集群名" class="el-col-12" prop="clusterName">
+              <el-select v-model="form.clusterName" placeholder="请选择集群名" clearable style="width: 100%" :disabled="detailViem">
                 <el-option
-                  v-for="data in variableFactorOptions"
+                  v-for="data in dimensionDataOptions"
                   :key="data.value"
                   :label="data.label"
                   :value="data.value"
-                  :type="data.type"
                 />
-              </el-option-group>
-              <el-option-group :label="dataSourceTwoName" v-if="dataSourceTwoName!=='' && dataSourceTwoName!==null">
+              </el-select>
+            </el-form-item>
+            <el-form-item label="redis方法" class="el-col-12" prop="redisFunction">
+              <el-select v-model="form.redisFunction" @change="redisFunctionChange" placeholder="请选择模板类型" clearable
+                         style="width: 100%" :disabled="detailViem">
                 <el-option
-                  v-for="data in variableFactorTwoOptions"
-                  :key="data.value"
-                  :label="data.label"
-                  :value="data.value"
-                  :type="data.type"
+                  v-for="dict in redisFunctionOptions"
+                  :key="dict.dictValue"
+                  :label="dict.dictLabel"
+                  :value="dict.dictValue"
                 />
-              </el-option-group>
-              <div v-for="dataAll in listDimension">
-                <el-option-group :label="dataAll.name" v-show="dimensionitem" size="medium">
-                  <el-option
-                    v-for="data in dataAll.dimensionRelationOptions"
-                    :key="data.value"
-                    :label="data.label"
-                    :value="data.value"
-                  />
-                </el-option-group>
-              </div>
-            </el-select>
-          </el-form-item>
-          <el-form-item class="el-col-5" label-width="10px" id="variableFactorFunctionId">
-            <el-select v-model="form.statisticsSelfFunctionItem.effectFunction" @change="statisticsSelfFunctionChange"
-                       placeholder="是否添加作用函数" clearable style="width: 100%" :disabled="detailViem">
-              <el-option
-                v-for="data in redisSelfFunctionOptions"
-                :key="data.value"
-                :label="data.label"
-                :value="data.name"
-              />
-            </el-select>
-          </el-form-item>
-          <el-form-item class="el-col-1" label-width="2px" v-show="statisticsSelfFunctionShow">
-            <el-input v-model="form.statisticsSelfFunctionItem.beginIndex" placeholder="start" :disabled="detailViem"/>
-          </el-form-item>
-          <el-form-item class="el-col-1" label-width="2px" v-show="statisticsSelfFunctionShow">
-            <el-input v-model="form.statisticsSelfFunctionItem.lengthNum" placeholder="len" :disabled="detailViem"/>
-          </el-form-item>
-          <el-form-item label="统计计算模板" class="el-col-12" prop="statisticsCountModel">
-            <el-select v-model="form.statisticsCountModel" placeholder="请选择计算模板" clearable style="width: 100%"
-                       :disabled="detailViem">
-              <el-option
-                v-for="data in statisticsCountModelOptions"
-                :key="data.dictValue"
-                :label="data.dictLabel"
-                :value="data.dictValue"
-              />
-            </el-select>
-          </el-form-item>
-          <div v-for="(itemGroup, index) in form.statisticsGroupItem" :key="index" class="el-col-24">
-            <el-form-item label="统计分组" class="el-col-7">
-              <el-select v-model="itemGroup.groupField" placeholder="请选择统计分组，该顺序即是分组顺序" clearable
-                         no-data-text="未选择变量分类" style="width: 100%" :disabled="detailViem">
+              </el-select>
+            </el-form-item>
+            <el-form-item label="1" class="el-col-12" v-show="redisFieldItem" id="redisFieldItem">
+              <el-input v-model="form.redisValue" placeholder="请输入field" id="redisField" :disabled="detailViem"/>
+            </el-form-item>
+            <el-form-item label="2" class="el-col-7" v-show="redisKeyItem" id="redisKeyItem">
+              <el-select v-model="form.redisKey" placeholder="请输入key" style="width: 100%" id="redisKey"
+                         no-data-text="未选择变量分类" clearable :disabled="detailViem">
                 <el-option-group :label="dataSourceName">
                   <el-option
-                    v-for="data in statisticsGroupOptions"
+                    v-for="data in variableFactorOptions"
                     :key="data.value"
-                    :label="data.name"
+                    :label="data.label"
                     :value="data.value"
+                  />
+                </el-option-group>
+                <el-option-group :label="dataSourceTwoName">
+                  <el-option
+                    v-for="data in variableFactorTwoOptions"
+                    :key="data.value"
+                    :label="data.label"
+                    :value="data.value"
+                  />
+                </el-option-group>
+                <div v-for="dataAll in listDimension">
+                  <el-option-group :label="dataAll.name" v-show="dimensionitem" size="medium">
+                    <el-option
+                      v-for="data in dataAll.dimensionRelationOptions"
+                      :key="data.value"
+                      :label="data.label"
+                      :value="data.value"
+                    />
+                  </el-option-group>
+                </div>
+              </el-select>
+            </el-form-item>
+            <el-form-item class="el-col-5" label-width="10px" v-show="redisKeyItem" id="effectFunctionId">
+              <el-select v-model="form.redisSelfFunctionItem.effectFunction" placeholder="是否添加作用函数" clearable
+                         style="width: 100%" @change="redisSelfFunctionChange" :disabled="detailViem">
+                <el-option
+                  v-for="data in redisSelfFunctionOptions"
+                  :key="data.value"
+                  :label="data.label"
+                  :value="data.name"
+                />
+              </el-select>
+            </el-form-item>
+            <el-form-item class="el-col-1" label-width="2px" v-show="redisSelfFunctionShow">
+              <el-input v-model="form.redisSelfFunctionItem.beginIndex" placeholder="start" :disabled="detailViem"/>
+            </el-form-item>
+            <el-form-item class="el-col-1" label-width="2px" v-show="redisSelfFunctionShow">
+              <el-input v-model="form.redisSelfFunctionItem.lengthNum" placeholder="len" :disabled="detailViem"/>
+            </el-form-item>
+
+
+            <el-form-item label="元素去重" class="el-col-12" label-width="120px" v-show="redisElementDistinctItem">
+              <el-select v-model="form.redisElementDistinct" placeholder="是否去重" clearable
+                         style="width: 100%" :disabled="detailViem">
+                <el-option
+                  v-for="dict in redisElementDistinctOptions"
+                  :key="dict.dictValue"
+                  :label="dict.dictLabel"
+                  :value="dict.dictValue"
+                />
+              </el-select>
+            </el-form-item>
+          </div>
+          <!--        统计查询展示模块        -->
+          <div v-show="countDiv">
+            <el-form-item label="变量因子" class="el-col-7" prop="variableFactor">
+              <el-select v-model="form.variableFactor" placeholder="请选择变量因子" clearable no-data-text="未选择变量分类"
+                         style="width: 100%" :disabled="detailViem">
+                <el-option-group :label="dataSourceName">
+                  <el-option
+                    v-for="data in variableFactorOptions"
+                    :key="data.value"
+                    :label="data.label"
+                    :value="data.value"
+                    :type="data.type"
                   />
                 </el-option-group>
                 <el-option-group :label="dataSourceTwoName" v-if="dataSourceTwoName!=='' && dataSourceTwoName!==null">
                   <el-option
-                    v-for="data in statisticsGroupTwoOptions"
+                    v-for="data in variableFactorTwoOptions"
                     :key="data.value"
                     :label="data.label"
                     :value="data.value"
@@ -367,10 +305,9 @@
                 </div>
               </el-select>
             </el-form-item>
-            <el-form-item class="el-col-5" label-width="10px" :id="'groupFunctionId'+index">
-              <el-select v-model="itemGroup.groupFunction" @change="groupFunctionChange($event, index)" placeholder="是否添加作用函数"
-                         clearable
-                         style="width: 100%" :disabled="detailViem">
+            <el-form-item class="el-col-5" label-width="10px" id="variableFactorFunctionId">
+              <el-select v-model="form.statisticsSelfFunctionItem.effectFunction" @change="statisticsSelfFunctionChange"
+                         placeholder="是否添加作用函数" clearable style="width: 100%" :disabled="detailViem">
                 <el-option
                   v-for="data in redisSelfFunctionOptions"
                   :key="data.value"
@@ -379,225 +316,157 @@
                 />
               </el-select>
             </el-form-item>
-            <el-form-item class="el-col-1" label-width="2px" :id="'groupFunctionBeginIndexId'+index" v-show="false" >
-              <el-input v-model="itemGroup.beginIndex" placeholder="start" :disabled="detailViem"/>
+            <el-form-item class="el-col-1" label-width="2px" v-show="statisticsSelfFunctionShow">
+              <el-input v-model="form.statisticsSelfFunctionItem.beginIndex" placeholder="start" :disabled="detailViem"/>
             </el-form-item>
-            <el-form-item class="el-col-1" label-width="2px" :id="'groupFunctionLengthNumId'+index" v-show="false">
-              <el-input v-model="itemGroup.lengthNum" placeholder="len" :disabled="detailViem"/>
+            <el-form-item class="el-col-1" label-width="2px" v-show="statisticsSelfFunctionShow">
+              <el-input v-model="form.statisticsSelfFunctionItem.lengthNum" placeholder="len" :disabled="detailViem"/>
             </el-form-item>
-            <el-form-item label-width="10px" class="el-col-4">
-              <span>
-                <el-button @click="addGroup" :disabled="detailViem"><i class="el-icon-plus"/></el-button>
-                <el-button @click="deleteGroup(itemGroup, index)" :disabled="detailViem"><i class="el-icon-minus"/></el-button>
-              </span>
+            <el-form-item label="统计计算模板" class="el-col-12" prop="statisticsCountModel">
+              <el-select v-model="form.statisticsCountModel" placeholder="请选择计算模板" clearable style="width: 100%"
+                         :disabled="detailViem">
+                <el-option
+                  v-for="data in statisticsCountModelOptions"
+                  :key="data.dictValue"
+                  :label="data.dictLabel"
+                  :value="data.dictValue"
+                />
+              </el-select>
             </el-form-item>
+            <div v-for="(itemGroup, index) in form.statisticsGroupItem" :key="index" class="el-col-24">
+              <el-form-item label="统计分组" class="el-col-7">
+                <el-select v-model="itemGroup.groupField" placeholder="请选择统计分组，该顺序即是分组顺序" clearable
+                           no-data-text="未选择变量分类" style="width: 100%" :disabled="detailViem">
+                  <el-option-group :label="dataSourceName">
+                    <el-option
+                      v-for="data in statisticsGroupOptions"
+                      :key="data.value"
+                      :label="data.name"
+                      :value="data.value"
+                    />
+                  </el-option-group>
+                  <el-option-group :label="dataSourceTwoName" v-if="dataSourceTwoName!=='' && dataSourceTwoName!==null">
+                    <el-option
+                      v-for="data in statisticsGroupTwoOptions"
+                      :key="data.value"
+                      :label="data.label"
+                      :value="data.value"
+                      :type="data.type"
+                    />
+                  </el-option-group>
+                  <div v-for="dataAll in listDimension">
+                    <el-option-group :label="dataAll.name" v-show="dimensionitem" size="medium">
+                      <el-option
+                        v-for="data in dataAll.dimensionRelationOptions"
+                        :key="data.value"
+                        :label="data.label"
+                        :value="data.value"
+                      />
+                    </el-option-group>
+                  </div>
+                </el-select>
+              </el-form-item>
+              <el-form-item class="el-col-5" label-width="10px" :id="'groupFunctionId'+index">
+                <el-select v-model="itemGroup.groupFunction" @change="groupFunctionChange($event, index)" placeholder="是否添加作用函数"
+                           clearable
+                           style="width: 100%" :disabled="detailViem">
+                  <el-option
+                    v-for="data in redisSelfFunctionOptions"
+                    :key="data.value"
+                    :label="data.label"
+                    :value="data.name"
+                  />
+                </el-select>
+              </el-form-item>
+              <el-form-item class="el-col-1" label-width="2px" :id="'groupFunctionBeginIndexId'+index" v-show="false" >
+                <el-input v-model="itemGroup.beginIndex" placeholder="start" :disabled="detailViem"/>
+              </el-form-item>
+              <el-form-item class="el-col-1" label-width="2px" :id="'groupFunctionLengthNumId'+index" v-show="false">
+                <el-input v-model="itemGroup.lengthNum" placeholder="len" :disabled="detailViem"/>
+              </el-form-item>
+              <el-form-item label-width="10px" class="el-col-4">
+                <span>
+                  <el-button @click="addGroup" :disabled="detailViem"><i class="el-icon-plus"/></el-button>
+                  <el-button @click="deleteGroup(itemGroup, index)" :disabled="detailViem"><i class="el-icon-minus"/></el-button>
+                </span>
+              </el-form-item>
+            </div>
+
+            <el-form-item label="统计周期" class="el-col-24">
+              <el-select v-model="form.statisticsModel" @change="statisticsModelChange" placeholder="请选择统计周期模式" clearable style="width: 14%"
+                         :disabled="detailViem">
+                <el-option
+                  v-for="dict in statisticsModelOptions"
+                  :key="dict.dictValue"
+                  :label="dict.dictLabel"
+                  :value="dict.dictValue"
+                />
+              </el-select>
+              <el-input v-model="form.globalVariableStartTime"  style="width: 16%" placeholder="开始时间" v-show="globalVariableModelShow" :disabled="detailViem"/>
+              <el-input v-model="form.globalVariableStopTime"  style="width: 16%" placeholder="结束时间" v-show="globalVariableModelShow" :disabled="detailViem"/>
+              <el-input-number v-model="form.statisticsNum" :min=0 :max="1000000" :step="1" v-show="statisticsModelShow" :disabled="detailViem"/>
+              <el-select v-model="form.statisticsCycle" v-show="statisticsModelShow" placeholder="请选择统计周期" clearable
+                         style="width: 14%"
+                         :disabled="detailViem">
+                <el-option
+                  v-for="dict in statisticsCycleOptions"
+                  :key="dict.dictValue"
+                  :label="dict.dictLabel"
+                  :value="dict.dictValue"
+                />
+              </el-select>
+            </el-form-item>
+
+
           </div>
-
-          <el-form-item label="统计周期" class="el-col-24">
-            <el-select v-model="form.statisticsModel" @change="statisticsModelChange" placeholder="请选择统计周期模式" clearable style="width: 14%"
-                       :disabled="detailViem">
-              <el-option
-                v-for="dict in statisticsModelOptions"
-                :key="dict.dictValue"
-                :label="dict.dictLabel"
-                :value="dict.dictValue"
-              />
-            </el-select>
-            <el-input v-model="form.globalVariableStartTime"  style="width: 16%" placeholder="开始时间" v-show="globalVariableModelShow" :disabled="detailViem"/>
-            <el-input v-model="form.globalVariableStopTime"  style="width: 16%" placeholder="结束时间" v-show="globalVariableModelShow" :disabled="detailViem"/>
-            <el-input-number v-model="form.statisticsNum" :min=0 :max="1000000" :step="1" v-show="statisticsModelShow" :disabled="detailViem"/>
-            <el-select v-model="form.statisticsCycle" v-show="statisticsModelShow" placeholder="请选择统计周期" clearable
-                       style="width: 14%"
-                       :disabled="detailViem">
-              <el-option
-                v-for="dict in statisticsCycleOptions"
-                :key="dict.dictValue"
-                :label="dict.dictLabel"
-                :value="dict.dictValue"
-              />
-            </el-select>
-          </el-form-item>
-
-
-        </div>
-        <!--   普通查询和统计查询共用的   增加条件选项  -->
-        <el-form-item class="el-col-24" v-show="normalAndCount">
-          <div class="el-col-24">
-            <el-button type="primary" @click="addConditionTable" :disabled="detailViem">增加条件选项</el-button>
-            <div class="table">
-              <el-table
-                :data="form.conditionTable"
-                tooltip-effect="dark"
-                border
-                stripe
-                style="width: 100%">
-                <el-table-column label="序号" type="index" width="60" align="center"/>
-                <el-table-column label="字段名称" align="center" width="750">
-                  <template slot-scope="scope" style="float: right">
-                    <el-select v-model="scope.row.field" placeholder="字段" clearable no-data-text="未选择数据源表"
-                               :disabled="detailViem" style="width:50%" @change="conditionFiledChange(scope)">
-                      <el-option-group :label="dataSourceName">
-                        <el-option
-                          v-for="data in statisticsfieldOptions"
-                          :key="data.value"
-                          :label="data.name"
-                          :value="data.value"
-                          :type="data.type"
-                        />
-                      </el-option-group>
-                      <el-option-group :label="dataSourceTwoName" v-if="dataSourceTwoName!=='' && dataSourceTwoName!==null">
-                        <el-option
-                          v-for="data in statisticsfieldTwoOptions"
-                          :key="data.value"
-                          :label="data.label"
-                          :value="data.value"
-                          :type="data.type"
-                        />
-                      </el-option-group>
-                      <div v-for="dataAll in listDimension">
-                        <el-option-group :label="dataAll.name" v-show="dimensionitem" size="medium">
+          <!--   普通查询和统计查询共用的   增加条件选项  -->
+          <el-form-item class="el-col-24" v-show="normalAndCount">
+            <div class="el-col-24">
+              <el-button type="primary" @click="addConditionTable" :disabled="detailViem">增加条件选项</el-button>
+              <div class="table">
+                <el-table
+                  :data="form.conditionTable"
+                  tooltip-effect="dark"
+                  border
+                  stripe
+                  style="width: 100%">
+                  <el-table-column label="序号" type="index" width="60" align="center"/>
+                  <el-table-column label="字段名称" align="center" width="750">
+                    <template slot-scope="scope" style="float: right">
+                      <el-select v-model="scope.row.field" placeholder="字段" clearable no-data-text="未选择数据源表"
+                                 :disabled="detailViem" style="width:50%" @change="conditionFiledChange(scope)">
+                        <el-option-group :label="dataSourceName">
                           <el-option
-                            v-for="data in dataAll.dimensionStatisticsfieldOptions"
+                            v-for="data in statisticsfieldOptions"
+                            :key="data.value"
+                            :label="data.name"
+                            :value="data.value"
+                            :type="data.type"
+                          />
+                        </el-option-group>
+                        <el-option-group :label="dataSourceTwoName" v-if="dataSourceTwoName!=='' && dataSourceTwoName!==null">
+                          <el-option
+                            v-for="data in statisticsfieldTwoOptions"
                             :key="data.value"
                             :label="data.label"
                             :value="data.value"
                             :type="data.type"
                           />
                         </el-option-group>
-                      </div>
-                    </el-select>
-                    <el-select v-model="scope.row.functionType" @change="conditionTableFunctionChangeDetail(scope.row.functionType,scope.$index)" placeholder="是否添加作用函数" clearable
-                               style="width: 41%" :id="'conditionFunctionTypeId' +scope.$index" :disabled="detailViem">
-                      <el-option
-                        v-for="data in redisSelfFunctionOptions"
-                        :key="data.value"
-                        :label="data.label"
-                        :value="data.name"
-                      />
-                    </el-select>
-                    <el-input v-model="scope.row.beginIndex" style="width: 8%" :id="'conditionBeginIndexId' +scope.$index"
-                              placeholder="start" :disabled="detailViem" v-show="false"/>
-                    <el-input v-model="scope.row.lengthNum" style="width: 8%" :id="'conditionLengthNumId' +scope.$index"
-                              placeholder="len" :disabled="detailViem" v-show="false"/>
-                  </template>
-                </el-table-column>
-                <el-table-column label="类型" width="150" align="center">
-                  <template slot-scope="scope">
-                    <el-input v-model="scope.row.type" readonly="readonly" :disabled="detailViem"/>
-                  </template>
-                </el-table-column>
-                <el-table-column label="运算符" width="150" align="center">
-                  <template slot-scope="scope">
-                    <el-select v-model="scope.row.symbol" placeholder="运算符" @change="symbolChange(scope)" clearable
-                               :disabled="detailViem">
-                      <el-option
-                        v-for="data in statisticsConditionOperatorOption"
-                        :key="data.dictValue"
-                        :label="data.dictLabel"
-                        :value="data.dictValue"
-                      />
-                    </el-select>
-                  </template>
-                </el-table-column>
-                <el-table-column label="值" align="center">
-                  <template slot-scope="scope">
-                    <el-input v-model="scope.row.value" :id="'ref' + scope.$index" :disabled="detailViem"/>
-                  </template>
-                </el-table-column>
-                <el-table-column label="操作" align="center" width="200">
-                  <template slot-scope="scope">
-                    <el-button type="primary" @click="deleteConditionTable(scope)" :disabled="detailViem">删除</el-button>
-                    <el-button type="primary" @click="joinContext(scope)" :disabled="detailViem">选择</el-button>
-                  </template>
-                </el-table-column>
-              </el-table>
-            </div>
-            <div>
-              组合条件项：
-              <el-button type="primary" size="mini" @click="leftKuoHao" :disabled="detailViem">(</el-button>
-              <el-button type="primary" size="mini" @click="rightKuoHao" :disabled="detailViem">)</el-button>
-              <el-button type="primary" size="mini" @click="andButton" :disabled="detailViem">and</el-button>
-              <el-button type="primary" size="mini" @click="orButton" :disabled="detailViem">or</el-button>
-              <el-button type="primary" size="mini" @click="deleteLast" :disabled="detailViem">删除</el-button>
-              <el-button type="primary" size="mini" @click="clearContext" :disabled="detailViem">清空</el-button>
-            </div>
-            <div>
-              <el-input v-model="form.statisticsConditions" readonly="readonly" type="textarea" :disabled="detailViem"/>
-            </div>
-          </div>
-        </el-form-item>
-
-        <!--        数据加工展示模块       -->
-        <div v-show="processDiv">
-          <el-form-item label="加工计算模板" class="el-col-12">
-            <el-select v-model="form.processModel" placeholder="请选择计算模板" @change="querySelfSchema" clearable
-                       style="width: 100%" :disabled="detailViem">
-              <el-option
-                v-for="data in processModelOptions"
-                :key="data.value"
-                :label="data.name"
-                :value="data.value"
-                :selfFunctionNameCn="data.selfFunctionNameCn"
-              />
-            </el-select>
-          </el-form-item>
-          <!--输入字段展示-->
-          <el-form-item class="el-col-24">
-            <div class="el-col-23">
-              <div class="table">
-                <el-table
-                  :data="form.processTable"
-                  tooltip-effect="dark"
-                  border
-                  stripe
-                  style="width: 100%">
-                  <el-table-column label="序号" type="index" width="60" align="center"/>
-                  <el-table-column label="自定义函数输入字段" width="150" align="center" prop="schemaDefine"/>
-                  <el-table-column label="字段字段" width="200" align="center" prop="fieldType" :formatter="fieldTypeFormat"/>
-                  <el-table-column label="数据类型" align="center" width="150" prop="dataBaseType"/>
-                  <el-table-column label="中文名" align="center" width="200" prop="schemaName"/>
-                  <el-table-column label="参数对应字段" align="center" prop="selfDataSourceOutParams">
-                    <template slot-scope="scope">
-                      <span v-if="scope.row.fieldType === '01'">
-                        <el-select v-model="scope.row.selfDataSourceOutParams" placeholder="请选择字段" clearable
-                                   no-data-text="未选择变量分类" :disabled="detailViem" style="width:50%">
-                          <el-option-group :label="dataSourceName">
+                        <div v-for="dataAll in listDimension">
+                          <el-option-group :label="dataAll.name" v-show="dimensionitem" size="medium">
                             <el-option
-                              v-for="data in statisticsfieldOptions"
-                              :key="data.value"
-                              :label="data.name"
-                              :value="data.value"
-                              :type="data.type"
-                            />
-                          </el-option-group>
-                          <el-option-group :label="dataSourceTwoName" v-if="dataSourceTwoName!=='' && dataSourceTwoName!==null">
-                            <el-option
-                              v-for="data in statisticsfieldTwoOptions"
+                              v-for="data in dataAll.dimensionStatisticsfieldOptions"
                               :key="data.value"
                               :label="data.label"
                               :value="data.value"
                               :type="data.type"
                             />
                           </el-option-group>
-                          <div v-for="dataAll in listDimension">
-                            <el-option-group :label="dataAll.name" v-show="dimensionitem" size="medium">
-                              <el-option
-                                v-for="data in dataAll.dimensionStatisticsfieldOptions"
-                                :key="data.value"
-                                :label="data.label"
-                                :value="data.value"
-                              />
-                            </el-option-group>
-                          </div>
-                        </el-select>
-                      </span>
-                      <span v-if="scope.row.fieldType === '02'">
-                        <el-input v-model="scope.row.selfDataSourceOutParams" placeholder="请输入固定值" style="width:50%">
-                        </el-input>
-                      </span>
-                      <el-select v-model="scope.row.functionType" @change="selfFunctionChnage(scope.row.functionType,scope.$index)"
-                                 placeholder="是否添加作用函数" clearable :id="'selfFunctionTypeId' +scope.$index"
-                                 style="width: 41%" :disabled="detailViem">
+                        </div>
+                      </el-select>
+                      <el-select v-model="scope.row.functionType" @change="conditionTableFunctionChangeDetail(scope.row.functionType,scope.$index)" placeholder="是否添加作用函数" clearable
+                                 style="width: 41%" :id="'conditionFunctionTypeId' +scope.$index" :disabled="detailViem">
                         <el-option
                           v-for="data in redisSelfFunctionOptions"
                           :key="data.value"
@@ -605,347 +474,480 @@
                           :value="data.name"
                         />
                       </el-select>
-                      <el-input v-model="scope.row.beginIndex" style="width: 8%" :id="'selffunctionBeginIndexId' +scope.$index"
+                      <el-input v-model="scope.row.beginIndex" style="width: 8%" :id="'conditionBeginIndexId' +scope.$index"
                                 placeholder="start" :disabled="detailViem" v-show="false"/>
-                      <el-input v-model="scope.row.lengthNum" style="width: 8%" :id="'selffunctionLengthNumId' +scope.$index"
+                      <el-input v-model="scope.row.lengthNum" style="width: 8%" :id="'conditionLengthNumId' +scope.$index"
                                 placeholder="len" :disabled="detailViem" v-show="false"/>
                     </template>
                   </el-table-column>
-                </el-table>
-              </div>
-            </div>
-<!--            <div class="el-col-16" style="padding-top: 20px">-->
-<!--              <div class="table">-->
-<!--                <el-table-->
-<!--                  :data="form.processOutputTable"-->
-<!--                  tooltip-effect="dark"-->
-<!--                  border-->
-<!--                  stripe-->
-<!--                  style="width: 100%">-->
-<!--                  <el-table-column label="序号" type="index" width="60" align="center"/>-->
-<!--                  <el-table-column label="自定义函数输出字段" align="center" prop="schemaDefine"/>-->
-<!--                  <el-table-column label="字段类型" align="center" prop="dataBaseType"/>-->
-<!--                </el-table>-->
-<!--              </div>-->
-<!--            </div>-->
-          </el-form-item>
-        </div>
-
-        <!--        自定义查询展示模块-->
-        <div v-show="userDefinedDiv">
-          <el-form-item label="数据源表名" class="el-col-24" id="defineTableNameItem">
-            <div v-for="data in defineTableNameItem">
-              <el-button type="primary" size="mini" @click="tableButton" :disabled="detailViem">{{data.value}}
-              </el-button>
-            </div>
-          </el-form-item>
-          <el-form-item label="数据源表字段" class="el-col-24" id="defineSourceFieldItem">
-            <span style="margin-right: 5px" v-for="(data,index) in variableFactorOptions">
-              <el-button type="primary" size="mini" @click="tableButton"
-                         :disabled="detailViem">{{data.value}}</el-button>
-            </span>
-          </el-form-item>
-          <div v-for="dataAll in listDimension">
-            <el-form-item :label="dataAll.name" class="el-col-24" v-show="defineDimensionFieldDiv">
-            <span style="margin-right: 5px" v-for="data in dataAll.defineDimensionFieldItem">
-              <el-button type="primary" size="mini" @click="tableButton"
-                         :disabled="detailViem">{{data.label}}</el-button>
-            </span>
-            </el-form-item>
-          </div>
-          <el-form-item label="sql编辑区" class="el-col-24">
-            <el-input v-model="form.userDefinedSql" type="textarea" style="width: 100%"
-                      :autosize="{ minRows: 10, maxRows: 20}" placeholder="请编写正确有效的sql语句" :disabled="detailViem"/>
-          </el-form-item>
-        </div>
-
-        <!--       决策引擎模块  -->
-<!--        <div v-show="decisionEngineDiv">-->
-<!--          <div>sss</div>-->
-<!--          &lt;!&ndash;    派生变量的模板类型      &ndash;&gt;-->
-<!--          -->
-<!--        </div>-->
-
-        <!--        派生变量模块  -->
-        <div v-show="deriveVariableDiv">
-          <el-form-item label="模板类型" class="el-col-12">
-            <el-select v-model="form.deriveVariableModelType" placeholder="请选择模板类型"
-                       style="width: 100%" @change="deriveVariableModelTypeChange" :disabled="detailViem">
-              <el-option
-                v-for="dict in deriveVariableModelTypeOptions"
-                :key="dict.dictValue"
-                :label="dict.dictLabel"
-                :value="dict.dictValue"
-              />
-            </el-select>
-          </el-form-item>
-
-<!--          <el-form-item label="逻辑运算符" v-show="logicOperationModelShow" class="el-col-12">-->
-<!--            <el-select v-model="form.deriveProcessModel" placeholder="请选择逻辑运算符" @change="deriveProcessModelChange" clearable-->
-<!--                       style="width: 100%" :disabled="detailViem">-->
-<!--              <el-option-->
-<!--                v-for="dict in logicOperationOptions"-->
-<!--                :key="dict.dictValue"-->
-<!--                :label="dict.dictLabel"-->
-<!--                :value="dict.dictValue"-->
-<!--              />-->
-<!--            </el-select>-->
-<!--          </el-form-item>-->
-
-          <el-form-item label="决策模板" v-show="deriveProcessModelShow" class="el-col-12">
-            <el-select v-model="form.deriveProcessModel" placeholder="请选择决策模板" @change="deriveProcessModelChange" clearable
-                       style="width: 100%" :disabled="detailViem">
-              <el-option
-                v-for="data in decisionModelOptions"
-                :key="data.value"
-                :label="data.name"
-                :value="data.value"
-                :selfFunctionNameCn="data.selfFunctionNameCn"
-              />
-            </el-select>
-          </el-form-item>
-
-          <!--输入字段展示-->
-          <el-form-item v-show="deriveEngineTableShow" class="el-col-24"  >
-            <div class="el-col-23">
-              <div class="table">
-                <el-table
-                  :data="form.deriveEngineTable"
-                  tooltip-effect="dark"
-                  border
-                  stripe
-                  style="width: 100%">
-                  <el-table-column label="序号" type="index" width="60" align="center"/>
-                  <el-table-column label="自定义函数输入字段" width="150" align="center" prop="schemaDefine"/>
-                  <el-table-column label="字段字段" width="200" align="center" prop="fieldType" :formatter="fieldTypeFormat"/>
-                  <el-table-column label="数据类型" align="center" width="150" prop="dataBaseType"/>
-                  <el-table-column label="中文名" align="center" width="200" prop="schemaName"/>
-                  <el-table-column label="参数对应字段" align="center" prop="selfDataSourceOutParams">
+                  <el-table-column label="类型" width="150" align="center">
                     <template slot-scope="scope">
-                      <span v-if="scope.row.fieldType === '01'">
-                        <treeselect v-model="scope.row.selfDataSourceOutParams" :options="allVariableOptions"
-                                    :multiple="true"
-                                    :appendToBody="true"
-                                    :disableBranchNodes="true"
-                                    :showCount="true"
-                                    style="width:90%;margin-left: 5%"
-                                    sortValueBy="INDEX"
-                                    placeholder="请选择变量分类" :disabled="detailViem" no-data-text="未选择变量分类"/>
-                      </span>
-                      <span v-if="scope.row.fieldType === '02'">
-                        <el-input v-model="scope.row.selfDataSourceOutParams" :disabled="detailViem" placeholder="请输入固定值" style="width:91%">
-                        </el-input>
-                      </span>
-<!--                      <span v-if="scope.row.dataBaseType === 'map'">-->
-<!--                                <el-button @click="addInputSource"><i class="el-icon-plus" :disabled="detailViem"/>-->
-<!--                                </el-button>-->
-<!--                                <el-button @click="removeInputSource(scope)"><i class="el-icon-minus"-->
-<!--                                                                                :disabled="detailViem"/></el-button>-->
-<!--                      </span>-->
-<!--                      <el-select v-model="scope.row.functionType" @change="selfFunctionChnage(scope.row.functionType,scope.$index)"-->
-<!--                                 placeholder="是否添加作用函数" clearable :id="'selfFunctionTypeId' +scope.$index"-->
-<!--                                 style="width: 41%" :disabled="detailViem">-->
-<!--                        <el-option-->
-<!--                          v-for="data in redisSelfFunctionOptions"-->
-<!--                          :key="data.value"-->
-<!--                          :label="data.label"-->
-<!--                          :value="data.name"-->
-<!--                        />-->
-<!--                      </el-select>-->
-<!--                      <el-input v-model="scope.row.beginIndex" style="width: 8%" :id="'selffunctionBeginIndexId' +scope.$index"-->
-<!--                                placeholder="start" :disabled="detailViem" v-show="false"/>-->
-<!--                      <el-input v-model="scope.row.lengthNum" style="width: 8%" :id="'selffunctionLengthNumId' +scope.$index"-->
-<!--                                placeholder="len" :disabled="detailViem" v-show="false"/>-->
+                      <el-input v-model="scope.row.type" readonly="readonly" :disabled="detailViem"/>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="运算符" width="150" align="center">
+                    <template slot-scope="scope">
+                      <el-select v-model="scope.row.symbol" placeholder="运算符" @change="symbolChange(scope)" clearable
+                                 :disabled="detailViem">
+                        <el-option
+                          v-for="data in statisticsConditionOperatorOption"
+                          :key="data.dictValue"
+                          :label="data.dictLabel"
+                          :value="data.dictValue"
+                        />
+                      </el-select>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="值" align="center">
+                    <template slot-scope="scope">
+                      <el-input v-model="scope.row.value" :id="'ref' + scope.$index" :disabled="detailViem"/>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="操作" align="center" width="200">
+                    <template slot-scope="scope">
+                      <el-button type="primary" @click="deleteConditionTable(scope)" :disabled="detailViem">删除</el-button>
+                      <el-button type="primary" @click="joinContext(scope)" :disabled="detailViem">选择</el-button>
                     </template>
                   </el-table-column>
                 </el-table>
               </div>
+              <div>
+                组合条件项：
+                <el-button type="primary" size="mini" @click="leftKuoHao" :disabled="detailViem">(</el-button>
+                <el-button type="primary" size="mini" @click="rightKuoHao" :disabled="detailViem">)</el-button>
+                <el-button type="primary" size="mini" @click="andButton" :disabled="detailViem">and</el-button>
+                <el-button type="primary" size="mini" @click="orButton" :disabled="detailViem">or</el-button>
+                <el-button type="primary" size="mini" @click="deleteLast" :disabled="detailViem">删除</el-button>
+                <el-button type="primary" size="mini" @click="clearContext" :disabled="detailViem">清空</el-button>
+              </div>
+              <div>
+                <el-input v-model="form.statisticsConditions" readonly="readonly" type="textarea" :disabled="detailViem"/>
+              </div>
             </div>
           </el-form-item>
 
-          <el-form-item label="变量编辑区" v-show="deriveVariableSqlShow" prop="deriveVariableSql" class="el-col-24">
-            <div>
-              <el-button type="primary" size="mini" @click="addWhere('(')" :disabled="detailViem">(</el-button>
-              <el-button type="primary" size="mini" @click="addWhere(')')" :disabled="detailViem">)</el-button>
-              <el-button type="primary" size="mini" @click="addWhere('+')" :disabled="detailViem">+</el-button>
-              <el-button type="primary" size="mini" @click="addWhere('-')" :disabled="detailViem">-</el-button>
-              <el-button type="primary" size="mini" @click="addWhere('*')" :disabled="detailViem">*</el-button>
-              <el-button type="primary" size="mini" @click="addWhere('/')" :disabled="detailViem">/</el-button>
-              <span v-show="logicOperationModelShow">
-              <el-button type="primary" size="mini" @click="addWhere('=')" :disabled="detailViem">=</el-button>
-              <el-button type="primary" size="mini" @click="addWhere('>')" :disabled="detailViem">></el-button>
-              <el-button type="primary" size="mini" @click="addWhere('>=')" :disabled="detailViem">>=</el-button>
-              <el-button type="primary" size="mini" @click="addWhere('<')" :disabled="detailViem"><</el-button>
-              <el-button type="primary" size="mini" @click="addWhere('<=')" :disabled="detailViem"><=</el-button>
-              <el-button type="primary" size="mini" @click="addWhere('<>')" :disabled="detailViem"><></el-button>
-              <el-button type="primary" size="mini" @click="addWhere('and')" :disabled="detailViem">and</el-button>
-              <el-button type="primary" size="mini" @click="addWhere('or')" :disabled="detailViem">or</el-button>
-            </span>
+          <!--        数据加工展示模块       -->
+          <div v-show="processDiv">
+            <el-form-item label="加工计算模板" class="el-col-12">
+              <el-select v-model="form.processModel" placeholder="请选择计算模板" @change="querySelfSchema" clearable
+                         style="width: 100%" :disabled="detailViem">
+                <el-option
+                  v-for="data in processModelOptions"
+                  :key="data.value"
+                  :label="data.name"
+                  :value="data.value"
+                  :selfFunctionNameCn="data.selfFunctionNameCn"
+                />
+              </el-select>
+            </el-form-item>
+            <!--输入字段展示-->
+            <el-form-item class="el-col-24">
+              <div class="el-col-23">
+                <div class="table">
+                  <el-table
+                    :data="form.processTable"
+                    tooltip-effect="dark"
+                    border
+                    stripe
+                    style="width: 100%">
+                    <el-table-column label="序号" type="index" width="60" align="center"/>
+                    <el-table-column label="自定义函数输入字段" width="150" align="center" prop="schemaDefine"/>
+                    <el-table-column label="字段字段" width="200" align="center" prop="fieldType" :formatter="fieldTypeFormat"/>
+                    <el-table-column label="数据类型" align="center" width="150" prop="dataBaseType"/>
+                    <el-table-column label="中文名" align="center" width="200" prop="schemaName"/>
+                    <el-table-column label="参数对应字段" align="center" prop="selfDataSourceOutParams">
+                      <template slot-scope="scope">
+                        <span v-if="scope.row.fieldType === '01'">
+                          <el-select v-model="scope.row.selfDataSourceOutParams" placeholder="请选择字段" clearable
+                                     no-data-text="未选择变量分类" :disabled="detailViem" style="width:50%">
+                            <el-option-group :label="dataSourceName">
+                              <el-option
+                                v-for="data in statisticsfieldOptions"
+                                :key="data.value"
+                                :label="data.name"
+                                :value="data.value"
+                                :type="data.type"
+                              />
+                            </el-option-group>
+                            <el-option-group :label="dataSourceTwoName" v-if="dataSourceTwoName!=='' && dataSourceTwoName!==null">
+                              <el-option
+                                v-for="data in statisticsfieldTwoOptions"
+                                :key="data.value"
+                                :label="data.label"
+                                :value="data.value"
+                                :type="data.type"
+                              />
+                            </el-option-group>
+                            <div v-for="dataAll in listDimension">
+                              <el-option-group :label="dataAll.name" v-show="dimensionitem" size="medium">
+                                <el-option
+                                  v-for="data in dataAll.dimensionStatisticsfieldOptions"
+                                  :key="data.value"
+                                  :label="data.label"
+                                  :value="data.value"
+                                />
+                              </el-option-group>
+                            </div>
+                          </el-select>
+                        </span>
+                        <span v-if="scope.row.fieldType === '02'">
+                          <el-input v-model="scope.row.selfDataSourceOutParams" placeholder="请输入固定值" style="width:50%">
+                          </el-input>
+                        </span>
+                        <el-select v-model="scope.row.functionType" @change="selfFunctionChnage(scope.row.functionType,scope.$index)"
+                                   placeholder="是否添加作用函数" clearable :id="'selfFunctionTypeId' +scope.$index"
+                                   style="width: 41%" :disabled="detailViem">
+                          <el-option
+                            v-for="data in redisSelfFunctionOptions"
+                            :key="data.value"
+                            :label="data.label"
+                            :value="data.name"
+                          />
+                        </el-select>
+                        <el-input v-model="scope.row.beginIndex" style="width: 8%" :id="'selffunctionBeginIndexId' +scope.$index"
+                                  placeholder="start" :disabled="detailViem" v-show="false"/>
+                        <el-input v-model="scope.row.lengthNum" style="width: 8%" :id="'selffunctionLengthNumId' +scope.$index"
+                                  placeholder="len" :disabled="detailViem" v-show="false"/>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </div>
+              </div>
+    <!--            <div class="el-col-16" style="padding-top: 20px">-->
+    <!--              <div class="table">-->
+    <!--                <el-table-->
+    <!--                  :data="form.processOutputTable"-->
+    <!--                  tooltip-effect="dark"-->
+    <!--                  border-->
+    <!--                  stripe-->
+    <!--                  style="width: 100%">-->
+    <!--                  <el-table-column label="序号" type="index" width="60" align="center"/>-->
+    <!--                  <el-table-column label="自定义函数输出字段" align="center" prop="schemaDefine"/>-->
+    <!--                  <el-table-column label="字段类型" align="center" prop="dataBaseType"/>-->
+    <!--                </el-table>-->
+    <!--              </div>-->
+    <!--            </div>-->
+            </el-form-item>
+          </div>
+
+          <!--        自定义查询展示模块-->
+          <div v-show="userDefinedDiv">
+            <el-form-item label="数据源表名" class="el-col-24" id="defineTableNameItem">
+              <div v-for="data in defineTableNameItem">
+                <el-button type="primary" size="mini" @click="tableButton" :disabled="detailViem">{{data.value}}
+                </el-button>
+              </div>
+            </el-form-item>
+            <el-form-item label="数据源表字段" class="el-col-24" id="defineSourceFieldItem">
+              <span style="margin-right: 5px" v-for="(data,index) in variableFactorOptions">
+                <el-button type="primary" size="mini" @click="tableButton"
+                           :disabled="detailViem">{{data.value}}</el-button>
+              </span>
+            </el-form-item>
+            <div v-for="dataAll in listDimension">
+              <el-form-item :label="dataAll.name" class="el-col-24" v-show="defineDimensionFieldDiv">
+              <span style="margin-right: 5px" v-for="data in dataAll.defineDimensionFieldItem">
+                <el-button type="primary" size="mini" @click="tableButton"
+                           :disabled="detailViem">{{data.label}}</el-button>
+              </span>
+              </el-form-item>
             </div>
-            <div @keyup.shift.50="deriveVariableSqlChange" @keyup.delete="deriveVariableSqlDelete">
-              <el-input v-model="form.deriveVariableSql" type="textarea" style="width: 100%"
-                        :autosize="{ minRows: 10, maxRows: 20}" id='ipt' :disabled="detailViem"/>
-            </div>
-            <ul id='tableList' v-clickoutside="handleClickOutSide" class="ulClass">
-              <li v-for="(data,index) in baseVariableOptions" :key="index" :value="data.value"
-                  :sourceInputParam="data.sourceInputParam" :dimensionInputParam="data.dimensionInputParam">{{data.label}}</li>
-            </ul>
-            <div>
-              备注：1、输入@符号，会提示基础变量。
-            </div>
-          </el-form-item>
+            <el-form-item label="sql编辑区" class="el-col-24">
+              <el-input v-model="form.userDefinedSql" type="textarea" style="width: 100%"
+                        :autosize="{ minRows: 10, maxRows: 20}" placeholder="请编写正确有效的sql语句" :disabled="detailViem"/>
+            </el-form-item>
+          </div>
 
-        </div>
+          <!--       决策引擎模块  -->
+    <!--        <div v-show="decisionEngineDiv">-->
+    <!--          <div>sss</div>-->
+    <!--          &lt;!&ndash;    派生变量的模板类型      &ndash;&gt;-->
+    <!--          -->
+    <!--        </div>-->
+
+          <!--        派生变量模块  -->
+          <div v-show="deriveVariableDiv">
+            <el-form-item label="模板类型" class="el-col-12">
+              <el-select v-model="form.deriveVariableModelType" placeholder="请选择模板类型"
+                         style="width: 100%" @change="deriveVariableModelTypeChange" :disabled="detailViem">
+                <el-option
+                  v-for="dict in deriveVariableModelTypeOptions"
+                  :key="dict.dictValue"
+                  :label="dict.dictLabel"
+                  :value="dict.dictValue"
+                />
+              </el-select>
+            </el-form-item>
+
+    <!--          <el-form-item label="逻辑运算符" v-show="logicOperationModelShow" class="el-col-12">-->
+    <!--            <el-select v-model="form.deriveProcessModel" placeholder="请选择逻辑运算符" @change="deriveProcessModelChange" clearable-->
+    <!--                       style="width: 100%" :disabled="detailViem">-->
+    <!--              <el-option-->
+    <!--                v-for="dict in logicOperationOptions"-->
+    <!--                :key="dict.dictValue"-->
+    <!--                :label="dict.dictLabel"-->
+    <!--                :value="dict.dictValue"-->
+    <!--              />-->
+    <!--            </el-select>-->
+    <!--          </el-form-item>-->
+
+            <el-form-item label="决策模板" v-show="deriveProcessModelShow" class="el-col-12">
+              <el-select v-model="form.deriveProcessModel" placeholder="请选择决策模板" @change="deriveProcessModelChange" clearable
+                         style="width: 100%" :disabled="detailViem">
+                <el-option
+                  v-for="data in decisionModelOptions"
+                  :key="data.value"
+                  :label="data.name"
+                  :value="data.value"
+                  :selfFunctionNameCn="data.selfFunctionNameCn"
+                />
+              </el-select>
+            </el-form-item>
+
+            <!--输入字段展示-->
+            <el-form-item v-show="deriveEngineTableShow" class="el-col-24"  >
+              <div class="el-col-23">
+                <div class="table">
+                  <el-table
+                    :data="form.deriveEngineTable"
+                    tooltip-effect="dark"
+                    border
+                    stripe
+                    style="width: 100%">
+                    <el-table-column label="序号" type="index" width="60" align="center"/>
+                    <el-table-column label="自定义函数输入字段" width="150" align="center" prop="schemaDefine"/>
+                    <el-table-column label="字段字段" width="200" align="center" prop="fieldType" :formatter="fieldTypeFormat"/>
+                    <el-table-column label="数据类型" align="center" width="150" prop="dataBaseType"/>
+                    <el-table-column label="中文名" align="center" width="200" prop="schemaName"/>
+                    <el-table-column label="参数对应字段" align="center" prop="selfDataSourceOutParams">
+                      <template slot-scope="scope">
+                        <span v-if="scope.row.fieldType === '01'">
+                          <treeselect v-model="scope.row.selfDataSourceOutParams" :options="allVariableOptions"
+                                      :multiple="true"
+                                      :appendToBody="true"
+                                      :disableBranchNodes="true"
+                                      :showCount="true"
+                                      style="width:90%;margin-left: 5%"
+                                      sortValueBy="INDEX"
+                                      placeholder="请选择变量分类" :disabled="detailViem" no-data-text="未选择变量分类"/>
+                        </span>
+                        <span v-if="scope.row.fieldType === '02'">
+                          <el-input v-model="scope.row.selfDataSourceOutParams" :disabled="detailViem" placeholder="请输入固定值" style="width:91%">
+                          </el-input>
+                        </span>
+    <!--                      <span v-if="scope.row.dataBaseType === 'map'">-->
+    <!--                                <el-button @click="addInputSource"><i class="el-icon-plus" :disabled="detailViem"/>-->
+    <!--                                </el-button>-->
+    <!--                                <el-button @click="removeInputSource(scope)"><i class="el-icon-minus"-->
+    <!--                                                                                :disabled="detailViem"/></el-button>-->
+    <!--                      </span>-->
+    <!--                      <el-select v-model="scope.row.functionType" @change="selfFunctionChnage(scope.row.functionType,scope.$index)"-->
+    <!--                                 placeholder="是否添加作用函数" clearable :id="'selfFunctionTypeId' +scope.$index"-->
+    <!--                                 style="width: 41%" :disabled="detailViem">-->
+    <!--                        <el-option-->
+    <!--                          v-for="data in redisSelfFunctionOptions"-->
+    <!--                          :key="data.value"-->
+    <!--                          :label="data.label"-->
+    <!--                          :value="data.name"-->
+    <!--                        />-->
+    <!--                      </el-select>-->
+    <!--                      <el-input v-model="scope.row.beginIndex" style="width: 8%" :id="'selffunctionBeginIndexId' +scope.$index"-->
+    <!--                                placeholder="start" :disabled="detailViem" v-show="false"/>-->
+    <!--                      <el-input v-model="scope.row.lengthNum" style="width: 8%" :id="'selffunctionLengthNumId' +scope.$index"-->
+    <!--                                placeholder="len" :disabled="detailViem" v-show="false"/>-->
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </div>
+              </div>
+            </el-form-item>
+
+            <el-form-item label="变量编辑区" v-show="deriveVariableSqlShow" prop="deriveVariableSql" class="el-col-24">
+              <div>
+                <el-button type="primary" size="mini" @click="addWhere('(')" :disabled="detailViem">(</el-button>
+                <el-button type="primary" size="mini" @click="addWhere(')')" :disabled="detailViem">)</el-button>
+                <el-button type="primary" size="mini" @click="addWhere('+')" :disabled="detailViem">+</el-button>
+                <el-button type="primary" size="mini" @click="addWhere('-')" :disabled="detailViem">-</el-button>
+                <el-button type="primary" size="mini" @click="addWhere('*')" :disabled="detailViem">*</el-button>
+                <el-button type="primary" size="mini" @click="addWhere('/')" :disabled="detailViem">/</el-button>
+                <span v-show="logicOperationModelShow">
+                <el-button type="primary" size="mini" @click="addWhere('=')" :disabled="detailViem">=</el-button>
+                <el-button type="primary" size="mini" @click="addWhere('>')" :disabled="detailViem">></el-button>
+                <el-button type="primary" size="mini" @click="addWhere('>=')" :disabled="detailViem">>=</el-button>
+                <el-button type="primary" size="mini" @click="addWhere('<')" :disabled="detailViem"><</el-button>
+                <el-button type="primary" size="mini" @click="addWhere('<=')" :disabled="detailViem"><=</el-button>
+                <el-button type="primary" size="mini" @click="addWhere('<>')" :disabled="detailViem"><></el-button>
+                <el-button type="primary" size="mini" @click="addWhere('and')" :disabled="detailViem">and</el-button>
+                <el-button type="primary" size="mini" @click="addWhere('or')" :disabled="detailViem">or</el-button>
+              </span>
+              </div>
+              <div @keyup.shift.50="deriveVariableSqlChange" @keyup.delete="deriveVariableSqlDelete">
+                <el-input v-model="form.deriveVariableSql" type="textarea" style="width: 100%"
+                          :autosize="{ minRows: 10, maxRows: 20}" id='ipt' :disabled="detailViem"/>
+              </div>
+              <ul id='tableList' v-clickoutside="handleClickOutSide" class="ulClass">
+                <li v-for="(data,index) in baseVariableOptions" :key="index" :value="data.value"
+                    :sourceInputParam="data.sourceInputParam" :dimensionInputParam="data.dimensionInputParam">{{data.label}}</li>
+              </ul>
+              <div>
+                备注：1、输入@符号，会提示基础变量。
+              </div>
+            </el-form-item>
+
+          </div>
 
 
-        <!--        测试模块-->
-        <div>
-          <template>
-            <div class="boxShadow">
-              <el-dialog :title="title" :visible.sync="open" customClass="customWidth" :close-on-click-modal="false"
-                         class="el-col-24" :show-close="false">
-                <el-tabs v-model="activeName" type="card">
+          <!--        测试模块-->
+          <div>
+            <template>
+              <div class="boxShadow">
+                <el-dialog :title="title" :visible.sync="open" customClass="customWidth" :close-on-click-modal="false"
+                           class="el-col-24" :show-close="false">
+                  <el-tabs v-model="activeName" type="card" v-loading="testRunLoading">
 
-                  <el-tab-pane label="测试数据" name="first">
-                    <!--  数据源表                   -->
-                    <el-form ref="form" :model="form" :rules="testRules" label-width="120px" class="el-col-24">
-                      <div v-show="sourceTableValueItem">
-                        <el-scrollbar>
-                          <span style="font-size: 16px;font-weight: bold">{{dataSourceName}}</span>
+                    <el-tab-pane label="测试数据" name="first">
+                      <!--  数据源表                   -->
+                      <el-form ref="form" :model="form" :rules="testRules" label-width="120px" class="el-col-24">
+                        <div v-show="sourceTableValueItem">
+                          <el-scrollbar>
+                            <span style="font-size: 16px;font-weight: bold">{{dataSourceName}}</span>
 
-                          <el-table :data="form.sourceTableValue" border ref="multipleTable" tooltip-effect="dark"
-                                    style="width: 100%; margin-top: 10px"
-                                    empty-text="未选择输入参数表">
-                            <template v-for='(col,index) in sourceTableCol'>
-                              <el-table-column :show-overflow-tooltip="true"
-                                               :prop="col.dataItem" align="center" :label="col.dataName" :key="index"
-                                               width="300px">
-                                <template scope="scope">
-                                  <el-form-item label-width="0px" :prop="col.dataName.indexOf('主键') > 0 ? 'sourceTableValue.'+scope.$index+'.' + col.dataItem :
-                                                   col.dataName.indexOf('水印') > 0 ? 'sourceTableValue.'+scope.$index+'.' + col.dataItem : ''"
-                                                :rules="col.dataName.indexOf('主键') > 0 ? testRules.primaryKey :
-                                                   col.dataName.indexOf('水印') > 0 ? testRules.waterMark :[{ required: false }]">
-                                    <el-input v-model="scope.row[col.dataItem]" placeholder="请输入内容"
-                                              :disabled="detailViem"/>
-                                  </el-form-item>
-                                </template>
-                              </el-table-column>
-                            </template>
-                            <el-table-column label="操作" width="200px" align="center"
-                                             class-name="small-padding fixed-width">
-                              <template slot-scope="scope">
-                                <el-button @click="addInputSource"><i class="el-icon-plus" :disabled="detailViem"/>
-                                </el-button>
-                                <el-button @click="removeInputSource(scope)"><i class="el-icon-minus"
-                                                                                :disabled="detailViem"/></el-button>
-                              </template>
-                            </el-table-column>
-                          </el-table>
-                        </el-scrollbar>
-                      </div>
-                      <!--  数据维表                   -->
-                      <div v-show="dimensionTableValueItem" style="margin-top: 10px">
-                        <el-scrollbar>
-                          <div v-for="(dataAll,indexList) in listResultDimension" style="margin-top: 10px">
-                            <span style="font-size: 16px;font-weight: bold">{{dataAll.name}}</span>
-                              <el-table :data="listResultDimension[indexList].dimensionTableValue" border ref="multipleTable"
-                                        tooltip-effect="dark"
-                                        style="width: 100%; margin-top: 10px"
-                                        empty-text="未选择输入参数表">
-                                <template v-for='(col,index) in listResultDimension[indexList].dimensionTableCol'>
-                                  <el-table-column :show-overflow-tooltip="true"
-                                                   :prop="col.dataItem" align="center" :label="col.dataName" :key="index"
-                                                   width="300px">
-                                    <template scope="scope">
-<!--                                      <el-form-item label-width="0px" :prop="col.dataName.indexOf('主键') > 0 ? 'listResultDimension['+indexList+'].dimensionTableValue.'+scope.$index+'.' + col.dataItem : ''"-->
-<!--                                                    :rules="col.dataName.indexOf('主键') > 0 ? {required: true, message:'主键不能为空', trigger: 'blur'} : [{ required: false }]">-->
-                                        <el-input v-model="scope.row[col.dataItem]" placeholder="请输入内容"
-                                                :disabled="detailViem"/>
-<!--                                      </el-form-item>-->
-                                    </template>
-                                  </el-table-column>
-                                </template>
-                                <el-table-column label="操作" width="200px" align="center"
-                                                 class-name="small-padding fixed-width">
-                                  <template slot-scope="scope">
-                                    <el-button @click="addInputDimension(dataAll.name)"><i class="el-icon-plus"/>
-                                    </el-button>
-                                    <el-button @click="removeInputDimension(scope,dataAll.name)"><i
-                                      class="el-icon-minus"/>
-                                    </el-button>
+                            <el-table :data="form.sourceTableValue" border ref="multipleTable" tooltip-effect="dark"
+                                      style="width: 100%; margin-top: 10px"
+                                      empty-text="未选择输入参数表">
+                              <template v-for='(col,index) in sourceTableCol'>
+                                <el-table-column :show-overflow-tooltip="true"
+                                                 :prop="col.dataItem" align="center" :label="col.dataName" :key="index"
+                                                 width="300px">
+                                  <template scope="scope">
+                                    <el-form-item label-width="0px" :prop="col.dataName.indexOf('主键') > 0 ? 'sourceTableValue.'+scope.$index+'.' + col.dataItem :
+                                                     col.dataName.indexOf('水印') > 0 ? 'sourceTableValue.'+scope.$index+'.' + col.dataItem : ''"
+                                                  :rules="col.dataName.indexOf('主键') > 0 ? testRules.primaryKey :
+                                                     col.dataName.indexOf('水印') > 0 ? testRules.waterMark :[{ required: false }]">
+                                      <el-input v-model="scope.row[col.dataItem]" placeholder="请输入内容" />
+                                    </el-form-item>
                                   </template>
                                 </el-table-column>
-                              </el-table>
-                          </div>
-                        </el-scrollbar>
+                              </template>
+                              <el-table-column label="操作" width="200px" align="center"
+                                               class-name="small-padding fixed-width">
+                                <template slot-scope="scope">
+                                  <el-button @click="addInputSource"><i class="el-icon-plus"/>
+                                  </el-button>
+                                  <el-button @click="removeInputSource(scope)"><i class="el-icon-minus"/></el-button>
+                                </template>
+                              </el-table-column>
+                            </el-table>
+                          </el-scrollbar>
+                        </div>
+                        <!--  数据维表                   -->
+                        <div v-show="dimensionTableValueItem" style="margin-top: 10px">
+                          <el-scrollbar>
+                            <div v-for="(dataAll,indexList) in listResultDimension" style="margin-top: 10px">
+                              <span style="font-size: 16px;font-weight: bold">{{dataAll.name}}</span>
+                                <el-table :data="listResultDimension[indexList].dimensionTableValue" border ref="multipleTable"
+                                          tooltip-effect="dark"
+                                          style="width: 100%; margin-top: 10px"
+                                          empty-text="未选择输入参数表">
+                                  <template v-for='(col,index) in listResultDimension[indexList].dimensionTableCol'>
+                                    <el-table-column :show-overflow-tooltip="true"
+                                                     :prop="col.dataItem" align="center" :label="col.dataName" :key="index"
+                                                     width="300px">
+                                      <template scope="scope">
+    <!--                                      <el-form-item label-width="0px" :prop="col.dataName.indexOf('主键') > 0 ? 'listResultDimension['+indexList+'].dimensionTableValue.'+scope.$index+'.' + col.dataItem : ''"-->
+    <!--                                                    :rules="col.dataName.indexOf('主键') > 0 ? {required: true, message:'主键不能为空', trigger: 'blur'} : [{ required: false }]">-->
+                                          <el-input v-model="scope.row[col.dataItem]" placeholder="请输入内容"
+                                                  :disabled="detailViem"/>
+    <!--                                      </el-form-item>-->
+                                      </template>
+                                    </el-table-column>
+                                  </template>
+                                  <el-table-column label="操作" width="200px" align="center"
+                                                   class-name="small-padding fixed-width">
+                                    <template slot-scope="scope">
+                                      <el-button @click="addInputDimension(dataAll.name)"><i class="el-icon-plus"/>
+                                      </el-button>
+                                      <el-button @click="removeInputDimension(scope,dataAll.name)"><i
+                                        class="el-icon-minus"/>
+                                      </el-button>
+                                    </template>
+                                  </el-table-column>
+                                </el-table>
+                            </div>
+                          </el-scrollbar>
+                        </div>
+                      </el-form>
+                    </el-tab-pane>
+
+                    <el-tab-pane label="测试结果" name="second">
+                      <div class="table">
+                        <el-table
+                          :data="testResultData"
+                          tooltip-effect="dark"
+                          border
+                          stripe
+                          style="width: 100%">
+                          <template v-for='(col,index) in testResultCol'>
+                            <el-table-column :show-overflow-tooltip="true" align="center" :prop="col.dataItem"
+                                             :label="col.dataName" :key="index"
+                                             width="200px">
+                            </el-table-column>
+                          </template>
+                        </el-table>
                       </div>
-                    </el-form>
-                  </el-tab-pane>
-
-                  <el-tab-pane label="测试结果" name="second">
-                    <div class="table">
-                      <el-table
-                        :data="testResultData"
-                        tooltip-effect="dark"
-                        border
-                        stripe
-                        style="width: 100%">
-                        <template v-for='(col,index) in testResultCol'>
-                          <el-table-column :show-overflow-tooltip="true" align="center" :prop="col.dataItem"
-                                           :label="col.dataName" :key="index"
-                                           width="200px">
-                          </el-table-column>
-                        </template>
-                      </el-table>
-                    </div>
-                  </el-tab-pane>
-                </el-tabs>
-                <div style="margin-left: 790px;margin-top:10px">
-                  <el-button type="primary" @click="confirmTest">开 始</el-button>
-                  <el-button @click="cancelTest">关 闭</el-button>
-                </div>
-              </el-dialog>
-            </div>
-          </template>
-        </div>
-
-
-        <el-form-item class="el-col-24">
-          <div style="float: right">
-            <el-button type="primary" @click="testRun" v-show="testButton" :disabled="detailViem">测 试</el-button>
-            <el-button type="primary" @click="submitForm" :disabled="detailViem">确 定</el-button>
-            <el-button @click="cancel">取 消</el-button>
+                    </el-tab-pane>
+                  </el-tabs>
+                 <div style="margin-top: 30px;display: flex;justify-content: flex-end;">
+                   <el-button type="primary" @click="confirmTest">开 始</el-button>
+                   <el-button @click="cancelTest">关 闭</el-button>
+                 </div>
+                </el-dialog>
+              </div>
+            </template>
           </div>
-        </el-form-item>
+
+          <el-form-item class="el-col-24">
+            <div style="float: right">
+              <el-button type="primary" @click="testRun" v-show="testButton" :disabled="testRunButton">调  试</el-button>
+              <el-button type="primary" @click="submitForm" v-show="submitButton" :disabled="detailViem">确 定</el-button>
+              <el-button @click="cancel">取 消</el-button>
+            </div>
+          </el-form-item>
+        </div>
       </el-form>
 
     </div>
 
     <!--    版本详情-->
     <div v-show="detailDiv">
-      <el-tabs v-model="versionTabName" type="card">
+      <el-tabs v-model="versionTabName" type="card" >
         <el-tab-pane label="版本历史" name="versionFirst">
-          <el-table v-loading="loading" :data="versionList">
+          <el-table v-loading="loading" :data="versionList" @row-dblclick="handleDetail">
             <el-table-column label="序号" width="55" align="center" type="index"/>
             <el-table-column label="变量中文名" align="center" prop="variableName"/>
             <el-table-column label="版本号" align="center" prop="versionNum"/>
-            <el-table-column label="版本制定者"  align="center" prop="createBy"/>
-            <el-table-column label="创建时间" align="center" prop="createTime" >
+            <el-table-column label="新增者"  align="center" prop="createBy"/>
+            <el-table-column label="修改者"  align="center" prop="updateBy"/>
+            <el-table-column label="新增时间" align="center" prop="createTime" >
               <template slot-scope="scope">
                 <span>{{ parseTime(scope.row.createTime) }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="修改时间" align="center" prop="modifyTime" width="180">
+            <el-table-column label="修改时间" align="center" prop="updateTime" width="180">
               <template slot-scope="scope">
-                <span>{{ parseTime(scope.row.modifyTime) }}</span>
+                <span>{{ parseTime(scope.row.updateTime) }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+            <el-table-column
+              label="操作"
+              align="center"
+              width="100"
+              class-name="small-padding fixed-width"
+            >
               <template slot-scope="scope">
                 <el-button
                   size="mini"
                   type="text"
-                  icon="el-icon-view"
                   @click="handleDetail(scope.row)"
                 >详情
                 </el-button>
@@ -968,7 +970,7 @@
         </el-tab-pane>
       </el-tabs>
       <div style="float: right">
-        <el-button  type="primary" @click="cancel" style="margin-right: 100px">返  回</el-button>
+        <el-button  type="primary" @click="backButton" style="margin-right: 50px;margin-top: 30px;">返  回</el-button>
       </div>
     </div>
   </div>
@@ -992,7 +994,8 @@
   import {listFunction} from "@/api/taskdevelop/function.js";
   import Treeselect from '@riophae/vue-treeselect';
   import '@riophae/vue-treeselect/dist/vue-treeselect.css';
-  import{isLegitimateName} from "@/utils/validate.js";
+  import {isLegitimateName} from "@/utils/validate.js";
+  import {mapGetters} from "vuex";
 
   const clickoutside = {
     // 初始化指令
@@ -1027,11 +1030,16 @@
       return {
         // 遮罩层
         loading: true,
+        // 变量测试Loading
+        testRunLoading: false,
+        // 变量修改Loading
+        updateLoading: false,
         // open
         open: false,
         asd: "",
         // 选中数组
         ids: [],
+        names: undefined,
         // 非单个禁用
         single: true,
         // 非多个禁用
@@ -1062,6 +1070,8 @@
         detailDiv: false,
         statisticsModelShow: true,
         globalVariableModelShow: false,
+        // 调试按钮
+        testRunButton: false,
         // 控制新增时是否展示
         layoutOne: true,
         // 数据维表的options
@@ -1157,6 +1167,8 @@
         testResultCol: [],
         // 控制测试按钮的展示
         testButton: true,
+        // 确定按钮的 展示
+        submitButton: true,
         // 变量编辑区
         deriveVariableSqlShow: true,
         deriveEngineTableShow: false,
@@ -1322,6 +1334,13 @@
         this.fieldTypeOptions = response.data;
       });
       this.getVariableClassification();
+    },
+    // 计算属性
+    computed:{
+      // 登录人的名
+      ...mapGetters([
+        'name'
+      ]),
     },
     directives: {clickoutside},
     methods: {
@@ -1638,7 +1657,7 @@
       // 确认测试
       confirmTest() {
         // 先校验
-        
+
         console.log(this.form)
 
         this.$refs["form"].validate((valid) => {
@@ -2354,8 +2373,17 @@
       },
 
       // 关联字段
-      relationField() {
+      relationField(callback) {
+
         if (this.listResultDimension.length > 0) {
+          // 解决测试时，关联的数据维没有选择时，则不需要在数据源表中有关联字段
+          let tableName = [];
+          for (let i = 0; i < this.listResultDimension.length; i++) {
+            let split = this.listResultDimension[i].name.split(":")
+            console.log(split);
+            tableName = tableName.concat(split[1]);
+          }
+
           this.variableClassificationOptions.map((data) => {
             if (data.value === this.form.variableClassification) {
               let parse = JSON.parse(data.dimensionRelation);
@@ -2365,14 +2393,10 @@
                 let flag = true;
                 for (let i = 0; i < this.sourceTableCol.length; i++) {
                   let tmp = this.sourceTableCol[i].dataItem;
-                  // if (this.sourceTableCol[i].dataName.indexOf(".") > 0) {
-                  //   let split1 = this.sourceTableCol[i].dataItem.split(".");
-                  //   tmp = split1[1];
-                  // }
                   if (parse[j].relation){
-                    flag = "true";
+                    flag = true;
                   }
-                  if (flag !== "true" && tmp === parse[j].sourceDabField) {
+                  if (flag !== true && tmp === parse[j].sourceDabField) {
                     flag = false;
                     if (this.sourceTableCol[i].dataName.indexOf("主键") <= 0) { // 主键不修改
                       this.sourceTableCol[i].dataName = parse[j].sourceDabField + "-" + parse[j].dimensionName +
@@ -2381,41 +2405,44 @@
                   }
                 }
                 if (flag === true) {
-                  tmpArr.push({
-                    dataItem: parse[j].sourceDabField,
-                    dataName: parse[j].sourceDabField + "-" + parse[j].dimensionName + "关联字段",
-                  })
-                }
-                // 如果有关联es表，那么分别提取数据源表与之关联的字段
-                else if(flag === "true"){
-                  for (let k = 0; k < parse[j].relation.length; k++) {
-                    // 拼接临时数据
-                    let tmpData = this.sourceTableCol.concat(tmpArr);
-                    var flag2 = true;
-                    for(let m = 0; m<tmpData.length;m++){
-                      let tmp = tmpData[m].dataItem;
-                      if (tmp === parse[j].relation[k].sourceDabField) {
-                        flag2 = false;
-                        if (tmpData[m].dataName.indexOf("主键") <= 0) { // 主键不修改
-                          tmpData[m].dataName = parse[j].relation[k].sourceDabField + "-" + parse[j]
-                            .dimensionName + "." + parse[j].relation[k].dimensionDabField + "关联字段";
-                        }
-                      }
-                    }
-                    if(flag2){
-                      tmpArr.push({
-                        dataItem: parse[j].relation[k].sourceDabField,
-                        dataName: parse[j].relation[k].sourceDabField + "-" + parse[j].dimensionName + "." + parse[j].relation[k].dimensionDabField + "关联字段",
-                      });
-                    }
+                  if(tableName.indexOf(parse[j].dimensionName) > -1){
+                    tmpArr.push({
+                      dataItem: parse[j].sourceDabField,
+                      dataName: parse[j].sourceDabField + "-" + parse[j].dimensionName + "关联字段",
+                    })
+
                   }
                 }
+                // 如果有关联es表，那么分别提取数据源表与之关联的字段
+                // else if(flag === true){
+                //   for (let k = 0; k < parse[j].relation.length; k++) {
+                //     // 拼接临时数据
+                //     let tmpData = this.sourceTableCol.concat(tmpArr);
+                //     var flag2 = true;
+                //     for(let m = 0; m<tmpData.length;m++){
+                //       let tmp = tmpData[m].dataItem;
+                //       if (tmp === parse[j].relation[k].sourceDabField) {
+                //         flag2 = false;
+                //         if (tmpData[m].dataName.indexOf("主键") <= 0) { // 主键不修改
+                //           tmpData[m].dataName = parse[j].relation[k].sourceDabField + "-" + parse[j]
+                //             .dimensionName + "." + parse[j].relation[k].dimensionDabField + "关联字段";
+                //         }
+                //       }
+                //     }
+                //     if(flag2){
+                //       tmpArr.push({
+                //         dataItem: parse[j].relation[k].sourceDabField,
+                //         dataName: parse[j].relation[k].sourceDabField + "-" + parse[j].dimensionName + "." + parse[j].relation[k].dimensionDabField + "关联字段",
+                //       });
+                //     }
+                //   }
+                // }
               }
               this.sourceTableCol = this.sourceTableCol.concat(tmpArr);
             }
           });
         }
-        console.log(this.sourceTableCol)
+        callback();
       },
 
       // 获取基础变量对应的测试数据
@@ -2426,6 +2453,7 @@
           for (let i = 0; i < value.length; i++) {
             tmp = tmp + value[i] + ","
           }
+          // axios请求
           const baseUrl = process.env.VUE_APP_BASE_API;
           axios({
             method: 'post',
@@ -2540,9 +2568,9 @@
 
       // 点击测试
       testRun() {
-
         this.$refs["form"].validate(valid => {
           if (valid) {
+            this.testRunLoading = true;
             this.open = true;
             this.title = "变量测试";
             // 给测试的参数赋值
@@ -2558,17 +2586,21 @@
                 dataItem: this.sourceTwoCol[0],
                 dataName: this.sourceTwoCol[0] + "-水印",
               });
-              if(this.form.deriveVariableModelType === "01"){
+              if(this.form.deriveVariableModelType === "01"){ // 四则运算
                 this.getBaseVariableTestCol(this.variableArray);
-              } else if(this.form.deriveVariableModelType === "02"){
-
+              } else if(this.form.deriveVariableModelType === "02"){ // 计算引擎
+                this.getBaseVariableTestCol(this.variableArray);
+              } else if(this.form.deriveVariableModelType === "03"){ // 逻辑运算
                 this.getBaseVariableTestCol(this.variableArray);
               }
+
             }
 
             // 添加关联字段
             setTimeout(_ => {
-              this.relationField();
+              this.relationField(()=>{
+                this.testRunLoading = false;
+              });
             },900);
 
             // 若测试的数据维表有字段，展示
@@ -2591,7 +2623,7 @@
               dataItem: this.form.variableNameEn
             })
           }
-        });
+        })
       },
 
       // 点击除该区域以外的地方
@@ -2715,7 +2747,6 @@
           this.deriveVariableDiv = false;
           this.deriveProcessModelShow = false;
           this.decisionEngineDiv = false;
-          this.testButton = true;
           this.rules.deriveVariableSql[0].required = false;
         } else if ('02' === value) { // 派生变量
           this.variableModelTypeItem = false;
@@ -2728,7 +2759,6 @@
           this.decisionEngineDiv = true;
           this.rules.clusterName[0].required = false;
           this.rules.variableModelType[0].required = false;
-          this.testButton = true;
           this.rules.deriveVariableSql[0].required = true;
           this.form.variableModelType = "";
           this.rules.statisticsCountModel[0].required = false;
@@ -2868,7 +2898,7 @@
             }
           }
         }).catch(resp => {
-          console.log('获取数据源表id' + val[0] + '失败!' + resp);
+          console.log('获取数据源表id' + value[0] + '失败!' + resp);
         });
       },
 
@@ -3013,7 +3043,6 @@
           this.processDiv = false;
           this.userDefinedDiv = false;
           this.normalCheck();
-          this.testButton = true;
           this.normalAndCount = true;
         } else if (this.form.variableModelType === '02') {  // 统计查询
           this.countDiv = true;
@@ -3021,7 +3050,6 @@
           this.normalDiv = false;
           this.userDefinedDiv = false;
           this.countCheck();
-          this.testButton = true;
           this.normalAndCount = true;
         } else if (this.form.variableModelType === '03') { // 数据加工
           this.processDiv = true;
@@ -3029,14 +3057,12 @@
           this.userDefinedDiv = false;
           this.countDiv = false;
           this.processCheck();
-          this.testButton = true;
           this.normalAndCount = false;
         } else if (this.form.variableModelType === '04') { // 自定义查询
           this.processDiv = false;
           this.normalDiv = false;
           this.countDiv = false;
           this.userDefinedDiv = true;
-          this.testButton = true;
           this.selfQueryCheck();
           this.normalAndCount = false;
         }
@@ -3433,6 +3459,12 @@
       variableTypeFormat(row) {
         return this.selectDictLabel(this.variableTypeOptions, row.variableType);
       },
+      // 返回按钮
+      backButton() {
+        this.addDiv = false;
+        this.layoutOne = true;
+        this.detailDiv = false;
+      },
       // 取消按钮
       cancel() {
         this.addDiv = false;
@@ -3533,7 +3565,6 @@
         this.open = false;
         this.variableArray = [];
         this.baseVariableOptions = [];
-        this.testButton = true;
         this.selfQueryTestItem = [];
         this.allVariableOptions = [];
         this.sourceTableCol = [];
@@ -3545,6 +3576,8 @@
         this.statisticsModelShow = true;
         this.globalVariableModelShow = false;
         this.deriveVariableSqlShow = true;
+        this.testRunButton = false;
+        this.getVariableClassification();
 
       },
       /** 搜索按钮操作 */
@@ -3560,6 +3593,8 @@
       // 多选框选中数据
       handleSelectionChange(selection) {
         this.ids = selection.map(item => item.variableId);
+        let nameTmp = selection.map(item => item.createBy);
+        this.names = new Set(nameTmp);
         this.single = selection.length !== 1;
         this.multiple = !selection.length
       },
@@ -3568,18 +3603,18 @@
         // 跳转页面
         //直接跳转
         this.addDiv = true;
+        this.submitButton = true;
         this.layoutOne = false;
         this.versionNumShow = false;
         this.detailViem = false;
         this.UnAllowedUpdate = false;
+        this.testButton = false;
         // 查询数据源表
         this.getSourceData();
         // 查询数据源维表
         this.getDimensionData();
         // 查询自定义模板表
         this.getVariableModelType();
-        // 查询所有的变量分类
-        this.getVariableClassification();
         // 查询所有的作用函数
         this.getFunctionTypeOptions();
         this.redisSelfFunctionChange("");
@@ -3645,13 +3680,13 @@
         this.detailViem = true;
         this.UnAllowedUpdate = true;
         this.versionNumShow = true;
+        this.updateLoading = true;
         this.addDiv = true;
+        this.submitButton = false;
         this.layoutOne = false;
         this.detailDiv = false;
         this.reset();
         const variableId = row.variableId || this.ids;
-        // 查询所有的变量分类
-        this.getVariableClassification();
         getCenter(variableId).then(response => {
           this.form = response.data;
           this.form.conditionTable = [];
@@ -3687,6 +3722,8 @@
             this.querySelfSchemaUpdate(this.form.processModel);
           }
           this.statisticsModelChange(this.form.statisticsModel);
+        }).then(res => {
+          this.updateLoading = false;
         })
         setTimeout(()=>{
           for (let i = 0; i < this.form.statisticsGroupItem.length; i++) {
@@ -3699,17 +3736,39 @@
 
       },
 
+      // 测试变量按钮
+      testVariabel(row){
+        this.testButton = true;
+        this.detailViem = true;
+        this.addDiv = true;
+        this.submitButton = false;
+        this.layoutOne = false;
+        this.detailDiv = false;
+        this.testAndUpdate(row);
+      },
+
       /** 修改按钮操作 */
       handleUpdate(row) {
+        // 只有自己能修改
+        if (row.createBy !== this.name){
+          this.$message.error("该数据是"+row.createBy+"创建的，您不能修改！");
+          return false;
+        }
+
         this.detailViem = false;
+        this.submitButton = true;
+        this.testButton = false;
+        this.testAndUpdate(row);
+
+      },
+      // 测试和修改通用代码
+      testAndUpdate(row){
+        this.updateLoading = true;
         this.UnAllowedUpdate = true;
         this.versionNumShow = true;
         this.reset();
 
         const variableId = row.variableId || this.ids;
-        this.variableClassificationOptions = [];
-        // 查询所有的变量分类
-        this.getVariableClassification();
         getCenter(variableId).then(response => {
           this.form = response.data;
           this.variableTmp = response.data;
@@ -3727,14 +3786,14 @@
 
           // 派生变量的返显
           if ("02" === this.form.variableType) {
-              let parse = JSON.parse(this.form.deriveBaseVariable);
-              this.variableArray = [];
-              for (let i = 0; i < parse.length; i++) {
-                this.variableArray = this.variableArray.concat(parse[i]);
-              }
+            let parse = JSON.parse(this.form.deriveBaseVariable);
+            this.variableArray = [];
+            for (let i = 0; i < parse.length; i++) {
+              this.variableArray = this.variableArray.concat(parse[i]);
+            }
 
-              console.log("--1-1-1");
-              console.log(this.variableArray);
+            console.log("--1-1-1");
+            console.log(this.variableArray);
           }
           // 查询所有的作用函数
           this.getFunctionTypeOptions();
@@ -3764,10 +3823,11 @@
           },600);
           setTimeout(()=>{
             if (this.form.processModel != null){
-              this.querySelfSchemaUpdate(this.form.processModel);
+              this.querySelfSchemaUpdate(this.form.processModel)
             }
           },600);
-
+        }).then(res => {
+          this.updateLoading = false;
         });
         setTimeout(()=>{
           if(this.form.statisticsGroupItem !== null){
@@ -3788,8 +3848,9 @@
         },2000);
         this.addDiv = true;
         this.layoutOne = false;
-
       },
+
+
       /** 提交按钮 */
       submitForm() {
         this.$refs["form"].validate((valid) => {
@@ -3830,9 +3891,9 @@
                     this.form.processInputParams = JSON.stringify(arr);
                   }
                 } else if (this.form.variableType === '02') {
-                   if("01" === this.form.deriveVariableModelType){
+                   if("01" === this.form.deriveVariableModelType){  // 四则运算
                      this.getBaseVariableTestCol(this.variableArray);
-                   } else if("02" === this.form.deriveVariableModelType){
+                   } else if("02" === this.form.deriveVariableModelType){ // 计算引擎
                      // 保存计算引擎输入参数
                      let arr = [];
                      // [{"selfFuncParam":"source1","outParam":"1112"},{"selfFuncParam":"source2","outParam":"222"},{"selfFuncParam":"sourceMap","outParam":["ad","e"]}]
@@ -3850,6 +3911,8 @@
                        }
                      }
                      this.form.deriveInputParams = JSON.stringify(arr);
+                     this.getBaseVariableTestCol(this.variableArray);
+                   }else if("03" === this.form.deriveVariableModelType){ // 逻辑运算
                      this.getBaseVariableTestCol(this.variableArray);
                    }
 
@@ -3931,6 +3994,8 @@
                       }
                     }
                     this.form.deriveInputParams = JSON.stringify(arr);
+                    this.getBaseVariableTestCol(this.variableArray);
+                  } else if("03" === this.form.deriveVariableModelType){
                     this.getBaseVariableTestCol(this.variableArray);
                   }
                 }
@@ -4079,6 +4144,20 @@
 
       /** 删除按钮操作 */
       handleDelete(row) {
+
+        // 只有自己能删除
+        if (row.variableId !== undefined) {
+          if (row.createBy !== this.name) {
+            this.$message.error("该数据为" + row.createBy + "创建，您不能删除！");
+            return false;
+          }
+        } else {
+          if (this.names.size > 1 || !this.names.has(this.name)) {
+            this.$message.error("您只能删除自己创建的数据");
+            return false;
+          }
+        }
+
         const variableIds = row.variableId || this.ids;
         this.$confirm('是否确认删除变量管理中心编号为"' + variableIds + '"的数据项?', "警告", {
           confirmButtonText: "确定",

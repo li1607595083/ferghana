@@ -10,6 +10,11 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
+      <el-form-item label="结果表英文名" prop="tableName">
+        <el-input v-model="queryParams.tableName" placeholder="请输入英文名" clearable size="small"
+                  @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
       <el-form-item label="连接器类型" prop="connectorType" label-width="100px">
         <el-select
           v-model="queryParams.connectorType"
@@ -25,11 +30,6 @@
           />
         </el-select>
       </el-form-item>
-      <el-form-item label="描述" prop="description">
-        <el-input v-model="queryParams.description" placeholder="请输入描述" clearable size="small"
-                  @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
         <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
@@ -43,17 +43,8 @@
           icon="el-icon-plus"
           size="mini"
           @click="handleAdd"
+          v-hasPermi="['source:result:add']"
         >新增
-        </el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          icon="el-icon-edit"
-          size="mini"
-          :disabled="single"
-          @click="handleUpdate"
-        >修改
         </el-button>
       </el-col>
       <el-col :span="1.5">
@@ -62,67 +53,56 @@
           icon="el-icon-delete"
           size="mini"
           :disabled="multiple"
+          v-hasPermi="['source:result:remove']"
           @click="handleDelete"
-        >删除
-        </el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          icon="el-icon-download"
-          size="mini"
-          @click="handleExport"
-          v-hasPermi="['system:source:export']"
-        >导出
+        >批量删除
         </el-button>
       </el-col>
     </el-row>
 
-    <el-table v-loading="loading" :data="sourceList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center"/>
-      <el-table-column label="序号" width="55" align="center" type="index"/>
-      <el-table-column label="结果表中文名" align="center" prop="dataSourceName"/>
-      <el-table-column label="结果表英文名" align="center" prop="tableName"/>
+    <el-table v-loading="loading" :data="sourceList" @selection-change="handleSelectionChange" @row-dblclick="handleDetail">
+      <el-table-column type="selection" width="45" align="center"/>
+      <el-table-column label="结果表中文名" align="left" prop="dataSourceName"/>
+      <el-table-column label="结果表英文名" align="left" prop="tableName"/>
       <el-table-column
         label="连接器类型"
-        align="center"
+        align="left"
         prop="connectorType"
         :formatter="connectorTypeMatter"
       />
-      <el-table-column label="创建时间" align="center" prop="createTime" width="160">
+      <el-table-column label="操作人" align="center" width="130" prop="createBy"/>
+      <el-table-column label="操作时间" align="center" prop="updateTime" width="170">
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.createTime) }}</span>
+          <span>{{ parseTime(scope.row.updateTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="修改时间" align="center" prop="modifyTime" width="160">
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.modifyTime) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column
+        label="操作"
+        align="center"
+        width="250"
+        class-name="small-padding fixed-width"
+      >
         <template slot-scope="scope">
           <el-button
             size="mini"
             type="text"
-            icon="el-icon-view"
             @click="handleDetail(scope.row)"
-            v-hasPermi="['system:source:edit']"
+            v-hasPermi="['source:result:query']"
           >详情
           </el-button>
           <el-button
             size="mini"
             type="text"
-            icon="el-icon-edit"
+            v-hasPermi="['source:result:edit']"
             @click="handleUpdate(scope.row)"
-            v-hasPermi="['system:source:edit']"
           >修改
           </el-button>
           <el-button
+            v-if="scope.row.userId !== 1"
             size="mini"
             type="text"
-            icon="el-icon-delete"
+            v-hasPermi="['source:result:remove']"
             @click="handleDelete(scope.row)"
-            v-hasPermi="['system:source:remove']"
           >删除
           </el-button>
         </template>
@@ -164,9 +144,6 @@
           </el-select>
         </el-form-item>
         <div v-show="kafkaDiv">
-          <el-form-item label="topic名" prop="topicName" class="el-col-12">
-            <el-input v-model="form.topicName" placeholder="请输入topic名" :disabled="detailViem"/>
-          </el-form-item>
           <el-form-item label="zookeeper地址" prop="zookeeperAddress" class="el-col-12">
             <el-input v-model="form.zookeeperAddress" placeholder="master:2181,slave:2181" :disabled="detailViem"/>
           </el-form-item>
@@ -218,6 +195,7 @@
 <script>
   import {listResult, getSource, delSource, addSource, updateSource, exportSource} from "@/api/source/result.js";
   import{isAddressPort,isLegitimateName,unContainSpace} from "@/utils/validate.js";
+  import {mapGetters} from "vuex";
 
   export default {
     name: "Result",
@@ -227,6 +205,7 @@
         loading: true,
         // 选中数组
         ids: [],
+        names: undefined,
         // 非单个禁用
         single: true,
         // 非多个禁用
@@ -268,7 +247,6 @@
           dataSourceType: undefined,
           connectorType: undefined,
           dataSource: undefined,
-          topicName: undefined,
           tableName: undefined,
           consumerGroup: undefined,
           consumerMode: undefined,
@@ -277,7 +255,7 @@
           schemaDefine: undefined,
           dataBaseType: undefined,
           description: undefined,
-          modifyTime: undefined
+          updateTime: undefined
         },
         // 表单参数
         form: {},
@@ -295,9 +273,6 @@
           ],
           dataSource: [
             {required: true, message: "数据来源不能为空", trigger: "blur"}
-          ],
-          topicName: [
-            {required: true, message: "topic名不能为空", trigger: "blur"}
           ],
           tableName: [
             {required: true, message: "结果表英文名不能为空", trigger: "blur"},
@@ -351,6 +326,13 @@
         this.sysDataBaseTypes = response.data;
       });
     },
+    // 计算属性
+    computed:{
+      // 登录人的名
+      ...mapGetters([
+        'name'
+      ]),
+    },
     methods: {
 
       // 连接器类型切换
@@ -372,7 +354,6 @@
         this.jdbcItem = false;
         this.hbaseItem = false;
         this.esItem = false;
-        this.rules.topicName[0].required = true;
         this.rules.zookeeperAddress[0].required = true;
         this.rules.kafkaAddress[0].required = true;
         this.rules.jdbcUrlAddress[0].required = false;
@@ -387,7 +368,6 @@
         this.jdbcItem = true;
         this.hbaseItem = false;
         this.esItem = false;
-        this.rules.topicName[0].required = false;
         this.rules.zookeeperAddress[0].required = false;
         this.rules.kafkaAddress[0].required = false;
         this.rules.jdbcUrlAddress[0].required = true;
@@ -402,7 +382,6 @@
         this.jdbcItem = false;
         this.hbaseItem = true;
         this.esItem = false;
-        this.rules.topicName[0].required = false;
         this.rules.zookeeperAddress[0].required = false;
         this.rules.kafkaAddress[0].required = false;
         this.rules.jdbcUrlAddress[0].required = false;
@@ -417,7 +396,6 @@
         this.jdbcItem = false;
         this.hbaseItem = false;
         this.esItem = true;
-        this.rules.topicName[0].required = false;
         this.rules.zookeeperAddress[0].required = false;
         this.rules.kafkaAddress[0].required = false;
         this.rules.jdbcUrlAddress[0].required = false;
@@ -460,7 +438,6 @@
           dataSourceType: undefined,
           connectorType: undefined,
           dataSource: undefined,
-          topicName: undefined,
           tableName: undefined,
           consumerGroup: undefined,
           consumerMode: undefined,
@@ -476,7 +453,7 @@
           hbaseZKAddress: undefined,
 
           createTime: undefined,
-          modifyTime: undefined,
+          updateTime: undefined,
         };
         this.resetForm("form");
         this.form.connectorType = "01";
@@ -494,6 +471,8 @@
       // 多选框选中数据
       handleSelectionChange(selection) {
         this.ids = selection.map(item => item.dataResultSourceId)
+        let nameTmp = selection.map(item => item.createBy);
+        this.names = new Set(nameTmp);
         this.single = selection.length !== 1
         this.multiple = !selection.length
       },
@@ -509,6 +488,12 @@
       },
       /** 修改按钮操作 */
       handleUpdate(row) {
+        // 只有自己能修改
+        if (row.createBy !== this.name){
+          this.$message.error("该数据是"+row.createBy+"创建的，您不能修改！");
+          return false;
+        }
+
         this.reset();
         const dataResultSourceId = row.dataResultSourceId || this.ids
         getSource(dataResultSourceId).then(response => {
@@ -563,6 +548,20 @@
       },
       /** 删除按钮操作 */
       handleDelete(row) {
+
+        // 只有自己能删除
+        if (row.dataResultSourceId !== undefined) {
+          if (row.createBy !== this.name) {
+            this.$message.error("该数据为" + row.createBy + "创建，您不能删除！");
+            return false;
+          }
+        } else {
+          if (this.names.size > 1 || !this.names.has(this.name)) {
+            this.$message.error("您只能删除自己创建的数据");
+            return false;
+          }
+        }
+
         const dataResultSourceIds = row.dataResultSourceId || this.ids;
         this.$confirm('是否确认删除该数据结果表?', "警告", {
           confirmButtonText: "确定",

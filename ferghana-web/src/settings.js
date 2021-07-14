@@ -20,6 +20,11 @@ module.exports = {
    * 是否显示logo
    */
   sidebarLogo: true,
+  
+  /**
+   * 是否横向布局
+   */
+  menuLayout: true,
 
   /**
    * @type {string | array} 'production' | ['production', 'development']

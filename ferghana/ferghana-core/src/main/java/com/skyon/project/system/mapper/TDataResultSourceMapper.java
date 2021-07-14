@@ -21,6 +21,13 @@ public interface TDataResultSourceMapper
     public TDataResultSource selectTDataResultSourceById(Long dataResultSourceId);
 
     /**
+     * 根据表名查询
+     * @param tableName 表名
+     * @return
+     */
+    public TDataResultSource selectTDataResultSourceByName(String tableName);
+
+    /**
      * 查询【请填写功能名称】列表
      * 
      * @param tDataResultSource 【请填写功能名称】

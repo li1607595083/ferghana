@@ -4,19 +4,17 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.skyon.common.exception.CustomException;
-import com.skyon.common.utils.DateUtils;
 import com.skyon.common.utils.SecurityUtils;
 import com.skyon.common.utils.StringUtils;
+import com.skyon.framework.aspectj.lang.annotation.DataScope;
 import com.skyon.project.system.domain.*;
 import com.skyon.project.system.mapper.TDimensionTableMapper;
 import com.skyon.project.system.mapper.TSelfFunctionMapper;
 import com.skyon.project.system.mapper.TVariableCenterMapper;
 import com.skyon.project.system.mapper.TVariableClassificationMapper;
 import com.skyon.project.system.service.ITVariableCenterService;
-import com.skyon.project.system.tuil.PropertiesUtil;
+import com.skyon.project.system.util.PropertiesUtil;
 import joptsimple.internal.Strings;
-import lombok.val;
-import org.apache.flink.runtime.resourcemanager.exceptions.UnfulfillableSlotRequestException;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -25,7 +23,6 @@ import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import scala.annotation.meta.param;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -79,6 +76,7 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
      * @return 变量管理中心
      */
     @Override
+    @DataScope(serviceTable = true)
     public List<TVariableCenter> selectTVariableCenterList(TVariableCenter tVariableCenter) {
         return tVariableCenterMapper.selectTVariableCenterList(tVariableCenter);
     }
@@ -96,8 +94,8 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
      */
     @Override
     public int insertTVariableCenter(TVariableCenter tVariableCenter) {
-        tVariableCenter.setCreateTime(DateUtils.getNowDate());
         tVariableCenter.setCreateBy(SecurityUtils.getUsername());
+        tVariableCenter.setCreateId(SecurityUtils.getUserId());
         insertORupdate(tVariableCenter);
         return tVariableCenterMapper.insertTVariableCenter(tVariableCenter);
     }
@@ -462,7 +460,7 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
         String s = "";
         if ("sum(distinct())".equals(statisticsCountModel)) {
             s = " sum(distinct(" + variableFactor + ")) ";
-        }if ("count(distinct())".equals(statisticsCountModel)) {
+        }else if ("count(distinct())".equals(statisticsCountModel)) {
             s = " count(distinct(" + variableFactor + ")) ";
         } else {
             s = statisticsCountModel + "(" + variableFactor + ") ";
@@ -493,8 +491,8 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
      */
     @Override
     public int updateTVariableCenter(TVariableCenter tVariableCenter) {
-        tVariableCenter.setModifyTime(new Date());
         insertORupdate(tVariableCenter);
+        tVariableCenter.setUpdateBy(SecurityUtils.getUsername());
         return tVariableCenterMapper.updateTVariableCenter(tVariableCenter);
     }
 
@@ -713,12 +711,14 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
         Map mapParam = new HashMap();
         mapParam.put("runMode", "01");
         mapParam.put("testTopicName", millis);
+        //
+        mapParam.put("waterMark", map.get("waterMarkName") + "|" + map.get("waterMarkTime"));
         // 有维表时
         JSONArray dimensionRelation = JSON.parseArray(map.get("dimensionRelation").toString());
-        JSONObject sourceRelation = JSON.parseObject(map.get("sourceRelation").toString());
         // 如果有两个数据源表，sourceTableSql用分号隔开，新增sourceTableSql参数
-        if(StringUtils.isNotEmpty(map.get("createTableSql").toString()) && StringUtils.isNotNull(map.get("createTableSql").toString())){
+        if(map.containsKey("sourceTwoDabRelation") && StringUtils.isNotEmpty(map.get("sourceTwoDabRelation").toString()) && StringUtils.isNotNull(map.get("sourceTwoDabRelation").toString())){
             mapParam.put("sourceTableSql", map.get("createTableSql")+";"+map.get("createTableTwoSql"));
+            JSONObject sourceRelation = JSON.parseObject(map.get("sourceRelation").toString());
             parseTwoStreamJoinSQl(mapParam,map, sourceRelation);
         }
         else{

@@ -4,10 +4,12 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.base.Strings;
 import com.skyon.common.exception.CustomException;
+import com.skyon.common.utils.SecurityUtils;
+import com.skyon.framework.aspectj.lang.annotation.DataScope;
 import com.skyon.project.system.domain.TSelfFunction;
 import com.skyon.project.system.mapper.TSelfFunctionMapper;
 import com.skyon.project.system.service.ITSelfFunctionService;
-import com.skyon.project.system.tuil.PropertiesUtil;
+import com.skyon.project.system.util.PropertiesUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +17,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.security.Security;
 import java.util.*;
 
 import static org.apache.flink.optimizer.Optimizer.LOG;
@@ -75,6 +78,7 @@ public class TSelfFunctionServiceImpl implements ITSelfFunctionService {
      * @return 自定义函数
      */
     @Override
+    @DataScope(serviceTable = true)
     public List<TSelfFunction> selectTSelfFunctionList(TSelfFunction tSelfFunction) {
         return tSelfFunctionMapper.selectTSelfFunctionList(tSelfFunction);
     }
@@ -91,6 +95,8 @@ public class TSelfFunctionServiceImpl implements ITSelfFunctionService {
      */
     @Override
     public int insertTSelfFunction(TSelfFunction tSelfFunction) {
+        tSelfFunction.setCreateBy(SecurityUtils.getUsername());
+        tSelfFunction.setCreateId(SecurityUtils.getUserId());
         return tSelfFunctionMapper.insertTSelfFunction(tSelfFunction);
     }
 
@@ -108,13 +114,13 @@ public class TSelfFunctionServiceImpl implements ITSelfFunctionService {
         if (file.exists() && file.isFile() && !filePath.equals(jarPath)) {
             file.delete();
         }
-        tSelfFunction.setUpdateTime(new Date());
+        tSelfFunction.setUpdateBy(SecurityUtils.getUsername());
         return tSelfFunctionMapper.updateTSelfFunction(tSelfFunction);
     }
 
     @Override
     public int updateTSelfFunction(TSelfFunction tSelfFunction) {
-        tSelfFunction.setUpdateTime(new Date());
+        tSelfFunction.setUpdateBy(SecurityUtils.getUsername());
         return tSelfFunctionMapper.updateTSelfFunction(tSelfFunction);
     }
 

@@ -9,12 +9,12 @@ spring:
 #                url: jdbc:mysql://localhost:3306/upwisdom?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8
 #                username: root
 #                password: qwer
-#                url: jdbc:mysql://192.168.4.95:3306/ferghana?allowMultiQueries=true&useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8
-#                username: ferghana
-#                password: Ferghana@1234
-                url: jdbc:mysql://localhost:3306/ferghana?allowMultiQueries=true&useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8
+                url: jdbc:mysql://192.168.4.95:3306/ferghana?allowMultiQueries=true&useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8
                 username: ferghana
                 password: Ferghana@1234
+#                url: jdbc:mysql://localhost:3306/ferghana?allowMultiQueries=true&useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8
+#                username: ferghana
+#                password: Ferghana@1234
 #                url: jdbc:mysql://master:3306/ferghana?allowMultiQueries=true&useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8
 #                username: ferghana
 #                password: Ferghana@1234

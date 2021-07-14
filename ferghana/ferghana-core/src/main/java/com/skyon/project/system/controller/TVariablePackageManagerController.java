@@ -4,18 +4,13 @@ import java.math.BigDecimal;
 import java.util.*;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.skyon.project.system.domain.TDataResultSource;
 import com.skyon.project.system.domain.TVariableCenter;
 import com.skyon.project.system.domain.TVariablePackageOperateLog;
-import com.skyon.project.system.mapper.TDataResultSourceMapper;
 import com.skyon.project.system.service.*;
-import com.skyon.project.system.service.impl.TSqlDevelopServiceImpl;
-import com.skyon.project.system.tuil.ApplicationStatusUtil;
-import com.skyon.project.system.tuil.PropertiesUtil;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.skyon.project.system.util.ApplicationStatusUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -63,6 +58,7 @@ public class TVariablePackageManagerController extends BaseController {
     /**
      * 查询变量包管理列表
      */
+    @PreAuthorize("@ss.hasPermi('variable:package:list')")
     @GetMapping("/list")
     @Transactional
     public TableDataInfo list(TVariablePackageManager tVariablePackageManager) {
@@ -103,6 +99,7 @@ public class TVariablePackageManagerController extends BaseController {
     /**
      * 获取变量包管理详细信息
      */
+    @PreAuthorize("@ss.hasPermi('variable:package:query')")
     @GetMapping(value = "/{variablePackId}")
     public AjaxResult getInfo(@PathVariable("variablePackId") Long variablePackId) {
         return AjaxResult.success(tVariablePackageManagerService.selectTVariablePackageManagerById(variablePackId));
@@ -111,6 +108,7 @@ public class TVariablePackageManagerController extends BaseController {
     /**
      * 新增变量包管理
      */
+    @PreAuthorize("@ss.hasPermi('variable:package:add')")
     @Log(title = "变量包管理", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody TVariablePackageManager tVariablePackageManager) {
@@ -130,6 +128,7 @@ public class TVariablePackageManagerController extends BaseController {
     /**
      * 修改变量包管理
      */
+    @PreAuthorize("@ss.hasPermi('variable:package:edit')")
     @Log(title = "变量包管理", businessType = BusinessType.UPDATE)
     @PutMapping
     @Transactional
@@ -188,7 +187,6 @@ public class TVariablePackageManagerController extends BaseController {
         logService.insertTVariablePackageOperateLog(log);
         System.out.println("-------------------------1");
         //根据变量分类-数据源表-主键
-
         Map mapParam = tVariablePackageManagerService.getKeyByVariableId(pk.getVariableClassification());
         LOG.info("----1："+mapParam.toString());
         LOG.info("----2----");
@@ -236,6 +234,7 @@ public class TVariablePackageManagerController extends BaseController {
 
 
     // 启动变量包
+    @PreAuthorize("@ss.hasPermi('variable:package:start')")
     @PutMapping("/start")
     public AjaxResult startVariablePackage(@RequestBody TVariablePackageManager pkManager) {
         // 日志记录
@@ -245,21 +244,39 @@ public class TVariablePackageManagerController extends BaseController {
         logService.insertTVariablePackageOperateLog(log);
         //变量包名字、SQL（以分号拼接）、字段个数、主键名称、运行or测试、资源配置情况（以分号拼接）并发数、taskmanager内存、jobmanager内存
 
-        //根据变量分类-数据源表-主键
+        String[] pathArray = null;
         LOG.info("-----------package start------------");
-        Map map = tVariablePackageManagerService.getKeyByVariableId(pkManager.getVariableClassification());
-        // sql 拼接 ： 建表sql + 变量运行sql ; 中间用分号连接;  用变量id用查对应的sql
-        LOG.info("-----------1111111111111------------");
+        LOG.info("-----------packType------------" + pkManager.getVariablePackType());
 
-        List<TVariableCenter> variableListByIds = tVariablePackageManagerService.getVariableListByIds(pkManager.getVariableId());
-        LOG.info("-----------222222222222------------");
+        if ("01".equals(pkManager.getVariablePackType())){
+            //根据变量分类-数据源表-主键
+            Map map = tVariablePackageManagerService.getKeyByVariableId(pkManager.getVariableClassification());
+            // sql 拼接 ： 建表sql + 变量运行sql ; 中间用分号连接;  用变量id用查对应的sql
 
-        String[] pathArray = tVariablePackageManagerService.joinPath(map, pkManager, variableListByIds);
-        LOG.info("-----------pathArray1------------" + pathArray[1]);
-        LOG.info("-----------pathArray2------------" + pathArray[2]);
+            List<TVariableCenter> variableListByIds = tVariablePackageManagerService.getVariableListByIds(pkManager.getVariableId());
+
+            pathArray = tVariablePackageManagerService.joinPath(map, pkManager, variableListByIds);
+
+            LOG.info("-------normal----pathArray1------------" + pathArray[1]);
+            LOG.info("-------normal----pathArray2------------" + pathArray[2]);
+        } else if ("02".equals(pkManager.getVariablePackType())){ // mysql-cdc
+            //根据变量分类-数据源表-主键
+            Map map = tVariablePackageManagerService.getKeyByVariableId(pkManager.getVariableClassification());
+
+            // 拼接运行参数
+            pathArray = tVariablePackageManagerService.joinMysqlPath(map, pkManager);
+            LOG.info("-------mysql-cdc----pathArray1------------" + pathArray[1]);
+            LOG.info("-------mysql-cdc----pathArray2------------" + pathArray[2]);
+        } else if ("03".equals(pkManager.getVariablePackType())){ // oracle-cdc
+            // 拼接运行参数
+            pathArray = tVariablePackageManagerService.joinOraclePath(pkManager);
+            LOG.info("-------oracle-cdc----pathArray1------------" + pathArray[1]);
+            LOG.info("-------oracle-cdc----pathArray2------------" + pathArray[2]);
+        }
+
 
         Map mapResult = tVariablePackageManagerService.exe(pathArray);
-        LOG.info("--------------33333333333333---------------");
+        LOG.info("--------------mapResult---------------");
 
         int i = 0;
         Object jobId = mapResult.get("jobId");
@@ -279,6 +296,7 @@ public class TVariablePackageManagerController extends BaseController {
     }
 
     // 停止变量包任务
+    @PreAuthorize("@ss.hasPermi('variable:package:stop')")
     @PutMapping("/stop")
     public AjaxResult stop(@RequestBody TVariablePackageManager pkManager) {
         // 日志记录
@@ -318,6 +336,7 @@ public class TVariablePackageManagerController extends BaseController {
     /**
      * 删除变量包管理
      */
+    @PreAuthorize("@ss.hasPermi('variable:package:remove')")
     @Log(title = "变量包管理", businessType = BusinessType.DELETE)
     @DeleteMapping("/{variablePackIds}")
     public AjaxResult remove(@PathVariable Long[] variablePackIds) {

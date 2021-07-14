@@ -11,7 +11,6 @@ import java.util.Date;
 /**
  * 对象 t_data_source
  *
- *
  * @date 2020-05-21
  */
 public class TDataSource extends BaseEntity {
@@ -34,7 +33,6 @@ public class TDataSource extends BaseEntity {
      */
     @Excel(name = "数据源类型")
     private String dataSourceType;
-
 
 
     /**
@@ -102,7 +100,6 @@ public class TDataSource extends BaseEntity {
     private Object handleData; // 数据操作
 
 
-
     /**
      * schema
      */
@@ -136,16 +133,6 @@ public class TDataSource extends BaseEntity {
     @Transient
     private Object[] dynamicItem;
 
-
-//    /** 创建时间 */
-//    @Excel(name = "创建时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss", type = Type.EXPORT)
-//    private Date createTime;
-//
-    /**
-     * 修改时间
-     */
-    @Excel(name = "修改时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss", type = Type.EXPORT)
-    private Date modifyTime;
 
     public String getMyAddress() {
         return myAddress;
@@ -339,14 +326,6 @@ public class TDataSource extends BaseEntity {
         this.dynamicItem = dynamicItem;
     }
 
-    public Date getModifyTime() {
-        return modifyTime;
-    }
-
-    public void setModifyTime(Date modifyTime) {
-        this.modifyTime = modifyTime;
-    }
-
     public String getSchemaPrimaryKey() {
         return schemaPrimaryKey;
     }
@@ -401,7 +380,6 @@ public class TDataSource extends BaseEntity {
                 ", description='" + description + '\'' +
                 ", createTableSql='" + createTableSql + '\'' +
                 ", dynamicItem=" + Arrays.toString(dynamicItem) +
-                ", modifyTime=" + modifyTime +
                 '}';
     }
 }

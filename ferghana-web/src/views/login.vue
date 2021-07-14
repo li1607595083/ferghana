@@ -426,8 +426,8 @@
     <el-form ref="loginForm" :model="loginForm" :rules="loginRules" class="login-form el-col-24" >
 <!--        <img  v-if="logo" :src="logo">-->
       <el-form-item class="el-col-24">
-        <img  v-if="logo" :src="logo" class="el-col-4" style="width:150px;margin-top: 12px;margin-left: 40px">
-        <h2 class="title el-col-8" >实时智能魔方</h2>
+        <img  v-if="logo" :src="logo" class="el-col-4" style="width:200px;margin-top: 12px;margin-left: 40px">
+        <span class="title el-col-8" >实时智能魔方</span>
       </el-form-item>
       <el-form-item prop="username" class="el-col-24">
         <el-input v-model="loginForm.username" type="text" auto-complete="off" placeholder="账号">
@@ -474,9 +474,9 @@
       </el-form-item>
     </el-form>
     <!--  底部  -->
-    <!--    <div class="el-login-footer">-->
-    <!--      <span>Copyright © 2020 BCP All Rights Reserved.</span>-->
-    <!--    </div>-->
+     <div class="el-login-footer">
+       <span>Copyright © 1999-2021 上海诺祺科技有限公司. </span>
+     </div>
   </div>
 </template>
 
@@ -583,12 +583,15 @@
   }
 
   .title {
-    margin: 13px auto 0px auto;
+    margin: 19px auto 0px auto;
+    margin-left: 10px;
     text-align: center;
     /*color: #707070;*/
-    color: #336ab1;
-    font-size:16px;
-    font-weight: bolder;
+    color: #185093;
+    font-size: 21px;
+    letter-spacing: 2px;
+    font-family: ChuQianTi;
+    opacity: 0.9;
   }
   .el-button--primary{
     background-color: #0083CB;
@@ -597,7 +600,7 @@
   .login-form {
     border-radius: 6px;
     background: #ffffff;
-    width: 400px;
+    width: 480px;
     padding: 25px 25px 5px 25px;
 
     .el-input {
@@ -639,9 +642,9 @@
     bottom: 0;
     width: 100%;
     text-align: center;
-    color: #fff;
+    color: #f5f5f5;
     font-family: Arial;
-    font-size: 12px;
+    font-size: 15px;
     letter-spacing: 1px;
   }
 </style>

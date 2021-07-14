@@ -7,42 +7,48 @@
           <el-input v-model="queryParams.variablePackName" placeholder="请输入变量包中文名" clearable size="small"
             @keyup.enter.native="handleQuery" />
         </el-form-item>
-        <el-form-item label="运行状态" prop="runingState">
+        <el-form-item label="变量包英文名" prop="variablePackEn">
+          <el-input v-model="queryParams.variablePackEn" placeholder="请输入英文名" clearable size="small"
+                    @keyup.enter.native="handleQuery" />
+        </el-form-item>
+        <el-form-item label="变量分类" prop="variableClassificationName">
+          <el-select v-model="queryParams.variableClassificationName" placeholder="请选择变量类型" clearable size="small">
+            <el-option
+              v-for="dict in variableClassificationOptions"
+              :key="dict.name"
+              :label="dict.name"
+              :value="dict.name"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="运行状态" label-width="70px" prop="runingState">
           <el-select v-model="queryParams.runingState" placeholder="请选择运行状态" clearable size="small">
             <el-option v-for="dict in runingStateOptions" :key="dict.dictValue" :label="dict.dictLabel"
               :value="dict.dictValue" />
           </el-select>
         </el-form-item>
-        <el-form-item label="变量分类" prop="variableClassification">
-          <el-input v-model="queryParams.variableClassification" placeholder="请输入变量分类" clearable size="small"
-            @keyup.enter.native="handleQuery" />
-        </el-form-item>
         <el-form-item>
-          <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
+          <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery" v-hasPermi="['variable:package:query']">搜索</el-button>
           <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
         </el-form-item>
       </el-form>
 
       <el-row :gutter="10" class="mb8">
         <el-col :span="1.5">
-          <el-button type="primary" icon="el-icon-plus" size="mini" @click="handleAdd">新增
+          <el-button type="primary" icon="el-icon-plus" size="mini"  v-hasPermi="['variable:package:add']" @click="handleAdd">新增
           </el-button>
         </el-col>
         <el-col :span="1.5">
-          <el-button type="primary" icon="el-icon-edit" size="mini" :disabled="single" @click="handleUpdate">修改
-          </el-button>
-        </el-col>
-        <el-col :span="1.5">
-          <el-button type="primary" icon="el-icon-delete" size="mini" :disabled="multiple" @click="handleDelete">删除
+          <el-button type="primary" icon="el-icon-delete" size="mini" v-hasPermi="['variable:package:remove']" :disabled="multiple" @click="handleDelete">批量删除
           </el-button>
         </el-col>
       </el-row>
 
-      <el-table v-loading="loading" :data="managerList" @selection-change="handleSelectionChange">
+      <el-table v-loading="loading" :data="managerList" @selection-change="handleSelectionChange" @row-dblclick="versionDetail">
         <el-table-column type="selection" width="55" align="center" />
-        <el-table-column label="变量包中文名" align="left" header-align="center" prop="variablePackName" />
-        <el-table-column label="变量包英文名" width="200" align="left" header-align="center" prop="variablePackEn" />
-        <el-table-column label="变量分类" width="250" align="center" prop="variableClassificationName" />
+        <el-table-column label="变量包中文名" align="left" prop="variablePackName" />
+        <el-table-column label="变量包英文名" width="200" align="left" prop="variablePackEn" />
+        <el-table-column label="变量分类" width="250" align="left" prop="variableClassificationName" />
         <el-table-column label="版本号" width="80" align="center" prop="versionNum" />
         <el-table-column label="运行状态" width="100" align="center" prop="runingState" :formatter="runingStateFormat">
           <template slot-scope="scope">
@@ -50,26 +56,49 @@
               @change="handleStatusChange(scope.row)" />
           </template>
         </el-table-column>
-        <el-table-column label="创建时间" align="center" prop="createTime" width="180">
+        <el-table-column label="操作人" align="center" width="130" prop="createBy"/>
+        <el-table-column label="操作时间" align="center" prop="updateTime" width="180">
           <template slot-scope="scope">
-            <span>{{ parseTime(scope.row.createTime) }}</span>
+            <span>{{ parseTime(scope.row.updateTime) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="修改时间" align="center" prop="modifyTime" width="180">
-          <template slot-scope="scope">
-            <span>{{ parseTime(scope.row.modifyTime) }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="200" align="center" class-name="small-padding fixed-width">
-          <template slot-scope="scope">
-            <el-button size="mini" type="text" icon="el-icon-view" @click="versionDetail(scope.row)">详情
-            </el-button>
-            <el-button size="mini" type="text" icon="el-icon-edit" @click="handleUpdate(scope.row)">修改
-            </el-button>
-            <el-button size="mini" type="text" icon="el-icon-delete" @click="handleDelete(scope.row)">删除
-            </el-button>
-          </template>
-        </el-table-column>
+        <el-table-column
+            label="操作"
+            align="center"
+            width="250"
+            class-name="small-padding fixed-width"
+          >
+            <template slot-scope="scope">
+              <el-button
+                size="mini"
+                type="text"
+                @click="handleDetail(scope.row)"
+                v-hasPermi="['variable:package:query']"
+              >详情
+              </el-button>
+              <el-button
+                size="mini"
+                type="text"
+                @click="handleUpdate(scope.row)"
+                v-hasPermi="['variable:package:edit']"
+              >修改
+              </el-button>
+              <el-button
+                size="mini"
+                type="text"
+                @click="testPackage(scope.row)"
+              >测试
+              </el-button>
+              <el-button
+                v-if="scope.row.userId !== 1"
+                size="mini"
+                type="text"
+                @click="handleDelete(scope.row)"
+                v-hasPermi="['variable:package:remove']"
+              >删除
+              </el-button>
+            </template>
+          </el-table-column>
       </el-table>
 
       <pagination v-show="total>0" :total="total" :page.sync="queryParams.pageNum" :limit.sync="queryParams.pageSize"
@@ -78,56 +107,59 @@
 
     <!-- 添加或修改变量包管理对话框 -->
     <div v-show="addDiv">
-      <el-form ref="form" :model="form" :rules="rules" label-width="130px" class="el-col-24">
-        <el-form-item label="变量包中文名" prop="variablePackName" class="el-col-12">
-          <el-input v-model="form.variablePackName" placeholder="请输入变量包中文名" :disabled="UnAllowedUpdate" />
-        </el-form-item>
-        <el-form-item label="变量包英文名" prop="variablePackEn" class="el-col-12">
-          <el-input v-model="form.variablePackEn" placeholder="请输入变量包英文名" :disabled="UnAllowedUpdate" />
-        </el-form-item>
-        <el-form-item label="版本号" class="el-col-12" v-show="versionNumShow">
-          <el-input v-model="form.versionNum" :disabled="UnAllowedUpdate" />
-        </el-form-item>
-        <el-form-item label="变量分类" prop="variableClassification" class="el-col-12">
-          <el-select v-model="form.variableClassification" placeholder="请选择变量类型" @change="variableClassificationChange"
-            clearable style="width: 100%" :disabled="UnAllowedUpdate">
-            <el-option v-for="data in variableClassificationOptions" :key="data.value" :label="data.name"
-              :value="data.value" :sourceTableName="data.sourceTableName" :dimensionRelation="data.dimensionRelation" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="数据结果表:" prop="resultTable" class="el-col-12">
-          <el-select v-model="form.resultTable" placeholder="请选择数据结果表" clearable style="width: 100%"
-            :disabled="detailViem">
-            <el-option v-for="data in resultTableOptions" :key="data.value" :label="data.name" :value="data.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="加工变量" class="el-col-24" prop="variableId">
-          <treeselect v-model="form.variableId" :options="variableCenter" :multiple="true" id="variableId"
-            @select="variableCenterSelect" @deselect="variableCenterDeSelect" :disableBranchNodes="true"
-            :showCount="true" :clearable="false" placeholder="请选择加工变量" :disabled="detailViem" />
-        </el-form-item>
-        <el-form-item label="原始变量" class="el-col-24">
-          <el-select v-model="form.originalVariable" placeholder="请选择原始变量" multiple clearable no-data-text="未选择变量分类"
-            style="width: 100%" :disabled="detailViem">
-            <el-option-group :label="dataSourceName">
-              <el-option v-for="data in dataSourcFields" :key="data.value" :label="data.label" :value="data.value"
-                :type="data.type" />
-            </el-option-group>
-            <div v-for="dataAll in listDimension">
-              <el-option-group :label="dataAll.name" size="medium">
-                <el-option v-for="data in dataAll.dimensionRelationOptions" :key="data.value" :label="data.label"
-                  :value="data.value" />
+      <el-form ref="form" :model="form" :rules="rules" label-width="130px" class="el-col-24" v-loading="updateLoading">
+        <div :style="{opacity: updateLoading ? '0' : '1'}">
+          <el-form-item label="变量包中文名" prop="variablePackName" class="el-col-12">
+            <el-input v-model="form.variablePackName" placeholder="请输入变量包中文名" :disabled="UnAllowedUpdate" />
+          </el-form-item>
+          <el-form-item label="变量包英文名" prop="variablePackEn" class="el-col-12">
+            <el-input v-model="form.variablePackEn" placeholder="请输入变量包英文名" :disabled="UnAllowedUpdate" />
+          </el-form-item>
+          <el-form-item label="版本号" class="el-col-12" v-show="versionNumShow">
+            <el-input v-model="form.versionNum" :disabled="UnAllowedUpdate" />
+          </el-form-item>
+          <el-form-item label="变量分类" prop="variableClassification" class="el-col-12">
+            <el-select v-model="form.variableClassification" placeholder="请选择变量类型" @change="variableClassificationChange"
+              clearable style="width: 100%" :disabled="UnAllowedUpdate">
+              <el-option v-for="data in variableClassificationOptions" :key="data.value" :label="data.name"
+                :value="data.value" :sourceTableName="data.sourceTableName" :dimensionRelation="data.dimensionRelation"
+                         :connectorType="data.connectorType"/>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="数据结果表:" prop="resultTable" class="el-col-12">
+            <el-select v-model="form.resultTable" placeholder="请选择数据结果表" clearable style="width: 100%"
+              :disabled="detailViem">
+              <el-option v-for="data in resultTableOptions" :key="data.value" :label="data.name" :value="data.value" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="加工变量" class="el-col-24" prop="variableId" v-show="variableIdShow">
+            <treeselect v-model="form.variableId" :options="variableCenter" :multiple="true" id="variableId"
+              @select="variableCenterSelect" @deselect="variableCenterDeSelect" :disableBranchNodes="true"
+              :showCount="true" :clearable="false" placeholder="请选择加工变量" :disabled="detailViem" />
+          </el-form-item>
+          <el-form-item label="原始变量" class="el-col-24">
+            <el-select v-model="form.originalVariable" placeholder="请选择原始变量" multiple clearable no-data-text="未选择变量分类"
+              style="width: 100%" :disabled="detailViem">
+              <el-option-group :label="dataSourceName">
+                <el-option v-for="data in dataSourcFields" :key="data.value" :label="data.label" :value="data.value"
+                  :type="data.type" />
               </el-option-group>
-            </div>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="备注" prop="description" class="el-col-24">
-          <el-input v-model="form.description" type="textarea" placeholder="请输入备注" :disabled="detailViem" />
-        </el-form-item>
+              <div v-for="dataAll in listDimension">
+                <el-option-group :label="dataAll.name" size="medium">
+                  <el-option v-for="data in dataAll.dimensionRelationOptions" :key="data.value" :label="data.label"
+                    :value="data.value" />
+                </el-option-group>
+              </div>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="备注" prop="description" class="el-col-24">
+            <el-input v-model="form.description" type="textarea" placeholder="请输入备注" :disabled="detailViem" />
+          </el-form-item>
+        </div>
       </el-form>
-      <div slot="footer" class="dialog-footer" style="float: right">
-        <el-button type="primary" @click="testRun" :disabled="detailViem">测 试</el-button>
-        <el-button type="primary" @click="submitForm" :disabled="detailViem">确 定</el-button>
+      <div slot="footer" class="dialog-footer" style="float: right" :style="{opacity: updateLoading ? '0' : '1'}">
+        <el-button type="primary" @click="testRun" v-show="testButton">调  试</el-button>
+        <el-button type="primary" @click="submitForm" v-show="submitButton" :disabled="detailViem">确 定</el-button>
         <el-button @click="cancel">取 消</el-button>
       </div>
     </div>
@@ -202,7 +234,7 @@
                 </div>
               </el-tab-pane>
             </el-tabs>
-            <div style="margin-left: 790px;margin-top:10px">
+            <div style="margin-top: 30px;display: flex;justify-content: flex-end;">
               <el-button type="primary" @click="confirmTest">开 始</el-button>
               <el-button @click="cancelTest">关 闭</el-button>
             </div>
@@ -248,25 +280,20 @@
     <div v-show="detailDiv">
       <el-tabs v-model="versionTabName" type="card">
         <el-tab-pane label="版本历史" name="versionFirst">
-          <el-table v-loading="loading" :data="versionList">
+          <el-table v-loading="loading" :data="versionList" @row-dblclick="handleDetail">
             <el-table-column label="序号" width="55" align="center" type="index" />
             <el-table-column label="变量中文名" align="center" prop="variablePackName" />
             <el-table-column label="版本号" align="center" prop="versionNum" />
-            <el-table-column label="版本制定者" align="center" prop="createBy" />
-            <el-table-column label="创建时间" align="center" prop="createTime">
+            <el-table-column label="新增者"  align="center" prop="createBy"/>
+            <el-table-column label="修改者"  align="center" prop="updateBy"/>
+            <el-table-column label="新增时间" align="center" prop="createTime" >
               <template slot-scope="scope">
                 <span>{{ parseTime(scope.row.createTime) }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="修改时间" align="center" prop="modifyTime" width="180">
+            <el-table-column label="修改时间" align="center" prop="updateTime" width="180">
               <template slot-scope="scope">
-                <span>{{ parseTime(scope.row.modifyTime) }}</span>
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
-              <template slot-scope="scope">
-                <el-button size="mini" type="text" icon="el-icon-view" @click="handleDetail(scope.row)">详情
-                </el-button>
+                <span>{{ parseTime(scope.row.updateTime) }}</span>
               </template>
             </el-table-column>
           </el-table>
@@ -318,6 +345,7 @@
   import {
     isLegitimateName
   } from "@/utils/validate.js";
+  import {mapGetters} from "vuex";
 
   export default {
     name: "packageManager",
@@ -328,8 +356,11 @@
       return {
         // 遮罩层
         loading: true,
+        // 变量包更新加载
+        updateLoading: false,
         // 选中数组
         ids: [],
+        names: undefined,
         // 非单个禁用
         single: true,
         // 非多个禁用
@@ -360,6 +391,8 @@
         variableCenter: [],
         //
         layoutOne: true,
+        // 确定按钮的展示
+        submitButton: true,
         // 新增展示参数
         addDiv: false,
         // 控制手动配置资源div
@@ -367,6 +400,8 @@
         versionNumShow: false,
         //
         packageRow: undefined,
+        // 加工变量展示
+        variableIdShow:true,
 
         //tabs标签页的初始页
         activeName: 'first',
@@ -393,6 +428,8 @@
         concurrencyConfigure: "",
         taskMemoryConfigure: "",
         jobMemoryConfigure: "",
+        // 测试按钮show
+        testButton:true,
 
         // 资源配置单选框
         resourceForm: {
@@ -489,6 +526,14 @@
       this.getDicts("sql_task_status").then(response => {
         this.runingStateOptions = response.data;
       });
+      this.getVariableClassificationOptions();
+    },
+    // 计算属性
+    computed:{
+      // 登录人的名
+      ...mapGetters([
+        'name'
+      ]),
     },
     methods: {
 
@@ -601,12 +646,9 @@
             this.open = true;
             this.sourceTableValueItem = true;
             this.title = "变量包测试";
-            console.log("--q--");
-            console.log(this.selectVariableNote);
             for (let i = 0; i < this.selectVariableNote.length; i++) { // 已经选中的变量
 
-              console.log("-------2www-------------");
-              console.log(this.selectVariableNote);
+              // 数据源表的sql使用字段
               let testSourceTableCol = this.selectVariableNote[i].testSourceTableCol;
               if (testSourceTableCol !== null) {
                 let parse = JSON.parse(testSourceTableCol);
@@ -632,6 +674,8 @@
                   }
                 }
               }
+
+
               // listResultDimension dimensionTableCol
               let testDimensionTableCol = this.selectVariableNote[i].testDimensionTableCol;
               let parse1 = JSON.parse(testDimensionTableCol);
@@ -684,6 +728,50 @@
                 }
               }
             }
+
+            // 数据源表的关联字段
+            this.variableClassificationOptions.map((data, i) => {
+              if (data.value === this.form.variableClassification) {
+                let parse = JSON.parse(data.dimensionRelation)
+                //"[{"dimensionName":"EP_CUST_INF","sourceDabField":"CUST_NO"},{"dimensionName":"EP_BIND_ACCT","sourceDabField":"ACCT_NO"}]"
+                for (let k = 0; k < parse.length; k++) {
+                  console.log("---------sssss----------------");
+                  let flag = true;
+                  let sourceDabField = parse[k].sourceDabField;
+                  for (let j = 0; j < this.sourceTableCol.length; j++) {
+                    let dataItem = this.sourceTableCol[j].dataItem;
+                    if (dataItem.indexOf('.')>-1) {
+                      let split = dataItem.split('.')
+                      dataItem = split[1]
+                    }
+
+                    if (dataItem === sourceDabField) {
+                      // 如果不是主键和水印字段就后缀增加：“关联字段”
+                      if(!(this.sourceTableCol[j].dataName.indexOf("主键") > 0 || this.sourceTableCol[j].dataName.indexOf("水印") > 0 )){
+                        this.sourceTableCol[j].dataName = this.sourceTableCol[j].dataName + "-关联字段";
+                      }
+                      flag = false;
+                      break;
+                    }
+                  }
+                  if (flag === true){
+
+                    let dimenName = [];
+                    for (let l = 0; l < this.listResultDimension.length; l++) { // 没用的维表不关联
+                      let name = this.listResultDimension[l].name.split(":");
+                      dimenName = dimenName.concat(name[1]);
+                    }
+                    if (dimenName.indexOf(parse[k].dimensionName) > -1){
+                      this.sourceTableCol.push({
+                        dataItem: sourceDabField,
+                        dataName: parse[k].dimensionName + "."+sourceDabField+"-关联字段",
+                      })
+                    }
+
+                  }
+                }
+              }
+            })
 
             // 若测试的数据源表有字段，展示
             if (this.sourceTableCol.length > 0) {
@@ -1189,6 +1277,7 @@
               name: resp.data.rows[i].variableClassificationName,
               sourceTableName: resp.data.rows[i].sourceDabRelation,
               dimensionRelation: resp.data.rows[i].dimensionRelation,
+              connectorType: resp.data.rows[i].connectorType,
             });
           }
         }).catch(resp => {
@@ -1203,8 +1292,21 @@
         console.log("--2");
         console.log(value);
         console.log(this.variableClassificationOptions);
+
         this.variableClassificationOptions.map((data, i) => {
           if (data.value === value) {
+            // 如果数据源表是oracle-cdc
+            this.variableIdShow = true;
+            this.rules.variableId[0].required = true;
+            if (data.connectorType === "03") {
+              this.cdcShow();
+              this.form.variablePackType = "03";
+            } else if (data.connectorType === "02"){
+              this.cdcShow();
+              this.form.variablePackType = "02";
+            } else {
+              this.form.variablePackType = data.connectorType;
+            }
             this.sourceDataChange(data.sourceTableName);
             this.getDimensionRelationFild(data.dimensionRelation);
             // 数据源表赋值
@@ -1212,6 +1314,12 @@
             this.form.dimensionRelation = data.dimensionRelation;
           }
         });
+      },
+      // 变量分类为cdc时，下列字段影藏
+      cdcShow(){
+        // 变量分类字段不展示
+        this.variableIdShow = false;
+        this.rules.variableId[0].required = false;
       },
 
       /** 查询变量包管理列表 */
@@ -1242,6 +1350,7 @@
           variablePackId: undefined,
           variablePackName: undefined,
           variablePackEn: undefined,
+          variablePackType: undefined,
           runingState: undefined,
           variableClassification: undefined,
           description: undefined,
@@ -1268,6 +1377,7 @@
         this.resultTableOptions = [];
         this.variableClassificationOptions = [];
         this.variableNum = 0;
+        this.getVariableClassificationOptions();
 
       },
       /** 搜索按钮操作 */
@@ -1283,11 +1393,14 @@
       // 多选框选中数据
       handleSelectionChange(selection) {
         this.ids = selection.map(item => item.variablePackId);
+        let nameTmp = selection.map(item => item.createBy);
+        this.names = new Set(nameTmp);
         this.single = selection.length !== 1;
         this.multiple = !selection.length
       },
       /** 新增按钮操作 */
       handleAdd() {
+        this.submitButton = true;
         this.detailViem = false;
         this.reset();
         this.title = "添加变量包管理";
@@ -1295,9 +1408,8 @@
         this.versionNumShow = false;
         this.UnAllowedUpdate = false;
         this.addDiv = true;
+        this.testButton = false;
 
-        // 查询变量分类
-        this.getVariableClassificationOptions();
         // 查询数据结果表
         this.getResultTable();
 
@@ -1305,6 +1417,8 @@
 
       // 查看变量的版本详细
       versionDetail(row) {
+        this.submitButton = false;
+        this.testButton = false;
         this.detailDiv = true;
         this.layoutOne = false;
         this.versionNumShow = true;
@@ -1321,12 +1435,11 @@
         this.title = "查看变量包管理";
         this.layoutOne = false;
         this.versionNumShow = true;
+        this.updateLoading = true;
         this.UnAllowedUpdate = true;
         this.detailDiv = false;
         this.addDiv = true;
         const variablePackId = row.variablePackId || this.ids;
-        // 查询变量分类
-        this.getVariableClassificationOptions();
         // 查询数据结果表
         this.getResultTable();
         getManager(variablePackId).then(response => {
@@ -1337,21 +1450,41 @@
           this.selectVariableNote = JSON.parse(this.form.selectVariableNoteForm);
           this.form.originalVariable = JSON.parse(this.form.originalVariable);
           this.variableClassificationChange(this.form.variableClassification);
+        }).then(res => {
+          this.updateLoading = false;
         });
       },
-
+      // 测试按钮
+      testPackage(row){
+        this.testButton = true;
+        this.detailViem = true;
+        this.detailDiv = false;
+        this.submitButton = false;
+        this.testAndUpdate(row);
+      },
       /** 修改按钮操作 */
       handleUpdate(row) {
+        // 只有自己能修改
+        if (row.createBy !== this.name){
+          this.$message.error("该数据是"+row.createBy+"创建的，您不能修改！");
+          return false;
+        }
+        this.submitButton = true;
+        this.testButton = false;
         this.detailViem = false;
-        this.reset();
         this.title = "修改变量包管理";
+        this.testAndUpdate(row);
+      },
+
+      // 测试和修改共用
+      testAndUpdate(row) {
+        this.reset();
+        this.updateLoading = true;
         this.layoutOne = false;
         this.versionNumShow = true;
         this.UnAllowedUpdate = true;
         this.addDiv = true;
         const variablePackId = row.variablePackId || this.ids
-        // 查询变量分类
-        this.getVariableClassificationOptions();
         // 查询数据结果表
         this.getResultTable();
         getManager(variablePackId).then(response => {
@@ -1374,9 +1507,9 @@
               }
             });
           }, 300);
+        }).then(res => {
+          this.updateLoading = false;
         });
-
-
       },
       /** 提交按钮 */
       submitForm: function() {
@@ -1417,6 +1550,19 @@
       },
       /** 删除按钮操作 */
       handleDelete(row) {
+        // 只有自己能删除
+        if (row.variablePackId !== undefined) {
+          if (row.createBy !== this.name) {
+            this.$message.error("该数据为" + row.createBy + "创建，您不能删除！");
+            return false;
+          }
+        } else {
+          if (this.names.size > 1 || !this.names.has(this.name)) {
+            this.$message.error("您只能删除自己创建的数据");
+            return false;
+          }
+        }
+
         const variablePackIds = row.variablePackId || this.ids;
         this.$confirm('是否确认删除变量包管理编号为"' + variablePackIds + '"的数据项?', "警告", {
           confirmButtonText: "确定",

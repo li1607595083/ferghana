@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api.operators;
+package org_change.org.apache.flink.streaming.api.operators;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.annotation.Internal;
@@ -25,7 +25,10 @@ import org.apache.flink.configuration.MetricOptions;
 import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
-import org.apache.flink.streaming.api.watermark.Watermark;
+import org.apache.flink.streaming.api.operators.AbstractUdfStreamOperator;
+import org.apache.flink.streaming.api.operators.ChainingStrategy;
+import org.apache.flink.streaming.api.operators.Output;
+import org_change.org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.runtime.streamstatus.StreamStatusMaintainer;
@@ -239,7 +242,7 @@ public class StreamSource<OUT, SRC extends SourceFunction<OUT>> extends Abstract
                             } catch (Throwable t) {
                                 // we catch the Throwables here so that we don't trigger the processing
                                 // timer services async exception handler
-                                LOG.warn("Error while emitting latency marker.", t);
+                                AbstractStreamOperator.LOG.warn("Error while emitting latency marker.", t);
                             }
                         }
                     },

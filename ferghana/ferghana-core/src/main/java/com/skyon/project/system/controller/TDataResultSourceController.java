@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 【请填写功能名称】Controller
+ * 数据结果表Controller
  * 
  *
  * @date 2020-05-31
@@ -28,7 +28,7 @@ public class TDataResultSourceController extends BaseController
     private ITDataResultSourceService tDataResultSourceService;
 
     /**
-     * 查询【请填写功能名称】列表
+     * 查询数据结果表列表
      */
     @PreAuthorize("@ss.hasPermi('source:result:list')")
     @GetMapping("/list")
@@ -40,9 +40,9 @@ public class TDataResultSourceController extends BaseController
     }
 
     /**
-     * 导出【请填写功能名称】列表
+     * 导出数据结果表列表
      */
-    @PreAuthorize("@ss.hasPermi('source:result:export')")
+//    @PreAuthorize("@ss.hasPermi('source:result:export')")
     @Log(title = "【请填写功能名称】", businessType = BusinessType.EXPORT)
     @GetMapping("/export")
     public AjaxResult export(TDataResultSource tDataResultSource)
@@ -53,7 +53,7 @@ public class TDataResultSourceController extends BaseController
     }
 
     /**
-     * 获取【请填写功能名称】详细信息
+     * 获取数据结果表详细信息
      */
     @PreAuthorize("@ss.hasPermi('source:result:query')")
     @GetMapping(value = "/{dataResultSourceId}")
@@ -63,7 +63,7 @@ public class TDataResultSourceController extends BaseController
     }
 
     /**
-     * 新增【请填写功能名称】
+     * 新增数据结果表
      */
     @PreAuthorize("@ss.hasPermi('source:result:add')")
     @Log(title = "【请填写功能名称】", businessType = BusinessType.INSERT)
@@ -74,7 +74,7 @@ public class TDataResultSourceController extends BaseController
     }
 
     /**
-     * 修改【请填写功能名称】
+     * 修改数据结果表
      */
     @PreAuthorize("@ss.hasPermi('source:result:edit')")
     @Log(title = "【请填写功能名称】", businessType = BusinessType.UPDATE)
@@ -85,7 +85,7 @@ public class TDataResultSourceController extends BaseController
     }
 
     /**
-     * 删除【请填写功能名称】
+     * 删除数据结果表
      */
     @PreAuthorize("@ss.hasPermi('source:result:remove')")
     @Log(title = "【请填写功能名称】", businessType = BusinessType.DELETE)

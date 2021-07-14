@@ -25,6 +25,8 @@ public class TVariablePackageManager extends BaseEntity
     /** 英文名 */
     private String variablePackEn;
 
+    private String variablePackType; // 变量包类型 01 普通变量包  02 mysql-cdc变量包  03 oracle-cdc变量包
+
     private String versionNum;
 
     private String versionShow;
@@ -84,6 +86,8 @@ public class TVariablePackageManager extends BaseEntity
     private String dimensionId;
     private Object sourceTableValue; // 变量测试数据源表值
 
+
+
     private Object dimensionTableValue; // 变量测试数据维表值
 
     private String sourceKey; // 变量测试数据维表值
@@ -91,6 +95,14 @@ public class TVariablePackageManager extends BaseEntity
     private Object testResultItem;
 
     private Object testDimdata;
+
+    public String getVariablePackType() {
+        return variablePackType;
+    }
+
+    public void setVariablePackType(String variablePackType) {
+        this.variablePackType = variablePackType;
+    }
 
     public String getSavePointDir() {
         return savePointDir;
@@ -380,4 +392,44 @@ public class TVariablePackageManager extends BaseEntity
         return modifyTime;
     }
 
+    @Override
+    public String toString() {
+        return "TVariablePackageManager{" +
+                "variablePackId=" + variablePackId +
+                ", variablePackName='" + variablePackName + '\'' +
+                ", variablePackEn='" + variablePackEn + '\'' +
+                ", variablePackType='" + variablePackType + '\'' +
+                ", versionNum='" + versionNum + '\'' +
+                ", versionShow='" + versionShow + '\'' +
+                ", runingState='" + runingState + '\'' +
+                ", variableClassification=" + variableClassification +
+                ", description='" + description + '\'' +
+                ", variableId=" + variableId +
+                ", selectVariableNoteForm='" + selectVariableNoteForm + '\'' +
+                ", createTableSql='" + createTableSql + '\'' +
+                ", runingSql='" + runingSql + '\'' +
+                ", configurationType='" + configurationType + '\'' +
+                ", concurrency='" + concurrency + '\'' +
+                ", jobMemory='" + jobMemory + '\'' +
+                ", taskMemory='" + taskMemory + '\'' +
+                ", resultTable='" + resultTable + '\'' +
+                ", resultTableSql='" + resultTableSql + '\'' +
+                ", applicationId=" + applicationId +
+                ", jobId=" + jobId +
+                ", varDir='" + varDir + '\'' +
+                ", originalVariable=" + originalVariable +
+                ", originalVariableSql='" + originalVariableSql + '\'' +
+                ", startParamBase='" + startParamBase + '\'' +
+                ", savePointDir='" + savePointDir + '\'' +
+                ", sourceTableName='" + sourceTableName + '\'' +
+                ", dimensionId='" + dimensionId + '\'' +
+                ", sourceTableValue=" + sourceTableValue +
+                ", dimensionTableValue=" + dimensionTableValue +
+                ", sourceKey='" + sourceKey + '\'' +
+                ", testResultItem=" + testResultItem +
+                ", testDimdata=" + testDimdata +
+                ", modifyTime=" + modifyTime +
+                ", variableClassificationName='" + variableClassificationName + '\'' +
+                '}';
+    }
 }

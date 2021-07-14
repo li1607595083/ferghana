@@ -16,11 +16,12 @@
  * limitations under the License.
  */
 
-package org.apache.flink.connector.jdbc.dialect;
+package org_change.org.apache.flink.connector.jdbc.dialect;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.flink.connector.jdbc.dialect.AbstractDialect;
 import org.apache.flink.connector.jdbc.internal.converter.JdbcRowConverter;
-import org.apache.flink.connector.jdbc.internal.converter.OracleSQLRowConverter;
+import org_change.org.apache.flink.connector.jdbc.internal.converter.OracleSQLRowConverter;
 import org.apache.flink.table.types.logical.LogicalTypeRoot;
 import org.apache.flink.table.types.logical.RowType;
 

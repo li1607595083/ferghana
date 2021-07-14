@@ -1,5 +1,6 @@
-package org.apache.flink.connector.jdbc.internal.converter;
+package org_change.org.apache.flink.connector.jdbc.internal.converter;
 
+import org.apache.flink.connector.jdbc.internal.converter.AbstractJdbcRowConverter;
 import org.apache.flink.table.types.logical.RowType;
 
 /**

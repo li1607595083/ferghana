@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.runtime.io;
+package org_change.org.apache.flink.streaming.runtime.io;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.VisibleForTesting;
@@ -37,10 +37,13 @@ import org.apache.flink.runtime.io.network.partition.consumer.InputChannel;
 import org.apache.flink.runtime.plugable.DeserializationDelegate;
 import org.apache.flink.runtime.plugable.NonReusingDeserializationDelegate;
 import org.apache.flink.streaming.api.watermark.Watermark;
+import org.apache.flink.streaming.runtime.io.CheckpointedInputGate;
+import org.apache.flink.streaming.runtime.io.StreamInputProcessor;
+import org.apache.flink.streaming.runtime.io.StreamTaskInput;
 import org.apache.flink.streaming.runtime.streamrecord.StreamElement;
-import org.apache.flink.streaming.runtime.streamrecord.StreamElementSerializer;
-import org.apache.flink.streaming.runtime.streamstatus.StatusWatermarkValve;
-import org.apache.flink.streaming.runtime.streamstatus.StreamStatus;
+import org_change.org.apache.flink.streaming.runtime.streamrecord.StreamElementSerializer;
+import org_change.org.apache.flink.streaming.runtime.streamstatus.StatusWatermarkValve;
+import org_change.org.apache.flink.streaming.runtime.streamstatus.StreamStatus;
 import org.apache.flink.table.data.RowData;
 
 import javax.annotation.Nonnull;
@@ -187,12 +190,16 @@ public final class StreamTaskNetworkInput<T> implements StreamTaskInput<T> {
     private void processElement(StreamElement recordOrMark, DataOutput<T> output) throws Exception {
         // 对迟到的数据过滤
         if (recordOrMark.isRecord()){
-            RowData rowData = (RowData) recordOrMark.asRecord().getValue();
-            if (source && (rowData.getLong(rowData.getArity() -  1) > statusWatermarkValve.lastMaxWaterMark || rowData.getLong(rowData.getArity() -  1) < 0)){
-                output.emitRecord(recordOrMark.asRecord());
-            } else if (!source){
-                output.emitRecord(recordOrMark.asRecord());
-            }
+           if (recordOrMark.asRecord().getValue() instanceof RowData){
+               RowData rowData = (RowData) recordOrMark.asRecord().getValue();
+               if (source && (rowData.getLong(rowData.getArity() -  1) > statusWatermarkValve.lastMaxWaterMark || rowData.getLong(rowData.getArity() -  1) < 0)){
+                   output.emitRecord(recordOrMark.asRecord());
+               } else if (!source){
+                   output.emitRecord(recordOrMark.asRecord());
+               }
+           } else {
+               output.emitRecord(recordOrMark.asRecord());
+           }
         } else if (recordOrMark.isWatermark()) {
                 statusWatermarkValve.inputWatermark(recordOrMark.asWatermark(), lastChannel);
         } else if (recordOrMark.isLatencyMarker()) {

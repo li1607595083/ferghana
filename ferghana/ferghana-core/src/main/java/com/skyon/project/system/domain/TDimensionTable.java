@@ -123,9 +123,6 @@ public class TDimensionTable extends BaseEntity
         this.dimensionNameZH = dimensionNameZH;
     }
 
-    /** 修改时间 */
-    @Excel(name = "修改时间", width = 30, dateFormat = "yyyy-MM-dd")
-    private Date modifyTime;
 
     public String getHbaseCreateSql() {
         return hbaseCreateSql;
@@ -319,18 +316,9 @@ public class TDimensionTable extends BaseEntity
         this.hbaseTableName = hbaseTableName;
     }
 
-    public String getHbaseTableName() 
+    public String getHbaseTableName()
     {
         return hbaseTableName;
-    }
-    public void setModifyTime(Date modifyTime) 
-    {
-        this.modifyTime = modifyTime;
-    }
-
-    public Date getModifyTime() 
-    {
-        return modifyTime;
     }
 
     public Object[] getRedisDynamicItem() {
@@ -420,7 +408,6 @@ public class TDimensionTable extends BaseEntity
             .append("zookeeperAddress", getZookeeperAddress())
             .append("hbaseTableName", getHbaseTableName())
             .append("createTime", getCreateTime())
-            .append("modifyTime", getModifyTime())
             .toString();
     }
 }

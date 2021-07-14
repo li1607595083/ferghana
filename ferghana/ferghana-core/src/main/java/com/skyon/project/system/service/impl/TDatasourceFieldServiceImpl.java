@@ -164,7 +164,9 @@ public class TDatasourceFieldServiceImpl implements ITDatasourceFieldService {
 
         // 修改数据维表 对应的字段
         List list = joinDeleteParamList(tVariableCenter);
-        fieldMapper.updateWhenDelete(list);
+        if(list.size() > 0) {
+            fieldMapper.updateWhenDelete(list);
+        }
 
     }
 

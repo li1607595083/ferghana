@@ -25,4 +25,9 @@ public @interface DataScope
      * 用户表的别名
      */
     public String userAlias() default "";
+
+    /**
+     * 是否为业务表  默认false否  true是
+     */
+    public boolean serviceTable() default false;
 }

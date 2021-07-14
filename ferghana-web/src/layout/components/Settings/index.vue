@@ -22,6 +22,11 @@
         <span>显示 Logo</span>
         <el-switch v-model="sidebarLogo" class="drawer-switch" />
       </div>
+      
+      <div class="drawer-item">
+        <span>横向菜单</span>
+        <el-switch v-model="menuLayout" class="drawer-switch" />
+      </div>
 
     </div>
   </div>
@@ -69,6 +74,17 @@ export default {
         })
       }
     },
+    menuLayout: {
+      get() {
+        return this.$store.state.settings.menuLayout
+      },
+      set(val) {
+        this.$store.dispatch('settings/changeSetting', {
+          key: 'menuLayout',
+          value: val
+        })
+      }
+    }
   },
   methods: {
     themeChange(val) {

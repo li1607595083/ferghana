@@ -5,10 +5,6 @@
         <el-input v-model="queryParams.variableClassificationName" placeholder="请输入变量分类" clearable size="small"
           @keyup.enter.native="handleQuery" />
       </el-form-item>
-      <el-form-item label="关联数据源表" label-width="100px" prop="sourceDabRelation">
-        <el-input v-model="queryParams.sourceDabRelation" placeholder="请输入关联数据源表" clearable size="small"
-          @keyup.enter.native="handleQuery" />
-      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
         <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
@@ -17,40 +13,62 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" icon="el-icon-plus" size="mini" @click="handleAdd">新增
+        <el-button type="primary" icon="el-icon-plus" size="mini"  v-hasPermi="['variable:classification:add']" @click="handleAdd">新增
         </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="primary" icon="el-icon-edit" size="mini" :disabled="single" @click="handleUpdate">修改
+        <el-button
+          type="primary"
+          icon="el-icon-delete"
+          size="mini"
+          :disabled="multiple"
+          @click="handleDelete"
+          v-hasPermi="['variable:classification:remove']"
+        >批量删除
         </el-button>
       </el-col>
     </el-row>
 
-    <el-table v-loading="loading" :data="classificationList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="classificationList" @selection-change="handleSelectionChange" @row-dblclick="handleDetail">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="变量分类" align="center" prop="variableClassificationName" />
-      <el-table-column label="关联数据源表" align="center" prop="sourceDab" />
-      <el-table-column label="备注" align="center" prop="description" />
-      <el-table-column label="创建时间" align="center" prop="createTime" width="180">
+      <el-table-column label="变量分类名" align="left" prop="variableClassificationName" />
+      <el-table-column label="操作人" align="center"  prop="createBy"/>
+      <el-table-column label="操作时间" align="center" prop="updateTime" >
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.createTime) }}</span>
+          <span>{{ parseTime(scope.row.updateTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="修改时间" align="center" prop="modifyTime" width="180">
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.modifyTime) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
-        <template slot-scope="scope">
-          <el-button size="mini" type="text" icon="el-icon-view" @click="handleDetail(scope.row)">详情
-          </el-button>
-          <el-button size="mini" type="text" icon="el-icon-edit" @click="handleUpdate(scope.row)">修改
-          </el-button>
-          <el-button size="mini" type="text" icon="el-icon-delete" @click="handleDelete(scope.row)">删除
-          </el-button>
-        </template>
-      </el-table-column>
+      <el-table-column
+          label="操作"
+          align="center"
+          width="250"
+          class-name="small-padding fixed-width"
+        >
+          <template slot-scope="scope">
+            <el-button
+              size="mini"
+              type="text"
+              @click="handleDetail(scope.row)"
+              v-hasPermi="['variable:classification:query']"
+            >详情
+            </el-button>
+            <el-button
+              size="mini"
+              type="text"
+              @click="handleUpdate(scope.row)"
+              v-hasPermi="['variable:classification:edit']"
+            >修改
+            </el-button>
+            <el-button
+              v-if="scope.row.userId !== 1"
+              size="mini"
+              type="text"
+              @click="handleDelete(scope.row)"
+              v-hasPermi="['variable:classification:remove']"
+            >删除
+            </el-button>
+          </template>
+        </el-table-column>
     </el-table>
 
     <pagination v-show="total>0" :total="total" :page.sync="queryParams.pageNum" :limit.sync="queryParams.pageSize"
@@ -68,7 +86,7 @@
         <div class="el-col-24">
           <!-- 第一个数据源表 -->
           <el-form-item :label="(sourceTwoDabItem ? '数据源表(一)' : '数据源表')" prop="sourceDabRelation" class="el-col-20">
-            <el-select v-model="form.sourceDabRelation" placeholder="请选择数据源表" @change="sourceDabRelationChange" clearable
+            <el-select v-model="form.sourceDabRelation" placeholder="请选择数据源表" @change="sourceDabRelationChange"
               style="width: 100%" :disabled="detailViem">
               <el-option v-for="data in sourceDataOptions" :key="data.value" :label="data.name" :value="data.value" />
             </el-select>
@@ -88,7 +106,7 @@
 
           <!-- 第二个数据源表 -->
           <el-form-item label="数据源表(二)" :prop="sourceTwoDabItem ? 'sourceTwoDabRelation' : ''" class="el-col-20" v-if="sourceTwoDabItem">
-            <el-select v-model="form.sourceTwoDabRelation" placeholder="请选择数据源表" @change="sourceTwoDabRelationChange" no-data-text="请先选择数据源表(一)" clearable
+            <el-select v-model="form.sourceTwoDabRelation" placeholder="请选择数据源表" @change="sourceTwoDabRelationChange" no-data-text="请先选择数据源表(一)"
               style="width: 100%" :disabled="detailViem">
               <el-option v-for="data in sourceTwoDataOptions" :key="data.value" :label="data.name" :value="data.value" />
             </el-select>
@@ -109,7 +127,7 @@
           <!-- 数据源表关联字段 -->
           <el-form-item label="源表(一)关联字段" :prop="sourceTwoDabItem ? 'sourceRelation.sourceDabField' : ''" class="el-col-12" v-if="sourceTwoDabItem">
             <el-select v-model="form.sourceRelation.sourceDabField" placeholder="请选择源表(一)关联字段" @change="refresh"
-              clearable style="width: 100%" :disabled="detailViem" no-data-text="请先选择源表(一)">
+              style="width: 100%" :disabled="detailViem" no-data-text="请先选择源表(一)">
               <el-option v-for="dict in sourceDabFieldOptions" :key="dict.value" :label="dict.label"
                 :value="dict.value" />
             </el-select>
@@ -125,13 +143,13 @@
 
           <el-form-item label="关联时间范围" class="el-col-24" v-if="sourceTwoDabItem" :rules="[{ required: true}]">
             <el-form-item class="el-col-11" :prop="sourceTwoDabItem ? 'sourceRelation.lowScope' : ''" v-if="sourceTwoDabItem">
-              <el-input type="number" :validate-event="true" :disabled="detailViem" v-model.number="form.sourceRelation.lowScope"></el-input>
+              <el-input-number v-model="form.sourceRelation.lowScope" controls-position="right" :min="0" style="width: 100%;" :validate-event="true" :disabled="detailViem"/>
             </el-form-item>
             <el-form-item class="el-col-2" v-if="sourceTwoDabItem">
               <el-col class="line" style="text-align: center;">-</el-col>
             </el-form-item>
             <el-form-item class="el-col-11" :prop="sourceTwoDabItem ? 'sourceRelation.highScope' : ''" v-if="sourceTwoDabItem">
-              <el-input type="number" validate-event="true" :disabled="detailViem" v-model.number="form.sourceRelation.highScope"></el-input>
+              <el-input-number v-model="form.sourceRelation.highScope" controls-position="right" :min="0" style="width: 100%;" :validate-event="true" :disabled="detailViem"/>
             </el-form-item>
           </el-form-item>
 
@@ -139,17 +157,17 @@
 
         <div v-for="(item, index) in form.dimensionRelation" :key="index">
           <div class="el-col-24">
-            <el-form-item label="关联数据维表" class="el-col-10" :rules="rules.dimensionRelation.dimensionName"
+            <el-form-item label="关联数据维表" class="el-col-10" :rules="(item.sourceDabField == '' && item.dimensionName == '' ? rules.dimensionRelation.dimensionName : rules.dimensionRelationNotNull.dimensionName)"
               :prop="'dimensionRelation.'+index+'.dimensionName'">
               <el-select v-model="item.dimensionName" placeholder="请选择关联数据维表" @change="dimensionDabRelationChange"
-                clearable style="width: 100%" :disabled="detailViem" :id="'label' + index">
+                style="width: 100%" :disabled="detailViem" :id="'label' + index">
                 <el-option v-for="dict in dimensionRelationOptions" :key="dict.value" :label="dict.label"
                   :value="dict.value+','+dict.connectorType+','+index" />
               </el-select>
             </el-form-item>
 
             <el-form-item label="数据源表关联字段" class="el-col-10" v-show="!judgeEs(item.relation)"
-              :rules="(!judgeEs(item.relation) ? rules.dimensionRelation.sourceDabField : 'null')" :prop="'dimensionRelation.'+index+'.sourceDabField'">
+              :rules="judgeEs(item.relation) ? 'null' : (item.sourceDabField == '' && item.dimensionName == '' ? rules.dimensionRelation.sourceDabField : rules.dimensionRelationNotNull.sourceDabField)" :prop="'dimensionRelation.'+index+'.sourceDabField'">
               <el-select v-model="item.sourceDabField" placeholder="请选择关联数据源表字段"
                 @change="sourceDabFieldChange" no-data-text="请先选择数据源表" style="width: 100%"
                 :disabled="detailViem">
@@ -171,7 +189,7 @@
                 <el-button @click="dimensionAddItem" :disabled="detailViem">
                   <i class="el-icon-plus" />
                 </el-button>
-                <el-button @click="dimensionDeleteItem(item, index)" :disabled="detailViem">
+                <el-button @click="dimensionDeleteItem(item, index)" :disabled="detailViem || form.dimensionRelation.length === 1">
                   <i class="el-icon-minus" />
                 </el-button>
               </span>
@@ -182,7 +200,7 @@
           <!-- 不止一项，用div包裹起来 -->
           <div v-for="(relation, index2) in item.relation" :key="index2" class="el-col-24" v-show="item.relation">
 
-            <el-form-item label="数据维表关联字段" class="el-col-9" :rules="rules.dimensionRelation.relation.dimensionDabField"
+            <el-form-item label="数据维表关联字段" class="el-col-9" :rules="(item.dimensionName == '' ? rules.dimensionRelation.relation.dimensionDabField : rules.dimensionRelationNotNull.relation.dimensionDabField)"
               :prop="'dimensionRelation.'+index+'.relation.'+index2+'.dimensionDabField'">
               <el-select v-model="relation.dimensionDabField" placeholder="请选择数据维表关联字段" no-data-text="请先选择数据维表"
                 style="width: 100%" :disabled="detailViem" @change="refresh()">
@@ -191,7 +209,7 @@
               </el-select>
             </el-form-item>
 
-            <el-form-item label="数据源表关联字段" class="el-col-9" :rules="rules.dimensionRelation.relation.sourceDabField"
+            <el-form-item label="数据源表关联字段" class="el-col-9" :rules="(item.dimensionName == '' ? rules.dimensionRelation.relation.sourceDabField : rules.dimensionRelationNotNull.relation.sourceDabField)"
               :prop="'dimensionRelation.'+index+'.relation.'+index2+'.sourceDabField'">
               <el-select v-model="relation.sourceDabField" placeholder="请选择数据源表关联字段" no-data-text="请先选择数据源表"
                 style="width: 100%" :disabled="detailViem" @change="sourceDabFieldChange">
@@ -251,6 +269,7 @@
   import {
     getToken
   } from '@/utils/auth'
+  import {mapGetters} from "vuex";
 
   export default {
     name: "Classification",
@@ -260,6 +279,7 @@
         loading: true,
         // 选中数组
         ids: [],
+        names: undefined,
         // 非单个禁用
         single: true,
         // 非多个禁用
@@ -343,6 +363,30 @@
           },
           dimensionRelation: {
             dimensionName: [{
+              required: false,
+              message: "数据维表不能为空",
+              trigger: "blur"
+            }],
+            sourceDabField: [{
+              required: false,
+              message: "数据源表关联字段不能为空",
+              trigger: "blur"
+            }],
+            relation: {
+              sourceDabField: [{
+                required: false,
+                message: "数据源表关联字段不能为空",
+                trigger: "blur"
+              }],
+              dimensionDabField: [{
+                required: false,
+                message: "数据维表关联字段不能为空",
+                trigger: "blur"
+              }]
+            }
+          },
+          dimensionRelationNotNull: {
+            dimensionName: [{
               required: true,
               message: "数据维表不能为空",
               trigger: "blur"
@@ -370,6 +414,13 @@
     },
     created() {
       this.getList();
+    },
+    // 计算属性
+    computed:{
+      // 登录人的名
+      ...mapGetters([
+        'name'
+      ]),
     },
     watch:{
       sourceTwoDabItem(newVal){
@@ -619,6 +670,7 @@
               });
             }
           }
+          that.$forceUpdate();
         }).catch(resp => {
           console.log('获取数据源表请求失败：' + resp.status + ',' + resp.statusText);
         });
@@ -678,7 +730,7 @@
           sourceTwoDabRelation: undefined,
           description: undefined,
           createTime: undefined,
-          modifyTime: undefined,
+          updateTime: undefined,
           sourceDabField: undefined,
           dimensionRelation: [{
             dimensionName: "",
@@ -710,6 +762,8 @@
       // 多选框选中数据
       handleSelectionChange(selection) {
         this.ids = selection.map(item => item.variableClassificationId);
+        let nameTmp = selection.map(item => item.createBy);
+        this.names = new Set(nameTmp);
         this.single = selection.length !== 1;
         this.multiple = !selection.length
       },
@@ -745,6 +799,11 @@
       },
       /** 修改按钮操作 */
       handleUpdate(row) {
+        // 只有自己能修改
+        if (row.createBy !== this.name){
+          this.$message.error("该数据是"+row.createBy+"创建的，您不能修改！");
+          return false;
+        }
         this.reset();
         this.detailViem = false;
         this.getSourceData();
@@ -753,6 +812,12 @@
         getClassification(variableClassificationId).then(response => {
           this.form = response.data;
           this.form.dimensionRelation = JSON.parse(this.form.dimensionRelation);
+          if(this.form.dimensionRelation.length === 0){
+            this.form.dimensionRelation.push({
+              dimensionName: "",
+              sourceDabField: "",
+            });
+          }
           this.form.sourceRelation = JSON.parse(this.form.sourceRelation);
           if(this.form.sourceTwoDabRelation && this.form.sourceTwoDabRelation !== ""){
             this.sourceTwoDabItem = true;
@@ -775,10 +840,17 @@
       },
       /** 提交按钮 */
       submitForm: function() {
-        console.log(this.form)
         this.refresh();
         this.$refs["form"].validate(valid => {
           if (valid) {
+            // 删除空白数据维表行
+            let temp = this.form.dimensionRelation;
+            for(let i=temp.length-1;i>=0;i--){
+              if(temp[i].dimensionName === "" || temp[i].sourceDabField === ""){
+                this.$delete(temp,i)
+              }
+            }
+            this.form.dimensionRelation = temp;
             if(this.form.sourceRelation && this.form.sourceRelation.lowScope !== "" && this.form.sourceRelation.highScope !== ""){
               if(this.form.sourceRelation.lowScope > this.form.sourceRelation.highScope){
                 let temp = this.form.sourceRelation.lowScope;
@@ -813,6 +885,20 @@
       },
       /** 删除按钮操作 */
       handleDelete(row) {
+
+        // 只有自己能删除
+        if (row.variableClassificationId !== undefined) {
+          if (row.createBy !== this.name) {
+            this.$message.error("该数据为" + row.createBy + "创建，您不能删除！");
+            return false;
+          }
+        } else {
+          if (this.names.size > 1 || !this.names.has(this.name)) {
+            this.$message.error("您只能删除自己创建的数据");
+            return false;
+          }
+        }
+
         const variableClassificationIds = row.variableClassificationId || this.ids;
         this.$confirm('是否确认删除变量分类编号为"' + variableClassificationIds + '"的数据项?', "警告", {
           confirmButtonText: "确定",

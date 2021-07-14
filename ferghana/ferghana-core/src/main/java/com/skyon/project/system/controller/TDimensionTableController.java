@@ -13,6 +13,7 @@ import com.skyon.project.system.domain.TDimensionTable;
 import com.skyon.project.system.service.ITDatasourceFieldService;
 import com.skyon.project.system.service.ITDimensionTableService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,7 +38,7 @@ public class TDimensionTableController extends BaseController {
     /**
      * 查询数据维列表
      */
-//    @PreAuthorize("@ss.hasPermi('system:Dimension:list')")
+    @PreAuthorize("@ss.hasPermi('source:dimension:list')")
     @GetMapping("/list")
     public TableDataInfo list(TDimensionTable tDimensionTable) {
         startPage();
@@ -48,7 +49,6 @@ public class TDimensionTableController extends BaseController {
     /**
      * 查询数据维列表
      */
-//    @PreAuthorize("@ss.hasPermi('system:Dimension:list')")
     @GetMapping("/typeQuery")
     public TableDataInfo typeQueryList() {
         List<Map> maps = tDimensionTableService.selectTDimensionTableListGroupByType();
@@ -150,7 +150,7 @@ public class TDimensionTableController extends BaseController {
     /**
      * 获取数据维详细信息
      */
-//    @PreAuthorize("@ss.hasPermi('system:Dimension:query')")
+    @PreAuthorize("@ss.hasPermi('source:dimension:query')")
     @GetMapping(value = "/{dimensionId}")
     public AjaxResult getInfo(@PathVariable("dimensionId") Long dimensionId) {
         return AjaxResult.success(tDimensionTableService.selectTDimensionTableById(dimensionId));
@@ -159,7 +159,7 @@ public class TDimensionTableController extends BaseController {
     /**
      * 新增数据维
      */
-//    @PreAuthorize("@ss.hasPermi('system:table:add')")
+    @PreAuthorize("@ss.hasPermi('source:dimension:add')")
     @Log(title = "数据维", businessType = BusinessType.INSERT)
     @PostMapping
     @Transactional
@@ -176,7 +176,7 @@ public class TDimensionTableController extends BaseController {
     /**
      * 修改数据维
      */
-//    @PreAuthorize("@ss.hasPermi('system:Dimension:edit')")
+    @PreAuthorize("@ss.hasPermi('source:dimension:edit')")
     @Log(title = "数据维", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@RequestBody TDimensionTable tDimensionTable) {
@@ -192,7 +192,7 @@ public class TDimensionTableController extends BaseController {
     /**
      * 删除数据维
      */
-//    @PreAuthorize("@ss.hasPermi('system:Dimension:remove')")
+    @PreAuthorize("@ss.hasPermi('source:dimension:remove')")
     @Log(title = "数据维", businessType = BusinessType.DELETE)
     @DeleteMapping("/{dimensionIds}")
     @Transactional

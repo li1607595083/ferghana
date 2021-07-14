@@ -1,23 +1,19 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" :inline="true" label-width="68px">
-      <el-form-item label="维度表名称" prop="dimensionNameZH" label-width="90px">
+    <el-form :model="queryParams" ref="queryForm" :inline="true" label-width="90px">
+      <el-form-item label="维表中文名" prop="dimensionNameZH" >
         <el-input v-model="queryParams.dimensionNameZH" placeholder="请输入维度表名称" clearable size="small"
           @keyup.enter.native="handleQuery" />
       </el-form-item>
-      <el-form-item label="维度表名" prop="dimensionName">
+      <el-form-item label="维表英文名" prop="dimensionName">
         <el-input v-model="queryParams.dimensionName" placeholder="请输入维度表名" clearable size="small"
           @keyup.enter.native="handleQuery" />
       </el-form-item>
-      <el-form-item label="连接器类型" prop="connectorType" label-width="90px">
+      <el-form-item label="连接器类型" prop="connectorType" >
         <el-select v-model="queryParams.connectorType" placeholder="请选择连接器类型" clearable size="small">
           <el-option v-for="dict in connectorTypeOptions" :key="dict.dictValue" :label="dict.dictLabel"
             :value="dict.dictValue" />
         </el-select>
-      </el-form-item>
-      <el-form-item label="描述" prop="description">
-        <el-input v-model="queryParams.description" placeholder="请输入描述" clearable size="small"
-          @keyup.enter.native="handleQuery" />
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
@@ -27,42 +23,54 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" icon="el-icon-plus" size="mini" @click="handleAdd">新增
+        <el-button type="primary" icon="el-icon-plus" size="mini"  v-hasPermi="['source:dimension:add']" @click="handleAdd">新增
         </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="primary" icon="el-icon-edit" size="mini" :disabled="single" @click="handleUpdate">修改
-        </el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button type="primary" icon="el-icon-delete" size="mini" :disabled="multiple" @click="handleDelete">删除
+        <el-button type="primary" icon="el-icon-delete" size="mini" :disabled="multiple" v-hasPermi="['source:dimension:remove']" @click="handleDelete">批量删除
         </el-button>
       </el-col>
     </el-row>
 
-    <el-table v-loading="loading" :data="tableList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" width="55" align="center" type="index" />
-      <el-table-column label="维表中文名" align="center" prop="dimensionNameZH" />
-      <el-table-column label="维表英文名" align="center" prop="dimensionName" />
-      <el-table-column label="连接器类型" align="center" prop="connectorType" :formatter="connectorTypeFormat" />
-      <el-table-column label="创建时间" align="center" prop="createTime" width="180">
+    <el-table v-loading="loading" :data="tableList" @selection-change="handleSelectionChange" @row-dblclick="handleDetail">
+      <el-table-column type="selection" width="45" align="center" />
+      <el-table-column label="维表中文名" align="left" prop="dimensionNameZH" />
+      <el-table-column label="维表英文名" align="left" prop="dimensionName" />
+      <el-table-column label="连接器类型" align="left" prop="connectorType" :formatter="connectorTypeFormat" />
+      <el-table-column label="操作人" align="center" width="130" prop="createBy"/>
+      <el-table-column label="操作时间" align="center" prop="updateTime" width="170">
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.createTime) }}</span>
+          <span>{{ parseTime(scope.row.updateTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="修改时间" align="center" prop="modifyTime" width="180">
+      <el-table-column
+        label="操作"
+        align="center"
+        width="250"
+        class-name="small-padding fixed-width"
+      >
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.modifyTime) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
-        <template slot-scope="scope">
-          <el-button size="mini" type="text" icon="el-icon-view" @click="handleDetail(scope.row)">详情
+          <el-button
+            size="mini"
+            type="text"
+            @click="handleDetail(scope.row)"
+            v-hasPermi="['source:dimension:query']"
+          >详情
           </el-button>
-          <el-button size="mini" type="text" icon="el-icon-edit" @click="handleUpdate(scope.row)">修改
+          <el-button
+            size="mini"
+            type="text"
+            @click="handleUpdate(scope.row)"
+            v-hasPermi="['source:dimension:edit']"
+          >修改
           </el-button>
-          <el-button size="mini" type="text" icon="el-icon-delete" @click="handleDelete(scope.row)">删除
+          <el-button
+            v-if="scope.row.userId !== 1"
+            size="mini"
+            type="text"
+            @click="handleDelete(scope.row)"
+            v-hasPermi="['source:dimension:remove']"
+          >删除
           </el-button>
         </template>
       </el-table-column>
@@ -126,12 +134,12 @@
           <el-form-item label="schema" class="el-col-6" :prop="'jdbcDynamicItem.' + index + '.jdbcKey'"
             :rules="rules.jdbcDynamicItem.jdbcKey">
             <el-input v-model="item.jdbcKey" @change="schemaDefineChange('jdbc',index)" placeholder="请输入字段"
-              style="width: 200px" :disabled="item.isUsed === '1'" />
+              style="width: 200px" :disabled="item.isUsed === '1' || detailViem" />
           </el-form-item>
           <el-form-item class="el-col-5 elementStyle" :prop="'jdbcDynamicItem.' + index + '.jdbcType'"
             :rules="rules.jdbcDynamicItem.jdbcType">
             <el-select v-model="item.jdbcType" placeholder="请选择数据类型" clearable style="width: 190px"
-              :disabled="item.isUsed === '1'">
+              :disabled="item.isUsed === '1' || detailViem">
               <el-option v-for="dict in sysDataBaseTypes" :key="dict.dictValue" :label="dict.dictLabel"
                 :value="dict.dictValue" />
             </el-select>
@@ -143,8 +151,8 @@
           <el-form-item class="el-col-2 elementStyle" :prop="'jdbcDynamicItem.' + index + '.primaryKey'">
             <el-input v-model="item.primaryKey" :disabled="detailViem" v-show="false" />
             <el-button @click="primaryKeyCheck(index)" :ref="'ref' + index" :id="'ref' + index"
-              :disabled="item.isUsed === '1'" style="padding: 10px;"
-              :style="{backgroundColor:item.primaryKey !== '' ? '#1890ff' : '#fff',color:item.primaryKey !== '' ? '#fff' : '#C0C4CC',}">
+              :disabled="item.isUsed === '1' || detailViem" style="padding: 10px;"
+              :style="{backgroundColor:(item.primaryKey !== '')  ? '#1890ff' : '#fff',color:(item.primaryKey !== '') ? '#fff' : '#C0C4CC',}">
               主键
             </el-button>
           </el-form-item>
@@ -153,7 +161,7 @@
               <el-button @click="jdbcAddItem" :disabled="detailViem">
                 <i class="el-icon-plus" />
               </el-button>
-              <el-button @click="jdbcDeleteItem(item, index)" :disabled="item.isUsed === '1'">
+              <el-button @click="jdbcDeleteItem(item, index)" :disabled="item.isUsed === '1' || detailViem || form.jdbcDynamicItem === 1">
                 <i class="el-icon-minus" />
               </el-button>
             </span>
@@ -222,7 +230,7 @@
               <el-button @click="hbaseAddItem(item,index)" :disabled="detailViem">
                 <i class="el-icon-plus" />增加列族
               </el-button>
-              <el-button @click="hbaseDeleteItem(item, index)" :disabled="detailViem">
+              <el-button @click="hbaseDeleteItem(item, index)" :disabled="detailViem || form.hbaseItem.length === 1">
                 <i class="el-icon-minus" />删除列族
               </el-button>
             </el-form-item>
@@ -260,7 +268,7 @@
                   <el-button @click="hbaseAddDynamicItem(index, item2, index2)" :disabled="detailViem">
                     <i class="el-icon-plus" />
                   </el-button>
-                  <el-button @click="hbaseDeleteDynamicItem(index, item2, index2)" :disabled="detailViem">
+                  <el-button @click="hbaseDeleteDynamicItem(index, item2, index2)" :disabled="detailViem || form.hbaseItem[index].div2.hbaseDynamicItem.length === 1">
                     <i class="el-icon-minus" />
                   </el-button>
                 </span>
@@ -294,6 +302,7 @@
     isHbaseName,
     unContainSpace
   } from "@/utils/validate.js";
+  import {mapGetters} from "vuex";
 
   export default {
     name: "Dimension",
@@ -303,6 +312,7 @@
         loading: true,
         // 选中数组
         ids: [],
+        names: undefined,
         // 非单个禁用
         single: true,
         // 非多个禁用
@@ -572,15 +582,25 @@
         this.sysDataBaseTypes = response.data;
       });
     },
+    // 计算属性
+    computed:{
+      // 登录人的名
+      ...mapGetters([
+        'name'
+      ]),
+    },
     methods: {
       schemaDefineChange(type, index) {
-        if (this.form.jdbcDynamicItem[index].primaryKey !== "" && type === "jdnc") {
-          this.form.jdbcDynamicItem[index].primaryKey = this.form.jdbcDynamicItem[index].jdbcKey;
-          this.form.jdbcPrimaryKey = this.form.jdbcDynamicItem[index].jdbcKey;
-        }
-        if (this.form.esDynamicItem[index].primaryKey !== "" && type === "es") {
-          this.form.esDynamicItem[index].primaryKey = this.form.esDynamicItem[index].esKey;
-          this.form.esPrimaryKey = this.form.esDynamicItem[index].esKey;
+        if (type === 'jdbc') {
+          if (this.form.jdbcDynamicItem[index].primaryKey !== '') {
+            this.form.jdbcDynamicItem[index].primaryKey = this.form.jdbcDynamicItem[index].jdbcKey
+            this.form.jdbcPrimaryKey = this.form.jdbcDynamicItem[index].jdbcKey
+          }
+        } else if (type === 'es') {
+          if (this.form.esDynamicItem[index].primaryKey !== '') {
+            this.form.esDynamicItem[index].primaryKey = this.form.esDynamicItem[index].esKey
+            this.form.esPrimaryKey = this.form.esDynamicItem[index].esKey
+          }
         }
       },
       // redis增加行
@@ -987,7 +1007,7 @@
           zookeeperAddress: undefined,
           rowkey: undefined,
           createTime: undefined,
-          modifyTime: undefined,
+          updateTime: undefined,
           hbaseSchemaDefine: undefined,
           dimensionNameZH: undefined,
           jdbcDynamicItem: [{
@@ -1041,6 +1061,8 @@
       // 多选框选中数据
       handleSelectionChange(selection) {
         this.ids = selection.map(item => item.dimensionId)
+        let nameTmp = selection.map(item => item.createBy);
+        this.names = new Set(nameTmp);
         this.single = selection.length !== 1
         this.multiple = !selection.length
       },
@@ -1096,11 +1118,18 @@
       },
       /** 修改按钮操作 */
       handleUpdate(row) {
+        // 只有自己能修改
+        if (row.createBy !== this.name){
+          this.$message.error("该数据是"+row.createBy+"创建的，您不能修改！");
+          return false;
+        }
         // this.reset();
         this.detailViem = false;
         const dimensionId = row.dimensionId || this.ids;
         getDimension(dimensionId).then(response => {
           this.form = response.data;
+          console.log("----sss");
+          console.log(this.form);
           if (this.form.connectorType === "01") {
             this.redisCheck();
           } else if (this.form.connectorType === "02") {
@@ -1140,9 +1169,6 @@
                 this.form.dimensionName = "";
               }
               if (this.form.connectorType === "02") {
-                for (let i = 0; i < this.form.jdbcDynamicItem.length; i++) {
-                  this.$delete(this.form.jdbcDynamicItem[i], "primaryKey");
-                }
                 this.form.schemaDefine = JSON.stringify(this.form.jdbcDynamicItem);
               }
               if (this.form.connectorType === "03") {
@@ -1154,6 +1180,8 @@
               if (this.form.connectorType === "05") {
                 this.form.schemaDefine = JSON.stringify(this.form.esDynamicItem);
               }
+              console.log("---sss");
+              console.log(this.form);
               updateDimension(this.form).then(response => {
                 if (response.code === 200) {
                   this.msgSuccess("修改成功");
@@ -1169,10 +1197,6 @@
                 this.form.dimensionName = "";
               }
               if (this.form.connectorType === "02") {
-                // primaryKey
-                for (let i = 0; i < this.form.jdbcDynamicItem.length; i++) {
-                  this.$delete(this.form.jdbcDynamicItem[i], "primaryKey");
-                }
                 this.form.schemaDefine = JSON.stringify(this.form.jdbcDynamicItem);
               }
               if (this.form.connectorType === "03") {
@@ -1201,6 +1225,20 @@
 
       /** 删除按钮操作 */
       handleDelete(row) {
+
+        // 只有自己能删除
+        if (row.dimensionId !== undefined) {
+          if (row.createBy !== this.name) {
+            this.$message.error("该数据为" + row.createBy + "创建，您不能删除！");
+            return false;
+          }
+        } else {
+          if (this.names.size > 1 || !this.names.has(this.name)) {
+            this.$message.error("您只能删除自己创建的数据");
+            return false;
+          }
+        }
+
         const dimensionIds = row.dimensionId || this.ids;
         this.$confirm('是否确认删除该数据维表?', "警告", {
           confirmButtonText: "确定",

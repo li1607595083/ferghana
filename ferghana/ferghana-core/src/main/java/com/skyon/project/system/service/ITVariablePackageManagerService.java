@@ -81,11 +81,20 @@ public interface ITVariablePackageManagerService {
 
     public String[] joinPath(Map map, TVariablePackageManager pkManager, List<TVariableCenter> variableListByIds);
 
+
+    // 组装oracle测试参数
+    public String[] joinOraclePath(TVariablePackageManager pkManager);
+
+
+
     // 获取结果
     public List getTestResult(Object jobId);
 
     // test
     public List testRun(String paramJsonString);
+
+    // 组装mysql测试参数
+    public String[] joinMysqlPath(Map map, TVariablePackageManager pkManager);
 
     // 组装测试参数
     public String variableTest(TVariablePackageManager pk, Map map, List<TVariableCenter> variableListByIds, String runFlag, String millis);

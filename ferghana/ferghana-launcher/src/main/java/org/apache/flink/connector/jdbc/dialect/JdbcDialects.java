@@ -16,7 +16,12 @@
  * limitations under the License.
  */
 
-package org.apache.flink.connector.jdbc.dialect;
+package org_change.org.apache.flink.connector.jdbc.dialect;
+
+import org.apache.flink.connector.jdbc.dialect.DerbyDialect;
+import org.apache.flink.connector.jdbc.dialect.JdbcDialect;
+import org.apache.flink.connector.jdbc.dialect.MySQLDialect;
+import org.apache.flink.connector.jdbc.dialect.PostgresDialect;
 
 import java.util.Arrays;
 import java.util.List;

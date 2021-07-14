@@ -14,8 +14,13 @@
         <result property="sourceRelation"    column="source_relation"    />
         <result property="description"    column="description"    />
         <result property="createTime"    column="create_time"    />
-        <result property="modifyTime"    column="modify_time"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateId"    column="update_id"    />
+<!--        关联字段 -->
         <result property="schemaDefine"    column="schema_define"    />
+        <result property="connectorType"    column="connector_type"    />
     </resultMap>
 
     <resultMap id="schemaPrimaryKey" type="java.util.Map">
@@ -39,14 +44,17 @@
 
     <sql id="selectTVariableClassificationVo">
         select variable_classification_id, variable_classification_name, source_dab_relation, source_two_dab_relation, source_dab_field,dimension_relation,source_relation,
-               d.description, d.create_time, d.modify_time,t.schema_define
-        from t_variable_classification d
-                 left join t_data_source t on d.source_dab_relation = t.table_name
+               t.description, t.create_time, t.update_time,t.create_by,t.create_id,t.update_by,s.schema_define,s.connector_type
+        from t_variable_classification t
+                 left join t_data_source s on t.source_dab_relation = s.table_name
     </sql>
 
     <sql id="selectSchemaPrimaryKey">
-        SELECT d.schema_primary_key,t.schema_primary_key as schema_two_primary_key,d.create_table_sql,t.create_table_sql as create_table_two_sql,d.table_name,t.table_name as table_two_name,
-               s.source_dab_field,s.dimension_relation,s.source_dab_relation,s.source_two_dab_relation,s.source_relation,d.water_mark_time,t.water_mark_time as water_mark_two_time,d.water_mark_name,t.water_mark_name as water_mark_two_name FROM ( t_variable_classification s LEFT JOIN t_data_source d ON s.source_dab_relation = d.table_name )
+        SELECT d.schema_primary_key,t.schema_primary_key as schema_two_primary_key,d.create_table_sql,
+        t.create_table_sql as create_table_two_sql,d.table_name,t.table_name as table_two_name,d.schema_define as schemaDefine,
+               s.source_dab_field,s.dimension_relation,s.source_dab_relation,s.source_two_dab_relation,
+               s.source_relation,d.water_mark_time,t.water_mark_time as water_mark_two_time,d.water_mark_name,
+               t.water_mark_name as water_mark_two_name FROM ( t_variable_classification s LEFT JOIN t_data_source d ON s.source_dab_relation = d.table_name )
                    LEFT JOIN t_data_source t ON s.source_two_dab_relation = t.table_name
     </sql>
 
@@ -61,6 +69,7 @@
             <if test="variableClassificationName != null  and variableClassificationName != ''"> and variable_classification_name like concat('%', #{variableClassificationName}, '%')</if>
             <if test="sourceDabRelation != null  and sourceDabRelation != ''"> and source_dab_relation = #{sourceDabRelation}</if>
             <if test="description != null  and description != ''"> and description like concat('%', #{description}, '%')</if>
+            <if test="dataScope != null and dataScope != ''"> ${dataScope}</if>
         </where>
         order by create_time desc
     </select>
@@ -80,8 +89,10 @@
             <if test="sourceDabField != null  and sourceDabField != ''">source_dab_field,</if>
             <if test="dimensionRelation != null  and dimensionRelation != ''">dimension_relation,</if>
             <if test="sourceRelation != null  and sourceRelation != ''">source_relation,</if>
-            <if test="createTime != null ">create_time,</if>
-            <if test="modifyTime != null ">modify_time,</if>
+            <if test="createBy != null ">create_by,</if>
+            <if test="createId != null ">create_id,</if>
+            create_time,
+            update_time
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="variableClassificationName != null  and variableClassificationName != ''">#{variableClassificationName},</if>
@@ -91,8 +102,10 @@
             <if test="sourceDabField != null  and sourceDabField != ''">#{sourceDabField},</if>
             <if test="dimensionRelation != null  and dimensionRelation != ''">#{dimensionRelation},</if>
             <if test="sourceRelation != null  and sourceRelation != ''">#{sourceRelation},</if>
-            <if test="createTime != null ">#{createTime},</if>
-            <if test="modifyTime != null ">#{modifyTime},</if>
+            <if test="createBy != null ">#{createBy},</if>
+            <if test="createId != null ">#{createId},</if>
+            sysdate(),
+            sysdate()
         </trim>
     </insert>
 
@@ -106,8 +119,9 @@
             <if test="sourceDabField != null">source_Dab_Field = #{sourceDabField},</if>
             <if test="dimensionRelation != null">dimension_Relation = #{dimensionRelation},</if>
             <if test="sourceRelation != null">source_Relation = #{sourceRelation},</if>
-            <if test="createTime != null ">create_time = #{createTime},</if>
-            <if test="modifyTime != null ">modify_time = #{modifyTime},</if>
+            <if test="updateBy != null ">update_by = #{updateBy},</if>
+            update_time=sysdate()
+
         </trim>
         where variable_classification_id = #{variableClassificationId}
     </update>
