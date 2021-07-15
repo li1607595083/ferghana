@@ -315,7 +315,17 @@ public class AppPerFormOperations {
      */
     private String addTimeField(String s){
         String[] split = s.trim().split("\\s+", 2);
-        return split[0] + " " + properties.getProperty(ParameterName.WATERMARK).split("[|]")[0] + "," + split[1];
+        boolean flag = false;
+        for (String field : split[1].replaceAll("from", "FROM").split("FROM")[0].split(",")) {
+            if (field.trim().equals(properties.getProperty(ParameterName.WATERMARK).split("[|]")[0].trim())){
+                flag = true;
+            }
+        }
+        if (!flag){
+            return split[0] + " " + properties.getProperty(ParameterName.WATERMARK).split("[|]")[0] + "," + split[1];
+        } else {
+            return s;
+        }
     }
 
 
