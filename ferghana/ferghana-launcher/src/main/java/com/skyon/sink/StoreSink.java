@@ -37,8 +37,6 @@ public class StoreSink {
     private String selesql;
     /*Result table creation statement*/
     private String resultTable;
-    // 测流输出表
-    private String sideOutputTable;
     /*parameter configuration*/
     private Properties properties;
     /*table execution environment*/
@@ -53,8 +51,10 @@ public class StoreSink {
         this.dbTableEnv =  dbTableEnv;
         this.nt = new LinkedHashMap<>();
         this.indexfieldNameAndType = indexfieldNameAndType;
-        initPre(properties.getProperty("sinkSql"));
-        getSchemaAndTable();
+        if (RunMode.START_MODE.equals(properties.getProperty(ParameterName.RUM_MODE))){
+            initPre(properties.getProperty(ParameterName.SINK_SQL));
+            getSchemaAndTable();
+        }
     }
 
     /**
@@ -68,9 +68,6 @@ public class StoreSink {
         resultTable = "CREATE TABLE " +  rstbname +" (";
         if (properties.getProperty(ParameterName.SINK_TYPE).equals(SinkType.SINK_HBASE)){
             resultTable = "CREATE TABLE " +  rstbname.split(":")[1] +" (";
-        }
-        if (RunMode.TEST_MODE.equals(properties.getProperty(ParameterName.RUM_MODE))){
-            sideOutputTable = "CREATE TABLE " +  "sink_" + properties.getProperty(ParameterName.TEST_TOPIC_NAME) +" (";
         }
     }
 
@@ -115,9 +112,6 @@ public class StoreSink {
                 fieldType = indexfieldNameAndType.getOrDefault(fieldName, fieldType);
             }
             resultTable = resultTable + fieldName + " " + fieldType  + ",";
-            if (RunMode.TEST_MODE.equals(properties.getProperty(ParameterName.RUM_MODE))){
-                sideOutputTable = sideOutputTable + fieldName + fieldType + ",";
-            }
             nt.put(fieldName, fieldType);
         }
         if (selesql.contains("ROW")){
@@ -132,50 +126,38 @@ public class StoreSink {
      * To sink to an external storage system(Hbase, JDBC，ES)
      * @throws Exception
      */
-    public void sinkTable(Boolean sideOut) throws Exception {
-        SingleOutputStreamOperator<String> stringDataStream;
-        StatementSet statementSet = dbTableEnv.createStatementSet();
-        if (sideOut){
-            stringDataStream = resultSideOut(statementSet);
-        } else {
-            stringDataStream = resultToString(rstbname, ParameterName.SINK_SQL);
-        }
-        String outputSql = "INSERT INTO " + rstbname + " SELECT * FROM result_table";
-        DataStreamToTable.registerTable(dbTableEnv, stringDataStream,"result_table", false, nt);
-        if (properties.getProperty(ParameterName.SINK_TYPE).equals(SinkType.SINK_KAFKA)) {
+    public void sinkTable() throws Exception {
+        if (RunMode.TEST_MODE.equals(properties.getProperty(ParameterName.RUM_MODE))){
             createOutPutTopic();
-            dbTableEnv.executeSql(getKafkaCreateTable());
-            statementSet.addInsertSql(outputSql).execute();
-            //sinkKafa(stringDataStream);
-        } else if (properties.getProperty(ParameterName.SINK_TYPE).equals(SinkType.SINK_JDBC)) {
-            String type = getMySqlCreateTable();
-            StoreUtils storeUtils = StoreUtils.of(resultTable);
-            Tuple3<HashMap<String, String>, ArrayList<String>, String> tableSchema = storeUtils.getTableSchema(type);
-            storeUtils.createOrUpdateJdbcTable(rstbname, Tuple2.of(tableSchema.f0,tableSchema.f2),type);
-            sinkJdbc(stringDataStream);
-        } else if (properties.getProperty(ParameterName.SINK_TYPE).equals(SinkType.SINK_HBASE)) {
-            getHbaseCreateTable();
-            StoreUtils storeUtils1 = StoreUtils.of(resultTable);
-            storeUtils1.createOrUpdateHbaseTABLE();
-            sinkHbase(stringDataStream);
-        }  else {
-            String esAddress = getEsCreateTable();
-            StoreUtils.of(resultTable).createIndexWithMappings();
-            sinkEs(stringDataStream, esAddress, rstbname);
+            testResultOutput();
+        } else {
+            SingleOutputStreamOperator<String> stringDataStream = resultToString(rstbname, ParameterName.SINK_SQL);
+            String outputSql = "INSERT INTO " + rstbname + " SELECT * FROM result_table";
+            DataStreamToTable.registerTable(dbTableEnv, stringDataStream,"result_table", false, nt);
+            if (properties.getProperty(ParameterName.SINK_TYPE).equals(SinkType.SINK_KAFKA)) {
+                createOutPutTopic();
+                getKafkaCreateTable();
+            } else if (properties.getProperty(ParameterName.SINK_TYPE).equals(SinkType.SINK_JDBC)) {
+                String type = getMySqlCreateTable();
+                StoreUtils storeUtils = StoreUtils.of(resultTable);
+                Tuple3<HashMap<String, String>, ArrayList<String>, String> tableSchema = storeUtils.getTableSchema(type);
+                storeUtils.createOrUpdateJdbcTable(rstbname, Tuple2.of(tableSchema.f0,tableSchema.f2),type);
+            } else if (properties.getProperty(ParameterName.SINK_TYPE).equals(SinkType.SINK_HBASE)) {
+                getHbaseCreateTable();
+                StoreUtils.of(resultTable).createOrUpdateHbaseTABLE();
+            }  else {
+                getEsCreateTable();
+                StoreUtils.of(resultTable).createIndexWithMappings();
             }
+            dbTableEnv.executeSql(resultTable);
+            dbTableEnv.createStatementSet().addInsertSql(outputSql).execute();
+        }
     }
 
-    private String getEsCreateTable() {
+    private void getEsCreateTable() {
         String esAddr = "";
-        String esAddress;
-        if (RunMode.START_MODE.equals(properties.getProperty(ParameterName.RUM_MODE))){
-        esAddress = properties.getProperty(ParameterName.ES_ADDRESS);
-        } else {
-        esAddress = properties.getProperty(ParameterName.TEST_ES_ADDRESS);
-        }
-        for (String addr : esAddress.split(",")) {
-            addr = "http://" + addr;
-            esAddr = esAddr + addr + ";";
+        for (String addr : properties.getProperty(ParameterName.ES_ADDRESS).split(",")) {
+            esAddr = "http://" + addr  + ";";
         }
         esAddr = esAddr.substring(0, esAddr.length() - 1);
         resultTable = resultTable + "PRIMARY KEY  (" + properties.getProperty(ParameterName.SOURCE_PRIMARY_KEY) + ") NOT ENFORCED"
@@ -184,7 +166,6 @@ public class StoreSink {
                 + "'hosts' = '" + esAddr + "',"
                 + "'index' = '" + rstbname + "'"
                 + ")";
-        return esAddress;
     }
 
     public SingleOutputStreamOperator<String> resultToString(String resultTable, String uidPrefix) {
@@ -194,46 +175,28 @@ public class StoreSink {
                 .map(FunMapValueMoveTypeAndFieldNmae.of(table.getSchema().getFieldNames()));
     }
 
-    private SingleOutputStreamOperator<String> resultSideOut(StatementSet statementSet) {
-        SingleOutputStreamOperator<String> stringDataStream;
-        DataStream<String> splitDataStream = resultToString(selesql, "sinkSql");
-        OutputTag<String> outputTag = new OutputTag<String>(ParameterValue.SIDE_OUTPUT, Types.STRING){};
-        stringDataStream = splitDataStream.process(new ProcessFunction<String, String>() {
-            @Override
-            public void processElement(String value, Context ctx, Collector<String> out) throws Exception {
-                out.collect(value);
-                ctx.output(outputTag, value);
-            }
-        });
-        DataStream<String> sideOutput = stringDataStream.getSideOutput(outputTag);
-        String sideOutputSql = "INSERT INTO " + "sink_" + properties.getProperty(ParameterName.TEST_TOPIC_NAME) + " SELECT * FROM sideout_result_table";
-        DataStreamToTable.registerTable(dbTableEnv, sideOutput,"sideout_result_table", false, nt);
-        dbTableEnv.executeSql(getSideOutputCreateTable());
-        statementSet.addInsertSql(sideOutputSql);
-//        sideOutput.addSink(KafkaSink.untransaction(properties.getProperty(ParameterName.TEST_TOPIC_NAME), properties.getProperty(ParameterName.TEST_BROKER_LIST)));
-        return stringDataStream;
+    public SingleOutputStreamOperator<String> resultToString() {
+        Table table = dbTableEnv.sqlQuery(selesql);
+        return dbTableEnv.toAppendStream(table, Row.class)
+                .map(FunMapValueMoveTypeAndFieldNmae.of(table.getSchema().getFieldNames()));
+    }
+
+    private void testResultOutput() {
+        DataStream<String> testResultDataStream = resultToString();
+        testResultDataStream.addSink(KafkaSink.untransaction(properties.getProperty(ParameterName.TEST_TOPIC_NAME), properties.getProperty(ParameterName.TEST_BROKER_LIST)));
     }
 
     private void getHbaseCreateTable() {
-        if (RunMode.START_MODE.equals(properties.getProperty(ParameterName.RUM_MODE))){
             resultTable = resultTable + " PRIMARY KEY  (" + properties.getProperty(ParameterName.SOURCE_PRIMARY_KEY) + ") NOT ENFORCED"
                     + ") WITH ("
                     + "'connector' = 'hbase-1.4',"
                     + "'table-name' = '" + rstbname + "',"
                     + "'zookeeper.quorum' = '" + properties.getProperty(ParameterName.HBASE_ZK) + "'"
                     + ")";
-        } else {
-            resultTable =  resultTable + " PRIMARY KEY  (" + properties.getProperty(ParameterName.SOURCE_PRIMARY_KEY) + ") NOT ENFORCED"
-                    + ") WITH ("
-                    + "'connector' = 'hbase-1.4',"
-                    + "'table-name' = '"  + rstbname + "',"
-                    + "'zookeeper.quorum' = '" + properties.getProperty(ParameterName.TEST_ZK) + "'"
-                    + ")";
-        }
     }
 
-    private String getSideOutputCreateTable(){
-        return removeTailLastSpecialSymbol(sideOutputTable,",", false)
+    private String getTestOutputCreateTable(){
+        return removeTailLastSpecialSymbol(resultTable,",", false)
                 + ") WITH ("
                 + "'connector' = 'kafka-0.11',"
                 + "'topic' = '" + properties.getProperty(ParameterName.TEST_TOPIC_NAME) + "',"
@@ -243,8 +206,7 @@ public class StoreSink {
                 + ")";
     }
 
-    private String getKafkaCreateTable(){
-        if (RunMode.START_MODE.equals(properties.getProperty(ParameterName.RUM_MODE))){
+    private void getKafkaCreateTable(){
             resultTable = removeTailLastSpecialSymbol(resultTable,",", false)
                     + ") WITH ("
                     + "'connector' = 'kafka-0.11',"
@@ -253,17 +215,6 @@ public class StoreSink {
                     + "'properties.group.id' = '" + "gp_" + rstbname + "',"
                     + "'format' = 'json'"
                     + ")";
-        } else {
-            resultTable = resultTable
-                    + ") WITH ("
-                    + "'connector' = 'kafka-0.11',"
-                    + "'topic' = '" + rstbname + "',"
-                    + "'properties.bootstrap.servers' = '" + properties.getProperty(ParameterName.TEST_BROKER_LIST) + "'"
-                    + "'properties.group.id' = '" + "gp_" + rstbname + "',"
-                    + "'format' = 'json'"
-                    + ")";
-        }
-        return resultTable;
     }
 
     private String getMySqlCreateTable() {
@@ -271,39 +222,15 @@ public class StoreSink {
         if (properties.getProperty(ParameterName.JDBC_DRIVER).startsWith("oracle.jdbc")){
             type = SinkType.SINK_JDBC_ORACLE;
         }
-        if (RunMode.START_MODE.equals(properties.getProperty(ParameterName.RUM_MODE))){
-            resultTable = resultTable + "PRIMARY KEY (" + properties.getProperty(ParameterName.SOURCE_PRIMARY_KEY) + ") NOT ENFORCED"
-                    + ") WITH ("
-                    + "'connector' = 'jdbc',"
-                    + "'url' = '" + properties.getProperty(ParameterName.JDBC_URL) + "',"
-                    + "'table-name' = '" + rstbname + "',"
-                    + "'username' = '" + properties.getProperty(ParameterName.JDBC_USER_NAME) + "',"
-                    + "'password' = '" + properties.getProperty(ParameterName.JDBC_USER_PWD) + "',"
-                    + "'driver' = '" + properties.getProperty(ParameterName.JDBC_DRIVER) + "'"
-                    + ")";
-        } else {
-            if ("oracle".equals(type)){
-                resultTable = resultTable + "PRIMARY KEY (" + properties.getProperty(ParameterName.SOURCE_PRIMARY_KEY) + ") NOT ENFORCED"
-                        + ") WITH ("
-                        + "'connector' = 'jdbc',"
-                        + "'url' = '" + properties.getProperty(ParameterName.TEST_ORACLE_DIM_URL) + "',"
-                        + "'table-name' = '"  + rstbname + "',"
-                        + "'username' = '" + properties.getProperty(ParameterName.TEST_ORACLE_USERNAME) + "',"
-                        + "'password' = '" + properties.getProperty(ParameterName.TEST_ORACLE_PASSWORD) + "',"
-                        + "'driver' = '" + properties.getProperty(ParameterName.TEST_ORACLE_DRIVER) + "'"
-                        + ")";
-            } else {
-                resultTable = resultTable + "PRIMARY KEY (" + properties.getProperty(ParameterName.SOURCE_PRIMARY_KEY) + ") NOT ENFORCED"
-                        + ") WITH ("
-                        + "'connector' = 'jdbc',"
-                        + "'url' = '" + properties.getProperty(ParameterName.TEST_MYSQL_DIM_URL) + "',"
-                        + "'table-name' = '" + rstbname + "',"
-                        + "'username' = '" + properties.getProperty(ParameterName.TEST_USER_NAME) + "',"
-                        + "'password' = '" + properties.getProperty(ParameterName.TEST_PASSWORD) + "',"
-                        + "'driver' = '" + properties.getProperty(ParameterName.TEST_DRIVER) + "'"
-                        + ")";
-            }
-        }
+        resultTable = resultTable + "PRIMARY KEY (" + properties.getProperty(ParameterName.SOURCE_PRIMARY_KEY) + ") NOT ENFORCED"
+                + ") WITH ("
+                + "'connector' = 'jdbc',"
+                + "'url' = '" + properties.getProperty(ParameterName.JDBC_URL) + "',"
+                + "'table-name' = '" + rstbname + "',"
+                + "'username' = '" + properties.getProperty(ParameterName.JDBC_USER_NAME) + "',"
+                + "'password' = '" + properties.getProperty(ParameterName.JDBC_USER_PWD) + "',"
+                + "'driver' = '" + properties.getProperty(ParameterName.JDBC_DRIVER) + "'"
+                + ")";
         return type;
     }
 

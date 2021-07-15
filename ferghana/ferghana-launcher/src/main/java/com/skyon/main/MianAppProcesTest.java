@@ -59,7 +59,7 @@ public class MianAppProcesTest {
         } else if (properties.getProperty(ParameterName.SOURCE_TYPE).equals(SourceType.MYSQL_CDC)){
             appOneStreamOver.cdcMySqlAsyncResult();
         }
-        if (properties.getProperty(ParameterName.SINK_SQL) == null && RunMode.TEST_MODE.equals(properties.getProperty(ParameterName.RUM_MODE))){
+        if (RunMode.TEST_MODE.equals(properties.getProperty(ParameterName.RUM_MODE))){
             dbEnv.execute("test");
         }
     }

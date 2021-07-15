@@ -1,1 +1,2 @@
 org.apache.flink.streaming.connectors.kafka.table.Kafka011DynamicTableFactory
+com.alibaba.ververica.cdc.connectors.mysql.table.MySQLTableSourceFactory

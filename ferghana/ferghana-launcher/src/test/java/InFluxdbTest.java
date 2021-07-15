@@ -19,14 +19,14 @@ public class InFluxdbTest {
 
     InfluxDB influxdbConnection;
 
-//    @Before
+    @Before
     public  void getInfluxdbConnection(){
         influxdbConnection =  InfluxDBFactory.connect("http://192.168.4.95:8086", "ferghana", "Ferghana@1234");
     }
 
-//    @Test
+    @Test
     public  void  query() throws ParseException {
-        String job_id = "9653274bf73419a2a91e57fb66b3c0fb";
+        String job_id = "5f0a8c37de2df8a4691d2143c8120199";
         // metric reporter 时间间隔
         int reportInterval =  1;
         // 检查时间范围
@@ -352,7 +352,7 @@ public class InFluxdbTest {
        return result.getSeries().stream().map(QueryResult.Series::getValues).collect(Collectors.toList()).get(0);
     }
 
-//    @After
+    @After
     public void close () {
         if (influxdbConnection != null) {
             influxdbConnection.close();
