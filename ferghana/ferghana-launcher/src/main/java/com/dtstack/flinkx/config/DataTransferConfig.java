@@ -141,6 +141,7 @@ public class DataTransferConfig extends AbstractConfig {
         }
         newcat.substring(0,newcat.length() - 2);
         parameter.put("cat",newcat);
+        parameter.put("pavingData",true);
 
         Map log = new LinkedTreeMap();
         log.put("isLogger",false);
