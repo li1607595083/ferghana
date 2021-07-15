@@ -133,7 +133,7 @@ public class AppPerFormOperations {
             KafkaUtils.clostZkUtils(zkUtils);
             if (properties.getProperty(ParameterName.SINK_SQL) != null){
                 DataStreamToTable.registerTable(dbTableEnv,result.f0, properties.getProperty(ParameterName.MIDDLE_TABLE_NAME), true,result.f1);
-                sink(result.f1,true);
+                sink(result.f1);
             } else if (properties.getProperty(ParameterName.DEVARIABLE_SQLS) != null){
                 DataStreamToTable.registerTable(dbTableEnv,result.f0,properties.getProperty(ParameterName.MIDDLE_TABLE_NAME), true,result.f1);
                 SingleOutputStreamOperator<String> singleOutputStreamOperator = resultToString(properties.getProperty(ParameterName.DECISION_SQL), ParameterName.DECISION_SQL);
@@ -153,7 +153,7 @@ public class AppPerFormOperations {
         if (RunMode.START_MODE.equals(properties.getProperty(ParameterName.RUM_MODE)) && properties.getProperty(ParameterName.SINK_SQL) != null){
             // 将拼接后的值再注册成一张表，用于后续的决策引擎使用
             DataStreamToTable.registerTable(dbTableEnv,result.f0,properties.getProperty(ParameterName.MIDDLE_TABLE_NAME), true, result.f1);
-            sink(result.f1,false);
+            sink(result.f1);
         }
     }
 
@@ -165,19 +165,19 @@ public class AppPerFormOperations {
         schema.put(ParameterValue.CDC_TYPE, "STRING");
         // 筛选所需要的同步类型数据(新增,更新，删除)，添加数据类型字段
         SingleOutputStreamOperator<String> data_deal = dbTableEnv.toRetractStream(table, Row.class)
-                .map(FunMapCdcAddType.of((String[]) schema.keySet().toArray(), properties.getProperty(ParameterName.CDC_ROW_KIND)))
+                .map(FunMapCdcAddType.of(table.getSchema().getFieldNames(), properties.getProperty(ParameterName.CDC_ROW_KIND)))
                 .filter(Objects::nonNull);
         DataStreamToTable.registerTable(dbTableEnv,data_deal,properties.getProperty(ParameterName.MIDDLE_TABLE_NAME),false,schema);
-        sink(new HashMap<>(),false);
+        sink(new HashMap<>());
     }
 
     /**
      * The data base(sink)
      * @throws Exception
      */
-    private void sink(HashMap<String, String> indexfieldNameAndType, Boolean sideOut) throws Exception {
+    private void sink(HashMap<String, String> indexfieldNameAndType) throws Exception {
         StoreSink storeSink = new StoreSink(dbTableEnv, properties, indexfieldNameAndType);
-        storeSink.sinkTable(sideOut);
+        storeSink.sinkTable();
     }
 
 

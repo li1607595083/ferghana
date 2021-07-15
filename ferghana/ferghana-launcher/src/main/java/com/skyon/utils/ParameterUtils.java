@@ -80,13 +80,7 @@ public class ParameterUtils {
             StringBuilder stringBuilder = new StringBuilder();
             // 注意，测试模式统一使用使用测试环境;
             String before = removeTailFirstSpecialSymbol(sinkSql, "(", true);
-            // 如果是测试模式，需要修改输出的表名;
-            if (properties.getProperty(ParameterName.RUM_MODE).equals(RunMode.TEST_MODE)){
-                String[] split = before.split("\\s+");
-                stringBuilder.append(split[0] + " " + split[1] + " " + "sink_" + split[2]);
-            } else {
-                stringBuilder.append(before);
-            }
+            stringBuilder.append(before);
             // eg: INSERT INTO index_table1(SELECT name, age, count, id FROM tmp_table);
             // 其中 id 是主键，需要进行位置调整，放到首位；
             // 由于前端生成的 sinkSql 主键放在了后面的位置，因此需要进行调整,主键需要在首位;
@@ -295,7 +289,7 @@ public class ParameterUtils {
      */
     private static String[] dealMysqlCdc(Properties properties, String sql) {
         String[] sourcePara = sql.split("[|]", 2);
-        String sourceName = removeTailFirstSpecialSymbol(sourcePara[1], "(", true).split("\\s+")[2];
+        String sourceName = removeTailFirstSpecialSymbol(sourcePara[0], "(", true).split("\\s+")[2];
         properties.put(ParameterName.CDC_SOURCE_TABLE_NAME, sourceName);
         properties.put(ParameterName.CDC_ROW_KIND, sourcePara[1]);
         return sourcePara;
@@ -436,7 +430,7 @@ public class ParameterUtils {
     private static void getSqlSet(Properties properties) {
         String sqlSet = "";
         if (properties.getProperty(ParameterName.ORIGINAL_VARIABLE_SQL) != null){
-            sqlSet +=  properties.getProperty(ParameterName.SOURCE_JOIN_DIM_SQL) + ";";
+            sqlSet +=  properties.getProperty(ParameterName.ORIGINAL_VARIABLE_SQL) + ";";
         }
         if (properties.getProperty(ParameterName.VARIABLE_SQLS) != null){
             sqlSet +=  properties.getProperty(ParameterName.VARIABLE_SQLS) + ";";
