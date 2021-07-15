@@ -256,7 +256,8 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
             }
             sb.append(StringUtils.join(fieldArr,","));
         }
-        sb.append(" FROM tmp_").append(pkManager.getResultTable());
+
+        sb.append(" FROM tmp_").append(pkManager.getVariablePackEn()).append(")");
 
         return sb.toString();
     }
