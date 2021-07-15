@@ -1300,7 +1300,7 @@
         });
       },
       //查询变量分类的值
-      getVariableClassificationOptions() {
+      getVariableClassificationOptions(callback) {
         let that = this;
         const baseUrl = process.env.VUE_APP_BASE_API;
         axios({
@@ -1322,7 +1322,10 @@
               sourceTwoDabRelation: resp.data.rows[i].sourceTwoDabRelation
             });
           }
+          if(callback)
+            callback();
         }).catch(resp => {
+          callback();
           console.log('获取变量分类请求失败：' + resp.status + ',' + resp.statusText);
         });
       },
@@ -1333,32 +1336,41 @@
         this.getVariableCenter(value);
         console.log("--2");
         console.log(value);
-        console.log(this.variableClassificationOptions);
-        this.variableClassificationOptions.map((data, i) => {
-          if (data.value === value) {
-            this.isTwoJoin = data.isTwoJoin;
-            // 如果数据源表是oracle-cdc
-            this.variableIdShow = true;
-            this.rules.variableId[0].required = true;
-            if (data.connectorType === "03") {
-              this.cdcShow();
-              this.form.variablePackType = "03";
-            } else if (data.connectorType === "02"){
-              this.cdcShow();
-              this.form.variablePackType = "02";
-            } else {
-              this.form.variablePackType = data.connectorType;
-            }
-            this.sourceDataChange(data.sourceTableName);
-            if(data.isTwoJoin){
-              this.sourceTwoDataChange(data.sourceTwoDabRelation)
-            }
-            this.getDimensionRelationFild(data.dimensionRelation);
-            // 数据源表赋值
-            this.form.sourceTableName = data.sourceTableName;
-            this.form.dimensionRelation = data.dimensionRelation;
+        new Promise((reslove, reject) => {
+          if(this.variableClassificationOptions.length > 0)
+            reslove();
+          else {
+            this.getVariableClassificationOptions(() => {
+              reslove();
+            })
           }
-        });
+        }).then(res => {
+          this.variableClassificationOptions.forEach((data, i) => {
+            if (data.value === value) {
+              this.isTwoJoin = data.isTwoJoin;
+              // 如果数据源表是oracle-cdc
+              this.variableIdShow = true;
+              this.rules.variableId[0].required = true;
+              if (data.connectorType === "03") {
+                this.cdcShow();
+                this.form.variablePackType = "03";
+              } else if (data.connectorType === "02"){
+                this.cdcShow();
+                this.form.variablePackType = "02";
+              } else {
+                this.form.variablePackType = data.connectorType;
+              }
+              this.sourceDataChange(data.sourceTableName);
+              if(data.isTwoJoin){
+                this.sourceTwoDataChange(data.sourceTwoDabRelation)
+              }
+              this.getDimensionRelationFild(data.dimensionRelation);
+              // 数据源表赋值
+              this.form.sourceTableName = data.sourceTableName;
+              this.form.dimensionRelation = data.dimensionRelation;
+            }
+          });
+        })
       },
       // 变量分类为cdc时，下列字段影藏
       cdcShow(){
