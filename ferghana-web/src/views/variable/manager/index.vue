@@ -806,131 +806,150 @@
                   <el-tabs v-model="activeName" type="card" v-loading="testRunLoading">
 
                     <el-tab-pane label="测试数据" name="first">
-                      <!--  数据源表                   -->
-                      <el-form ref="form" :model="form" :rules="testRules" label-width="120px" class="el-col-24">
-                        <div v-show="sourceTableValueItem">
-                          <el-scrollbar class="el-scrollbar-show">
-                            <span style="font-size: 16px;font-weight: bold">{{dataSourceName}}</span>
-
-                            <el-table :data="form.sourceTableValue" border ref="multipleTable" tooltip-effect="dark"
-                                      style="width: 100%; margin-top: 10px"
-                                      empty-text="未选择输入参数表">
-                              <template v-for='(col,index) in sourceTableCol'>
-                                <el-table-column :show-overflow-tooltip="true"
-                                                 :prop="col.dataItem" align="center" :label="col.dataName" :key="index"
-                                                 width="300px">
-                                  <template scope="scope">
-                                    <el-form-item label-width="0px" :prop="col.dataName.indexOf('主键') > 0 ? 'sourceTableValue.'+scope.$index+'.' + col.dataItem :
-                                                     col.dataName.indexOf('水印') > 0 ? 'sourceTableValue.'+scope.$index+'.' + col.dataItem : ''"
-                                                  :rules="col.dataName.indexOf('主键') > 0 ? testRules.primaryKey :
-                                                     col.dataName.indexOf('水印') > 0 ? testRules.waterMark :[{ required: false }]">
-                                      <el-input v-model="scope.row[col.dataItem]" placeholder="请输入内容" />
-                                    </el-form-item>
-                                  </template>
-                                </el-table-column>
-                              </template>
-                              <el-table-column label="操作" width="200px" align="center"
-                                               class-name="small-padding fixed-width">
-                                <template slot-scope="scope">
-                                  <el-button @click="addInputSource"><i class="el-icon-plus"/>
-                                  </el-button>
-                                  <el-button @click="removeInputSource(scope)"><i class="el-icon-minus"/></el-button>
-                                </template>
-                              </el-table-column>
-                            </el-table>
-                          </el-scrollbar>
-                        </div>
-
-                        <!--  数据源表(二)                   -->
-                        <div v-show="twoSourceTableValueItem" style="margin-top: 10px">
-                          <el-scrollbar class="el-scrollbar-show">
-                            <span style="font-size: 16px;font-weight: bold">{{dataSourceTwoName}}</span>
-
-                            <el-table :data="form.twoSourceTableValue" border ref="multipleTable" tooltip-effect="dark"
-                                      style="width: 100%; margin-top: 10px"
-                                      empty-text="未选择输入参数表">
-                              <template v-for='(col,index) in twoSourceTableCol'>
-                                <el-table-column :show-overflow-tooltip="true"
-                                                 :prop="col.dataItem" align="center" :label="col.dataName" :key="index"
-                                                 width="300px">
-                                  <template scope="scope">
-                                    <el-form-item label-width="0px" :prop="col.dataName.indexOf('主键') > 0 ? 'twoSourceTableValue.'+scope.$index+'.' + col.dataItem :
-                                                     col.dataName.indexOf('水印') > 0 ? 'twoSourceTableValue.'+scope.$index+'.' + col.dataItem : ''"
-                                                  :rules="col.dataName.indexOf('主键') > 0 ? testRules.twoPrimaryKey :
-                                                     col.dataName.indexOf('水印') > 0 ? testRules.twoWaterMark :[{ required: false }]">
-                                      <el-input v-model="scope.row[col.dataItem]" placeholder="请输入内容" />
-                                    </el-form-item>
-                                  </template>
-                                </el-table-column>
-                              </template>
-                              <el-table-column label="操作" width="200px" align="center"
-                                               class-name="small-padding fixed-width">
-                                <template slot-scope="scope">
-                                  <el-button @click="addInputTwoSource"><i class="el-icon-plus"/>
-                                  </el-button>
-                                  <el-button @click="removeInputTwoSource(scope)"><i class="el-icon-minus"/></el-button>
-                                </template>
-                              </el-table-column>
-                            </el-table>
-                          </el-scrollbar>
-                        </div>
-
-
-                        <!--  数据维表                   -->
-                        <div v-show="dimensionTableValueItem" style="margin-top: 10px">
-                          <el-scrollbar class="el-scrollbar-show">
-                            <div v-for="(dataAll,indexList) in listResultDimension" style="margin-top: 10px">
-                              <span style="font-size: 16px;font-weight: bold">{{dataAll.name}}</span>
-                                <el-table :data="listResultDimension[indexList].dimensionTableValue" border ref="multipleTable"
+                                      <!--  数据源表                   -->
+                                      <el-form ref="form" :model="form" :rules="testRules" label-width="120px" class="el-col-24">
+                                        <div v-show="sourceTableValueItem">
+                                          <el-scrollbar class="el-scrollbar-show">
+                                            <span style="font-size: 16px;font-weight: bold">{{dataSourceName}}</span>
+                    
+                                            <el-table :data="form.sourceTableValue" border ref="multipleTable" tooltip-effect="dark"
+                                                      style="width: 100%; margin-top: 10px"
+                                                      empty-text="未选择输入参数表">
+                                              <template v-for='(col,index) in sourceTableCol'>
+                                                <el-table-column :show-overflow-tooltip="true"
+                                                                 :prop="col.dataItem" align="center" :label="col.dataName" :key="index"
+                                                                 width="300px">
+                                                  <template slot="header" slot-scope="scope" v-if="!testRunLoading">
+                                                          {{col.dataName}}
+                                                          <el-tooltip class="item" effect="dark" placement="top" v-if="col.relations && col.relations.length > 0" :content="arrayToStr(col.relations)" >
+                                                              <i class="el-icon-info"></i>
+                                                          </el-tooltip>
+                                                  </template>
+                                                  <template scope="scope">
+                                                   <el-form-item label-width="0px" :prop="col.dataName.indexOf('主键') > 0 ? 'sourceTableValue.'+scope.$index+'.' + col.dataItem :
+                                                                     col.dataName.indexOf('水印') > 0 ? 'sourceTableValue.'+scope.$index+'.' + col.dataItem : ''"
+                                                                  :rules="col.dataName.indexOf('主键') > 0 ? testRules.primaryKey :
+                                                                     col.dataName.indexOf('水印') > 0 ? testRules.waterMark :[{ required: false }]">
+                                                      <el-input v-model="scope.row[col.dataItem]" placeholder="请输入内容" />
+                                                    </el-form-item>
+                                                  </template>
+                                                </el-table-column>
+                                              </template>
+                                              <el-table-column label="操作" width="200px" align="center"
+                                                               class-name="small-padding fixed-width">
+                                                <template slot-scope="scope">
+                                                  <el-button @click="addInputSource"><i class="el-icon-plus"/>
+                                                  </el-button>
+                                                  <el-button @click="removeInputSource(scope)"><i class="el-icon-minus"/></el-button>
+                                                </template>
+                                              </el-table-column>
+                                            </el-table>
+                                          </el-scrollbar>
+                                        </div>
+                    
+                                        <!--  数据源表(二)                   -->
+                                        <div v-show="twoSourceTableValueItem" style="margin-top: 10px">
+                                          <el-scrollbar class="el-scrollbar-show">
+                                            <span style="font-size: 16px;font-weight: bold">{{dataSourceTwoName}}</span>
+                    
+                                            <el-table :data="form.twoSourceTableValue" border ref="multipleTable" tooltip-effect="dark"
+                                                      style="width: 100%; margin-top: 10px"
+                                                      empty-text="未选择输入参数表">
+                                              <template v-for='(col,index) in twoSourceTableCol' v-if="!testRunLoading">
+                                                <el-table-column :show-overflow-tooltip="true"
+                                                                 :prop="col.dataItem" align="center" :label="col.dataName" :key="index"
+                                                                 width="300px">
+                                                  <template slot="header" slot-scope="scope">
+                                                          {{col.dataName}}
+                                                          <el-tooltip class="item" effect="dark" placement="top" v-if="col.relations && col.relations.length > 0" :content="arrayToStr(col.relations)" >
+                                                              <i class="el-icon-info"></i>
+                                                          </el-tooltip>
+                                                  </template>
+                                                  <template scope="scope">
+                                                    <el-form-item label-width="0px" :prop="col.dataName.indexOf('主键') > 0 ? 'twoSourceTableValue.'+scope.$index+'.' + col.dataItem :
+                                                                     col.dataName.indexOf('水印') > 0 ? 'twoSourceTableValue.'+scope.$index+'.' + col.dataItem : ''"
+                                                                  :rules="col.dataName.indexOf('主键') > 0 ? testRules.twoPrimaryKey :
+                                                                     col.dataName.indexOf('水印') > 0 ? testRules.twoWaterMark :[{ required: false }]">
+                                                      <el-input v-model="scope.row[col.dataItem]" placeholder="请输入内容" />
+                                                    </el-form-item>
+                                                  </template>
+                                                </el-table-column>
+                                              </template>
+                                              <el-table-column label="操作" width="200px" align="center"
+                                                               class-name="small-padding fixed-width">
+                                                <template slot-scope="scope">
+                                                  <el-button @click="addInputTwoSource"><i class="el-icon-plus"/>
+                                                  </el-button>
+                                                  <el-button @click="removeInputTwoSource(scope)"><i class="el-icon-minus"/></el-button>
+                                                </template>
+                                              </el-table-column>
+                                            </el-table>
+                                          </el-scrollbar>
+                                        </div>
+                    
+                    
+                                        <!--  数据维表                   -->
+                                        <div v-show="dimensionTableValueItem" style="margin-top: 10px">
+                                          <el-scrollbar class="el-scrollbar-show">
+                                            <div v-for="(dataAll,indexList) in listResultDimension" style="margin-top: 10px">
+                                              <span style="font-size: 16px;font-weight: bold">{{dataAll.name}}</span>
+                                                <el-table :data="listResultDimension[indexList].dimensionTableValue" border ref="multipleTable"
+                                                          tooltip-effect="dark"
+                                                          style="width: 100%; margin-top: 10px"
+                                                          empty-text="未选择输入参数表">
+                                                  <template v-for='(col,index) in listResultDimension[indexList].dimensionTableCol'>
+                                                    <el-table-column :show-overflow-tooltip="true"
+                                                                     :prop="col.dataItem" align="center" :label="col.dataName" :key="index"
+                                                                     width="300px">
+                                                      <template slot="header" slot-scope="scope" v-if="!testRunLoading">
+                                                              {{col.dataName}}
+                                                              <el-tooltip class="item" effect="dark" placement="top" v-if="col.relations && col.relations.length > 0" :content="arrayToStr(col.relations)" >
+                                                                  <i class="el-icon-info"></i>
+                                                              </el-tooltip>
+                                                      </template>
+                                                      <template scope="scope">
+                    <!--                                      <el-form-item label-width="0px" :prop="col.dataName.indexOf('主键') > 0 ? 'listResultDimension['+indexList+'].dimensionTableValue.'+scope.$index+'.' + col.dataItem : ''"-->
+                    <!--                                                    :rules="col.dataName.indexOf('主键') > 0 ? {required: true, message:'主键不能为空', trigger: 'blur'} : [{ required: false }]">-->
+                                                          <el-input v-model="scope.row[col.dataItem]" placeholder="请输入内容"/>
+                    <!--                                      </el-form-item>-->
+                                                      </template>
+                                                    </el-table-column>
+                                                  </template>
+                                                  <el-table-column label="操作" width="200px" align="center"
+                                                                   class-name="small-padding fixed-width">
+                                                    <template slot-scope="scope">
+                                                      <el-button @click="addInputDimension(dataAll.name)"><i class="el-icon-plus"/>
+                                                      </el-button>
+                                                      <el-button @click="removeInputDimension(scope,dataAll.name)"><i
+                                                        class="el-icon-minus"/>
+                                                      </el-button>
+                                                    </template>
+                                                  </el-table-column>
+                                                </el-table>
+                                            </div>
+                                          </el-scrollbar>
+                                        </div>
+                                      </el-form>
+                                    </el-tab-pane>
+                    
+                                    <el-tab-pane label="测试结果" name="second">
+                                      <div class="table">
+                                        <el-table
+                                          :data="testResultData"
                                           tooltip-effect="dark"
-                                          style="width: 100%; margin-top: 10px"
-                                          empty-text="未选择输入参数表">
-                                  <template v-for='(col,index) in listResultDimension[indexList].dimensionTableCol'>
-                                    <el-table-column :show-overflow-tooltip="true"
-                                                     :prop="col.dataItem" align="center" :label="col.dataName" :key="index"
-                                                     width="300px">
-                                      <template scope="scope">
-    <!--                                      <el-form-item label-width="0px" :prop="col.dataName.indexOf('主键') > 0 ? 'listResultDimension['+indexList+'].dimensionTableValue.'+scope.$index+'.' + col.dataItem : ''"-->
-    <!--                                                    :rules="col.dataName.indexOf('主键') > 0 ? {required: true, message:'主键不能为空', trigger: 'blur'} : [{ required: false }]">-->
-                                          <el-input v-model="scope.row[col.dataItem]" placeholder="请输入内容"/>
-    <!--                                      </el-form-item>-->
-                                      </template>
-                                    </el-table-column>
-                                  </template>
-                                  <el-table-column label="操作" width="200px" align="center"
-                                                   class-name="small-padding fixed-width">
-                                    <template slot-scope="scope">
-                                      <el-button @click="addInputDimension(dataAll.name)"><i class="el-icon-plus"/>
-                                      </el-button>
-                                      <el-button @click="removeInputDimension(scope,dataAll.name)"><i
-                                        class="el-icon-minus"/>
-                                      </el-button>
-                                    </template>
-                                  </el-table-column>
-                                </el-table>
-                            </div>
-                          </el-scrollbar>
-                        </div>
-                      </el-form>
-                    </el-tab-pane>
+                                          border
+                                          stripe
+                                          style="width: 100%">
+                                          <template v-for='(col,index) in testResultCol'>
+                                            <el-table-column :show-overflow-tooltip="true" align="center" :prop="col.dataItem"
+                                                             :label="col.dataName" :key="index"
+                                                             width="200px">
+                                            </el-table-column>
+                                          </template>
+                                        </el-table>
+                                      </div>
+                                    </el-tab-pane>
 
-                    <el-tab-pane label="测试结果" name="second">
-                      <div class="table">
-                        <el-table
-                          :data="testResultData"
-                          tooltip-effect="dark"
-                          border
-                          stripe
-                          style="width: 100%">
-                          <template v-for='(col,index) in testResultCol'>
-                            <el-table-column :show-overflow-tooltip="true" align="center" :prop="col.dataItem"
-                                             :label="col.dataName" :key="index"
-                                             width="200px">
-                            </el-table-column>
-                          </template>
-                        </el-table>
-                      </div>
-                    </el-tab-pane>
                   </el-tabs>
                  <div style="margin-top: 30px;display: flex;justify-content: flex-end;">
                    <el-button type="primary" @click="confirmTest">开 始</el-button>
@@ -1063,6 +1082,8 @@
     components: {Treeselect},
     data() {
       var validatePrimaryKey = (rule, value, callback) => {
+        if(!this.twoSourceTableValueItem)
+          callback();
         let split = rule.field.split(".");
         let index = parseInt(split[1]);
         let field = split[2];
@@ -1074,6 +1095,8 @@
         callback(new Error('主键不能为空'));
       };
       var validateWaterMark = (rule, value, callback) => {
+        if(!this.twoSourceTableValueItem)
+          callback();
         let split = rule.field.split(".");
         let index = parseInt(split[1]);
         let field = split[2];
@@ -1258,7 +1281,6 @@
         // 临时变量对象
         variableTmp:undefined,
         versionNumShow:false,
-
         fieldTypeOptions: [],
         // 查询参数
         queryParams: {
@@ -1744,6 +1766,9 @@
         console.log(this.form)
 
         this.$refs["form"].validate((valid) => {
+
+          console.log(valid)
+
           if (valid) {
             for (let j = 0; j < this.form.sourceTableValue.length; j++) {
               for (let i = 0; i < this.sourceTableCol.length; i++) {
@@ -1849,9 +1874,18 @@
         this.listResultDimension = [];
         this.dimensionTableValueItem = false;
         this.sourceTableValueItem = false;
+        this.twoSourceTableValueItem = false;
         this.activeName = "first";
         this.testResultData = [];
         // this.selfQueryTestItem = [];
+      },
+
+      judgeDimensionRelation(index_1, index_2) {
+        console.log(this.listResultDimension[index_1].dimensionTableCol[index_2])
+        // if(col.relations) {
+        //   return true;
+        // }
+        return false;
       },
 
       // 给 测试数据源展示 sourceTableCol  赋值
@@ -1861,6 +1895,7 @@
         this.sourceTableCol.push({
           dataItem: this.sourceTwoCol[1],
           dataName: this.sourceTwoCol[1] + "-主键",
+          relations: []
         })
         // 水印字段展示在最后一列
         this.sourceTableCol.push({
@@ -1870,6 +1905,7 @@
         this.twoSourceTableCol.push({
           dataItem: this.twoSourceTwoCol[1],
           dataName: this.twoSourceTwoCol[1] + "-主键",
+          relations: []
         })
         this.twoSourceTableCol.push({
           dataItem: this.twoSourceTwoCol[0],
@@ -2556,116 +2592,196 @@
 
       // 关联字段
       relationField(callback) {
-        console.log("=================[]===================")
-        if (this.listResultDimension.length > 0) {
-          // 解决测试时，关联的数据维没有选择时，则不需要在数据源表中有关联字段
-          let tableName = [];
-          for (let i = 0; i < this.listResultDimension.length; i++) {
-            let split = this.listResultDimension[i].name.split(":")
-            console.log(split);
-            tableName = tableName.concat(split[1]);
-          }
-
+        // 数据源表(一)、数据源表(二) 关联字段添加
+        if(this.twoSourceTableValueItem) {
           this.variableClassificationOptions.map((data) => {
             if (data.value === this.form.variableClassification) {
-              let parse = JSON.parse(data.dimensionRelation);
-              console.log("===========parse==============")
-              console.log(data)
-              console.log(parse)
-
               if(data.sourceRelation){
                 let sourceRelation = JSON.parse(data.sourceRelation)
                 let flag = true;
-                this.sourceTableCol.forEach(item => {
-                  let split = item.dataItem.split(".");
+                let currentIndex = null;
+                this.sourceTableCol.forEach((item, index) => {
+                  let split = `${item.dataItem}`.split(".");
                   if(item.dataItem === sourceRelation.sourceDabField || split[1] === sourceRelation.sourceDabField){
                     flag = false;
+                    currentIndex = index;
                   }
                 })
-                if(flag){
+                if(flag) {
                   this.sourceTableCol.push({
                     dataItem: sourceRelation.sourceDabField,
-                    dataName: sourceRelation.sourceDabField + "-" + data.sourceTwoDabRelation + "关联字段",
+                    dataName: sourceRelation.sourceDabField + "-" + "关联字段",
+                    relations: [`${data.sourceTwoDabRelation}-关联字段`]
                   })
                 }
+                else {
+                  let relations = this.sourceTableCol[currentIndex].relations ? this.sourceTableCol[currentIndex].relations : [];
+                  relations.push(`${data.sourceTwoDabRelation}-关联字段`);
+                  this.sourceTableCol[currentIndex].relations = relations;
+                }
                 flag = true;
-                this.twoSourceTableCol.forEach(item => {
+                currentIndex = null;
+                this.twoSourceTableCol.forEach((item, index) => {
                   let split = `${item.dataItem}`.split(".");
                   if(item.dataItem === sourceRelation.sourceTwoDabField || split[1] === sourceRelation.sourceTwoDabField){
                     flag = false;
+                    currentIndex = index;
                   }
                 })
                 if(flag){
                   this.twoSourceTableCol.push({
                     dataItem: sourceRelation.sourceTwoDabField,
-                    dataName: sourceRelation.sourceTwoDabField + "-" + data.sourceDabRelation + "关联字段",
+                    dataName: sourceRelation.sourceTwoDabField + "-" + "关联字段",
+                    relations: [`${data.sourceDabRelation}-关联字段`]
                   })
                 }
+                else {
+                  let relations = this.twoSourceTableCol[currentIndex].relations ? this.twoSourceTableCol[currentIndex].relations : [];
+                  relations.push(`${data.sourceDabRelation}-关联字段`);
+                  this.twoSourceTableCol[currentIndex].relations = relations;
+                }
               }
+            }
+          })
+        }
 
-              // 字段中没有关联字段时，需增加
-              let tmpArr = [];
-              let tmpArr2 = [];
+        // 数据维表主键添加关联信息
+        if (this.listResultDimension.length > 0) {
+          this.listResultDimension.forEach((item_1, index_1) => {
+            let name = item_1.name.split(":")[1];
+            name = name.replace(/(^\s*)|(\s*$)/g,"");
+            this.variableClassificationOptions.forEach(item_2 => {
+              if(item_2.value === this.form.variableClassification) {
+                let parse = JSON.parse(item_2.dimensionRelation);
+                parse.forEach(item_3 => {
+                  let relations = [];
+                  if(item_3.dimensionName === name) {
+                    if(item_3.sourceTwoDabField) {
+                      relations.push(`${item_2.sourceTwoDabRelation}-关联字段`);
+                    }
+                    else{
+                      relations.push(`${item_2.sourceDabRelation}-关联字段`);
+                    }
+                    item_1.dimensionTableCol.forEach((item_4, index_4) => {
+                      if(item_4.dataName.indexOf("-主键") > 0) {
+                        this.listResultDimension[index_1].dimensionTableCol[index_4].relations = relations;
+                      }
+                    })
+                  }
+                })
+              }
+            })
+          })
+        }
 
+        // 数据维表、数据源表(一) 数据维表、数据源表(二) 关联字段添加
+        if (this.listResultDimension.length > 0) {
+          // 解决测试时，关联的数据维没有选择时，则不需要在数据源表中有关联字段
+          let tableName = [];
+          for (let i = 0; i < this.listResultDimension.length; i++) {
+            let split = this.listResultDimension[i].name.split(":")
+            tableName = tableName.concat(split[1].replace(/(^\s*)|(\s*$)/g,""));
+          }
+
+          this.variableClassificationOptions.map((data) => {
+            if (data.value === this.form.variableClassification) {
+              let parse = JSON.parse(data.dimensionRelation);
+              console.log("===========parse===========")
+              console.log(parse)
+              console.log(data)
               for (let j = 0; j < parse.length; j++) {
+                // 数据源表(一)
                 if(!parse[j].sourceTwoDabField){
                   let flag = true;
-                  for (let i = 0; i < this.sourceTableCol.length; i++) {
-                    let tmp = this.sourceTableCol[i].dataItem;
+                  this.sourceTableCol.forEach((item, index) => {
+                    let tmp = item.dataItem;
                     if (parse[j].relation){
                       flag = true;
                     }
                     if (flag !== true && tmp === parse[j].sourceDabField) {
                       flag = false;
-                      if (this.sourceTableCol[i].dataName.indexOf("主键") <= 0) { // 主键不修改
-                        this.sourceTableCol[i].dataName = parse[j].sourceDabField + "-" + parse[j].dimensionName +
-                          "关联字段";
+                      if (item.dataName.indexOf("主键") <= 0) { // 主键不修改
+                        let relations = item.relations ? item.relations : [];
+                        relations.push(`${parse[j].dimensionName}-关联字段`);
+                        this.sourceTableCol[index].dataName = parse[j].sourceDabField + "-" + "关联字段";
+                        this.sourceTableCol[index].relations = relations;
+                      }
+                      else { // 向数据源表(一)主键添加数据维表关联信息
+                        let relations = item.relations ? item.relations : [];
+                        relations.push(`${parse[j].dimensionName}-关联字段`);
+                        this.sourceTableCol[index].relations = relations;
                       }
                     }
-                  }
-                  this.sourceTableCol.forEach(item => {
-                    let split_1 = item.dataItem.split(".");
+                  })
+                  this.sourceTableCol.forEach((item, index) => {
+                    let split_1 = `${item.dataItem}`.split(".");
                     if(split_1[1] === parse[j].sourceDabField || item.dataItem === parse[j].sourceDabField){
                       flag = false;
+                      if (item.dataName.indexOf("主键") <= 0) { // 主键不修改
+                        let relations = item.relations ? item.relations : [];
+                        relations.push(`${parse[j].dimensionName}-关联字段`);
+                        this.sourceTableCol[index].dataName = parse[j].sourceDabField + "-" + "关联字段";
+                        this.sourceTableCol[index].relations = relations;
+                      }
+                      else { // 向数据源表(一)主键添加数据维表关联信息
+                        let relations = item.relations ? item.relations : [];
+                        relations.push(`${parse[j].dimensionName}-关联字段`);
+                        this.sourceTableCol[index].relations = relations;
+                      }
                     }
                   })
                   if (flag === true) {
                     if(tableName.indexOf(parse[j].dimensionName) > -1){
-                      tmpArr.push({
+                      this.sourceTableCol.push({
                         dataItem: parse[j].sourceDabField,
-                        dataName: parse[j].sourceDabField + "-" + parse[j].dimensionName + "关联字段",
+                        dataName: parse[j].sourceDabField + "-" + "关联字段",
+                        relations: [`${parse[j].dimensionName}-关联字段`]
                       })
                     }
                   }
                 }
+                // 数据源表(二)
                 else{
                   let flag = true;
-                  for (let i = 0; i < this.twoSourceTableCol.length; i++) {
-                    let tmp = this.twoSourceTableCol[i].dataItem;
+                  this.twoSourceTableCol.forEach((item, index) => {
+                    let tmp = item.dataItem;
                     if (parse[j].relation){
                       flag = true;
                     }
                     if (flag !== true && tmp === parse[j].sourceTwoDabField) {
                       flag = false;
-                      if (this.twoSourceTableCol[i].dataName.indexOf("主键") <= 0) { // 主键不修改
-                        this.twoSourceTableCol[i].dataName = parse[j].sourceTwoDabField + "-" + parse[j].dimensionName +
-                          "关联字段";
+                      if (item.dataName.indexOf("主键") <= 0) { // 主键不修改
+                        let relations = [];
+                        if(item.relations){
+                          relations = item.relations;
+                        }
+                        relations.push(`${parse[j].dimensionName}-关联字段`);
+                        this.twoSourceTableCol[index].dataName = parse[j].sourceTwoDabField + "-" + "关联字段";
+                        this.twoSourceTableCol[index].relations = relations;
+                      }
+                      else { // 向数据源表(二)主键添加数据维表关联信息
+                        let relations = item.relations ? item.relations : [];
+                        relations.push(`${parse[j].dimensionName}-关联字段`);
+                        this.twoSourceTableCol[index].relations = relations;
                       }
                     }
-                  }
-                  this.twoSourceTableCol.forEach(item => {
-                    let split_1 = item.dataItem.split(".");
+                  })
+                  this.twoSourceTableCol.forEach((item, index) => {
+                    let split_1 = `${item.dataItem}`.split(".");
                     if(split_1[1] === parse[j].sourceTwoDabField || item.dataItem === parse[j].sourceTwoDabField){
                       flag = false;
+                      let relations = item.relations ? item.relations : [];
+                      relations.push(`${parse[j].dimensionName}-关联字段`);
+                      this.twoSourceTableCol[index].relations = relations;
                     }
                   })
                   if (flag === true) {
                     if(tableName.indexOf(parse[j].dimensionName) > -1){
-                      tmpArr2.push({
+                      this.twoSourceTableCol.push({
                         dataItem: parse[j].sourceTwoDabField,
-                        dataName: parse[j].sourceTwoDabField + "-" + parse[j].dimensionName + "关联字段",
+                        dataName: parse[j].sourceTwoDabField + "-" + "关联字段",
+                        relations: [`${parse[j].dimensionName}-关联字段`]
                       })
-
                     }
                   }
                 }
@@ -2695,8 +2811,6 @@
                 //   }
                 // }
               }
-              this.sourceTableCol = this.sourceTableCol.concat(tmpArr);
-              this.twoSourceTableCol = this.twoSourceTableCol.concat(tmpArr2);
             }
           });
         }
@@ -2838,11 +2952,11 @@
               // 主键字段排第一位
               this.sourceTableCol.push({
                 dataItem: this.sourceTwoCol[1],
-                dataName: this.sourceTwoCol[1] + "-主键",
+                dataName: this.sourceTwoCol[1] + "-主键"
               });
               this.sourceTableCol.push({
                 dataItem: this.sourceTwoCol[0],
-                dataName: this.sourceTwoCol[0] + "-水印",
+                dataName: this.sourceTwoCol[0] + "-水印"
               });
               if(this.form.deriveVariableModelType === "01"){ // 四则运算
                 this.getBaseVariableTestCol(this.variableArray);
@@ -3130,7 +3244,7 @@
             for (let key in resp.data.rows[i]) {
               let strings = key.split("&&");
               that.listDimension.push({
-                name: '数据维表:' + strings[0],  // 表名
+                name: '数据维表: ' + strings[0],  // 表名
                 primaryKeyLabel: strings[1],    // 主键 格式：  xxx-主键
                 primaryKeyValue: strings[2],    // 主键值 格式： 表名.主键
               });
@@ -3502,6 +3616,17 @@
           value: ''
         });
       },
+      // 数组转字符串，使用 "," 拼接
+      arrayToStr(arr) {
+        let str = "";
+        if(typeof(arr) === 'object' && arr.length && arr.length !== 0) {
+          arr.forEach((item, index) => {
+            str = str + (str.length === 0 ? '' : ', ') + item;
+          })
+          return str;
+        }
+        return null;
+      },
 
       // 查询计算模板
       getVariableModelType() {
@@ -3544,6 +3669,14 @@
           }).then(function (resp) {
             console.log("-----------------【resp】--------------------")
             console.log(resp);
+            if(resp.data.code === 500) {
+              that.$notify.error({
+                title: '错误',
+                dangerouslyUseHTMLString: true,
+                message: `<strong>获取数据源表<i>${value}</i>请求失败!</span>`
+              });
+              return;
+            }
             // 多次点击先清空。否则会重复叠加
             if (flag !== "test") {
               that.form.variableFactor = "";
@@ -3611,7 +3744,7 @@
               }
             }
           }).catch(resp => {
-            console.log('获取数据源表id' + val + '请求失败!' + resp);
+            console.log('获取数据源表id' + value + '请求失败!' + resp);
           });
 
         }, 0);
