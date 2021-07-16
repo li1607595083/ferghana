@@ -1,17 +1,13 @@
 package com.skyon.utils;
 
-import com.sun.codemodel.internal.JAssignment;
 import kafka.admin.AdminUtils;
 import kafka.admin.RackAwareMode;
-import kafka.server.KafkaConfig;
 import kafka.utils.ZkUtils;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.security.JaasUtils;
 
-import java.util.ArrayList;
 import java.util.Properties;
-import java.util.concurrent.Future;
 
 public class KafkaUtils {
 
