@@ -20,6 +20,7 @@ package com.dtstack.flinkx.config;
 
 import org.apache.flink.util.Preconditions;
 
+import com.dtstack.flinkx.oraclelogminer.format.LogParser;
 import com.dtstack.flinkx.util.GsonUtil;
 import com.dtstack.flinkx.util.MapUtil;
 import com.google.gson.internal.LinkedTreeMap;
@@ -40,8 +41,6 @@ import java.util.Map;
 public class DataTransferConfig extends AbstractConfig {
 
     JobConfig job;
-
-    public static List fields = new ArrayList();
 
     public DataTransferConfig(Map<String, Object> map) {
         super(map);
@@ -124,7 +123,7 @@ public class DataTransferConfig extends AbstractConfig {
         String schema = reader.get("schema").toString();
         String[] schemas = schema.split(",");
         for (String field : schemas) {
-            fields.add(field.split(":")[0]);
+            LogParser.fields.add(field.split(":")[0]);
         }
 
         LinkedTreeMap parameter = (LinkedTreeMap)reader.get("parameter");

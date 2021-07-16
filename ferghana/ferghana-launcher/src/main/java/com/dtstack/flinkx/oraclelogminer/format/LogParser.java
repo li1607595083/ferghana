@@ -38,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -59,13 +60,11 @@ public class LogParser {
     public static Pattern toDatePattern = Pattern.compile("(?i)(?<toDate>(TO_DATE\\('(?<datetime>(.*?))',\\s+'YYYY-MM-DD HH24:MI:SS'\\)))");
     //TO_TIMESTAMP函数值匹配
     public static Pattern timeStampPattern = Pattern.compile("(?i)(?<toTimeStamp>(TO_TIMESTAMP\\('(?<datetime>(.*?))'\\)))");
-
+    public static List fields = new ArrayList();
 
     public static SnowflakeIdWorker idWorker = new SnowflakeIdWorker(1, 1);
 
     private LogMinerConfig config;
-
-    List fields = DataTransferConfig.fields;
 
     public LogParser(LogMinerConfig config) {
         this.config = config;
@@ -188,14 +187,19 @@ public class LogParser {
             parseDeleteStmt((Delete) stmt, beforeDataMap, afterDataMap);
         }
         message.put("CDC_OP", operation);
-
+        System.out.println(fields.size());
+        System.out.println(fields.get(0));
+        System.out.println(fields.get(1));
+        System.out.println(fields.get(2));
         if (config.getPavingData()) {
             if (operation.equals("I")) {
-                afterDataMap.forEach((key, val) -> {
+                afterDataMap.forEach((key, val) ->
+                {
                     if (fields.contains(key)) {
                         message.put(key, val);
                     }
-                });
+                }
+                );
             } else if (operation.equals("U")) {
                 afterDataMap.forEach((key, val) -> {
                     if (fields.contains(key)) {
