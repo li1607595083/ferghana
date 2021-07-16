@@ -130,8 +130,9 @@ public class MianAppProcesTest {
 //        conf.setString("akka.ask.timeout", "180 s");
 //        conf.setString("web.timeout", String.valueOf(100000));
 
-        MyLocalStreamEnvironment env = new MyLocalStreamEnvironment(conf);
-
+//        MyLocalStreamEnvironment env = new MyLocalStreamEnvironment(conf);
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        env.setParallelism(1);
         HashMap<String, String> stringStringHashMap = new HashMap<>();
         ParameterTool parameterTool = ParameterTool.fromMap(stringStringHashMap);
         env.getConfig().setGlobalJobParameters(parameterTool);
