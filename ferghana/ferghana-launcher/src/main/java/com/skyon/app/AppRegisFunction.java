@@ -36,17 +36,17 @@ public class AppRegisFunction {
         // dbTableEnv.createTemporarySystemFunction("age_function", new AgeFunction());
         // dbTableEnv.createTemporarySystemFunction("timestamp_to_string_ymd", new TimestampToStringYMD());
          //获取 MySQL 连接
-        Connection connection = MySqlUtils.getConnection(parameterProperties.getProperty(ParameterName.REGIS_FUN_URL), parameterProperties.getProperty(ParameterName.TEST_USER_NAME), parameterProperties.getProperty(ParameterName.TEST_PASSWORD), parameterProperties.getProperty(ParameterName.TEST_DRIVER));
-        // 扫描全表数据
-        ResultSet resultSet = MySqlUtils.selectData(connection, scanSql);
-        // 对非项目模块内的自定义函数进行注册
-        for (TSelfFunction dateTran : dateTrans(resultSet)) {
-            // 对 Flink 非内置函数进行注册，其中函数类型为 00 的话，表示为 Flink  的内置函数
-            if (!ParameterValue.INTERNAEL_FUN_TYPE.equals(dateTran.getFunction_type()))
-            dbTableEnv.executeSql("CREATE TEMPORARY SYSTEM FUNCTION IF NOT EXISTS " +  dateTran.getFunction_name() + " AS '" + dateTran.getFunction_package_path() + "' LANGUAGE JAVA");
-        }
-        // 关闭 MySql 连接
-        MySqlUtils.closeConnection(connection);
+//        Connection connection = MySqlUtils.getConnection(parameterProperties.getProperty(ParameterName.REGIS_FUN_URL), parameterProperties.getProperty(ParameterName.TEST_USER_NAME), parameterProperties.getProperty(ParameterName.TEST_PASSWORD), parameterProperties.getProperty(ParameterName.TEST_DRIVER));
+//        // 扫描全表数据
+//        ResultSet resultSet = MySqlUtils.selectData(connection, scanSql);
+//        // 对非项目模块内的自定义函数进行注册
+//        for (TSelfFunction dateTran : dateTrans(resultSet)) {
+//            // 对 Flink 非内置函数进行注册，其中函数类型为 00 的话，表示为 Flink  的内置函数
+//            if (!ParameterValue.INTERNAEL_FUN_TYPE.equals(dateTran.getFunction_type()))
+//            dbTableEnv.executeSql("CREATE TEMPORARY SYSTEM FUNCTION IF NOT EXISTS " +  dateTran.getFunction_name() + " AS '" + dateTran.getFunction_package_path() + "' LANGUAGE JAVA");
+//        }
+//        // 关闭 MySql 连接
+//        MySqlUtils.closeConnection(connection);
     }
 
     /**

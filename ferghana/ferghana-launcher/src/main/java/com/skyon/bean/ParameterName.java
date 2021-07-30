@@ -18,8 +18,6 @@ public class ParameterName {
     public  static String KAFKA_ZK = "kafkaZK";
     // 输出到 es 地址
     public static String ES_ADDRESS = "esAddress";
-    // 测试输出到 es 地址
-    public static String TEST_ES_ADDRESS = "testEsAddress";
     // 输出到 hbase 所以依赖的 zk
     public static String HBASE_ZK = "hbaseZK";
     // 输出 jdbc driver
