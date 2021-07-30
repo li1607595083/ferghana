@@ -53,7 +53,7 @@
         <el-table-column label="运行状态" width="100" align="center" prop="runingState" :formatter="runingStateFormat">
           <template slot-scope="scope">
             <el-switch v-model="scope.row.runingState" active-value="1" inactive-value="0"
-              @change="handleStatusChange(scope.row)" />
+              @change="handleStatusChange(scope.row)" v-hasPermi="['variable:package:start']"/>
           </template>
         </el-table-column>
         <el-table-column label="操作人" align="center" width="130" prop="createBy"/>

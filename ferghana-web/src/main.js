@@ -23,6 +23,7 @@ import { parseTime, resetForm, addDateRange, selectDictLabel, download, handleTr
 import Pagination from "@/components/Pagination";
 
 import VeLine from 'v-charts/lib/line.common';
+import 'v-charts/lib/style.css';
 
 // 全局方法挂载
 Vue.prototype.getDicts = getDicts
