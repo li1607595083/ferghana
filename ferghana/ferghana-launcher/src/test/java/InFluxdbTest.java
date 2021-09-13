@@ -26,7 +26,7 @@ public class InFluxdbTest {
 
     @Test
     public  void  query() throws ParseException {
-        String job_id = "5f0a8c37de2df8a4691d2143c8120199";
+        String job_id = "5f0d1e1eef673cd8626bae5148f37e63";
         // metric reporter 时间间隔
         int reportInterval =  1;
         // 检查时间范围
@@ -80,7 +80,7 @@ public class InFluxdbTest {
 
 
 
-        // 5分钟内平均延迟
+        // 计算延迟
         String computerDurationSql =
                 "SELECT MEAN(value) "
                 + " FROM taskmanager_job_task_operator_flink_customer_metric_computer_duration "
@@ -90,16 +90,6 @@ public class InFluxdbTest {
                 + " tz('Asia/Shanghai')";
         double avgComputerDuration= getAvg(computerDurationSql, dataBase);
         System.out.println("5分钟内平局计算延迟:\t" + avgComputerDuration);
-
-
-
-
-
-//         获取当前的输出条数
-//        String computerSinkResult =
-//                "SELECT "
-
-
 
 
 
@@ -115,7 +105,7 @@ public class InFluxdbTest {
         // 横坐标
         long jmCpuLoadTime = jobManagerResourceCpuLoad.f0;
         // 纵坐标
-        double jmCpuLoadValue = jobManagerResourceCpuLoad.f1;
+        double jmCpuLoadValue = jobManagerResourceCpuLoad.f1 * 100;
         System.out.println("jobManger cpu 的使用情况:\t" + jmCpuLoadTime + "\t" + jmCpuLoadValue);
 
 
@@ -130,11 +120,20 @@ public class InFluxdbTest {
                 + " ORDER BY time DESC"
                 + " LIMIT 1 "
                 + " tz('Asia/Shanghai')";
+
+        String computerJobMangerHeadMax =
+                "SELECT value "
+                + " FROM jobmanager_Status_JVM_Memory_Heap_Max "
+                + " WHERE job_id_2 = " + "'" + job_id + "' "
+                + " ORDER BY time DESC"
+                + " LIMIT 1 "
+                + " tz('Asia/Shanghai')";
         Tuple2<Long, Double> jobManagerResourceHeadUsed = getJobManagerResource(computerJobMangerHeadLoad, dataBase);
+        Tuple2<Long, Double> jobManagerResourceHeadMax = getJobManagerResource(computerJobMangerHeadMax, dataBase);
         // 很坐标
         Long jmHeadUsedTime = jobManagerResourceHeadUsed.f0;
         // 中坐标
-        double jmHeadUsedValue = jobManagerResourceHeadUsed.f1 / (1024 * 1024);
+        double jmHeadUsedValue = (jobManagerResourceHeadUsed.f1 / jobManagerResourceHeadMax.f1) * 100;
         System.out.println("jobManger head 的使用情况\t" + jmHeadUsedTime + "\t" + jmHeadUsedValue);
 
 
@@ -149,17 +148,17 @@ public class InFluxdbTest {
                 + " AND time > now() - " + reportInterval + "m "
                 +  " ORDER BY time DESC "
                 + " tz('Asia/Shanghai')";
+
+
         HashMap<String, Tuple2<Long, Double>> taskManagerResourceCpuLoad = getTaskManagerResource(computerTaskMangerCpuLoad, dataBase);
-        Iterator<Map.Entry<String, Tuple2<Long, Double>>> iteratorTmCupLoad = taskManagerResourceCpuLoad.entrySet().iterator();
-        while (iteratorTmCupLoad.hasNext()){
-            Map.Entry<String, Tuple2<Long, Double>> next = iteratorTmCupLoad.next();
+        for (Map.Entry<String, Tuple2<Long, Double>> next : taskManagerResourceCpuLoad.entrySet()) {
             // 分类标准
             String taskCpuLoadContainer = next.getKey();
             Tuple2<Long, Double> value = next.getValue();
             // 横坐标
             Long tmCpuLoadTime = value.f0;
             // 纵坐标
-            Double tmCpuLoadValue = value.f1;
+            double tmCpuLoadValue = value.f1 * 100;
             System.out.println("taskManger cpu 的使用情况:\t" + taskCpuLoadContainer + "\t" + tmCpuLoadTime + "\t" + tmCpuLoadValue);
         }
 
@@ -167,7 +166,7 @@ public class InFluxdbTest {
 
 
 
-        //taskManger cpu 的使用情况
+        //taskManger head 的使用情况
         String computerTaskMangerHeadLoad =
                 "SELECT tm_id, value"
                 + " FROM taskmanager_Status_JVM_Memory_Heap_Used "
@@ -175,7 +174,16 @@ public class InFluxdbTest {
                 + " AND time > now() - " + reportInterval + "m "
                 + " ORDER BY time DESC "
                 + " tz('Asia/Shanghai')";
+
+        String computerTaskMangerHeadMax =
+                "SELECT tm_id, value"
+                        + " FROM taskmanager_Status_JVM_Memory_Heap_Max "
+                        + " WHERE job_id_2 = " + "'" + job_id + "' "
+                        + " AND time > now() - " + reportInterval + "m "
+                        + " ORDER BY time DESC "
+                        + " tz('Asia/Shanghai')";
         HashMap<String, Tuple2<Long, Double>> taskManagerResourceHeadUsed = getTaskManagerResource(computerTaskMangerHeadLoad, dataBase);
+        HashMap<String, Tuple2<Long, Double>> taskManagerResourceHeadMax = getTaskManagerResource(computerTaskMangerHeadMax, dataBase);
         Iterator<Map.Entry<String, Tuple2<Long, Double>>> iteratorTmHeadUsed = taskManagerResourceHeadUsed.entrySet().iterator();
         while (iteratorTmHeadUsed.hasNext()){
             Map.Entry<String, Tuple2<Long, Double>> next = iteratorTmHeadUsed.next();
@@ -185,7 +193,7 @@ public class InFluxdbTest {
             // 横坐标
             Long tmHedUseddTime = value.f0;
             // 纵坐标
-            Double tmHeadUsedValue = value.f1 / (1024 * 1024);
+            double tmHeadUsedValue = (value.f1 / taskManagerResourceHeadMax.get(taskHeadUsed).f1) * 100;
             System.out.println("taskManger head 的使用情况:\t" + taskHeadUsed + "\t" + tmHedUseddTime + "\t" + tmHeadUsedValue);
         }
 
@@ -198,7 +206,7 @@ public class InFluxdbTest {
                 "SELECT operator_name, count"
                         + " FROM taskmanager_job_task_operator_numRecordsOut "
                         + " WHERE job_id_2 = " + "'" + job_id + "' "
-                        + " AND time > now() - " + reportInterval + "m "
+                        + " AND time > now() - " + (reportInterval * 2) + "m "
                         + " ORDER BY time DESC "
                         + " tz('Asia/Shanghai')";
         Double numRecordsOut = getNumRecordsOut(computerNumRecordsOut, dataBase);
@@ -207,7 +215,8 @@ public class InFluxdbTest {
     }
 
 
-    private Double getNumRecordsOut(String sql, String database) throws ParseException {
+    private Double getNumRecordsOut(String sql, String database) {
+        HashMap<String, Double> hashMap = new HashMap<>();
         double counts = 0;
         QueryResult.Result oneQueryResult = getOneQueryResult(sql, database);
         if (oneQueryResult.getSeries() != null){
@@ -215,13 +224,19 @@ public class InFluxdbTest {
             if (queryResultFieldValue != null && queryResultFieldValue.size() > 0 ){
                 for (List<Object> values : queryResultFieldValue) {
                     String operatorName = values.get(1).toString();
-                    if (operatorName.contains("SINK_OUTPUT_RESUTL")){
-                        counts += (double)values.get(2);
+                    if (operatorName.contains("Sink:")){
+                        double number = (double) values.get(2);
+                        if (hashMap.get(operatorName) == null){
+                            hashMap.put(operatorName, counts);
+                            counts += number;
+                        } else {
+                            counts -= number;
+                        }
                     }
                 }
             }
         }
-        return counts;
+        return counts / 60;
     }
 
 
