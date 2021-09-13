@@ -42,6 +42,7 @@ import org.apache.flink.streaming.runtime.streamrecord.StreamElementSerializer;
 import org.apache.flink.streaming.runtime.streamstatus.StatusWatermarkValve;
 import org.apache.flink.streaming.runtime.streamstatus.StreamStatus;
 import org.apache.flink.table.data.RowData;
+import org.apache.flink.types.Row;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
@@ -70,8 +71,6 @@ import static org.apache.flink.util.Preconditions.checkState;
 @Internal
 public final class StreamTaskNetworkInput<T> implements StreamTaskInput<T> {
 
-    /**  判断数据是否来自数据源 */
-    private boolean source;
 
     private final CheckpointedInputGate checkpointedInputGate;
 
@@ -111,7 +110,6 @@ public final class StreamTaskNetworkInput<T> implements StreamTaskInput<T> {
         this.statusWatermarkValve = checkNotNull(statusWatermarkValve);
         this.inputIndex = inputIndex;
         this.channelIndexes = getChannelIndexes(checkpointedInputGate);
-        this.source = false;
     }
 
     @Nonnull
@@ -185,27 +183,17 @@ public final class StreamTaskNetworkInput<T> implements StreamTaskInput<T> {
      * @throws Exception
      */
     private void processElement(StreamElement recordOrMark, DataOutput<T> output) throws Exception {
-        // 对迟到的数据过滤
         if (recordOrMark.isRecord()){
-           if (recordOrMark.asRecord().getValue() instanceof RowData){
-               RowData rowData = (RowData) recordOrMark.asRecord().getValue();
-               if (source && (rowData.getLong(rowData.getArity() -  1) > statusWatermarkValve.lastMaxWaterMark || rowData.getLong(rowData.getArity() -  1) < 0)){
-                   output.emitRecord(recordOrMark.asRecord());
-               } else if (!source){
-                   output.emitRecord(recordOrMark.asRecord());
-               }
-           } else {
-               output.emitRecord(recordOrMark.asRecord());
-           }
+            output.emitRecord(recordOrMark.asRecord());
         } else if (recordOrMark.isWatermark()) {
-                statusWatermarkValve.inputWatermark(recordOrMark.asWatermark(), lastChannel);
+            statusWatermarkValve.inputWatermark(recordOrMark.asWatermark(), lastChannel);
         } else if (recordOrMark.isLatencyMarker()) {
             output.emitLatencyMarker(recordOrMark.asLatencyMarker());
         } else if (recordOrMark.isStreamStatus()) {
             StreamStatus streamStatus = recordOrMark.asStreamStatus();
             // 判断数据是否直接来自数据源
-            if (!source){
-                this.source = streamStatus.isSource();
+            if (!statusWatermarkValve.isSourec){
+                statusWatermarkValve.isSourec = streamStatus.isSource();
             }
             statusWatermarkValve.inputStreamStatus(streamStatus, lastChannel);
         } else {

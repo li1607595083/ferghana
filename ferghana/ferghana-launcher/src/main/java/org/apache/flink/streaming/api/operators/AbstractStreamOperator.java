@@ -577,10 +577,10 @@ public abstract class AbstractStreamOperator<OUT>
         long newMin = input2Statue == 0 ? Math.min(input1Watermark, input2Watermark) : input1Watermark;
         if (newMin > combinedWatermark) {
             combinedWatermark = newMin;
-            if (mark.getTdlease() == 0){
+            if (mark.getTdlease() != 0){
                 processWatermark(new Watermark(combinedWatermark));
             } else {
-                processWatermark(new Watermark(combinedWatermark, -1));
+                processWatermark(new Watermark(combinedWatermark, mark.getTdlease()));
             }
 
         }

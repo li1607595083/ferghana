@@ -6,6 +6,14 @@ package com.skyon.bean;
  * @DATE: 2021/6/22
  */
 public class ParameterName {
+    // 集合且分区 SQL 语句
+    public static String AGG_PARTITION_SQL = "aggPartitionSql";
+    // 非聚合 SQL 语句
+    public static String TRANSITION_SQL = "transitionSql";
+    // 聚合且非分区 SQL 语句
+    public static String  AGG_NO_PARTITION_SQL = "aggNoPartitionSql";
+    // 派生 SQL
+    public static String DERIVE_SQL = "deriveSql";
     // 批量输出，批次大小
     public static String BATH_SIZE = "batchSize";
     // topic 分区数
@@ -58,14 +66,8 @@ public class ParameterName {
     public static String TEST_ORACLE_PASSWORD = "testOraclePassWord";
     // 测试环境 oracle 连接 driver
     public static String TEST_ORACLE_DRIVER = "testOracleDriver";
-    // 结果指标 sql 集合
-    public static String SQL_SET = "sqlSet";
-    // 派生变量 sql
-    public static String DEVARIABLE_SQLS = "deVariableSqls";
     // 变量 sql
     public static String VARIABLE_SQLS = "variableSqls";
-    // 原始时段 sql
-    public static String ORIGINAL_VARIABLE_SQL = "originalVariableSql";
     // 数据源表和数据维表的关联的SQL语句
     public static String SOURCE_JOIN_DIM_SQL = "joinSql";
     // 维表类型

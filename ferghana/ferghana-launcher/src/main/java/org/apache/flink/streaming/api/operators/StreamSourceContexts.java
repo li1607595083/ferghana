@@ -546,7 +546,7 @@ public class StreamSourceContexts {
         @Override
         public void markAsTemporarilyIdle() {
             synchronized (checkpointLock) {
-                streamStatusMaintainer.toggleStreamStatus(new StreamStatus(-1, this.delayTime, this.twoStreamJoinDelayTime, false));
+                streamStatusMaintainer.toggleStreamStatus(new StreamStatus(-1, this.delayTime, this.twoStreamJoinDelayTime, true));
             }
         }
 

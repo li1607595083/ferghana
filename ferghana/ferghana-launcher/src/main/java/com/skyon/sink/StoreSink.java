@@ -1,6 +1,7 @@
 package com.skyon.sink;
 
 import com.skyon.bean.*;
+import com.skyon.function.FunMapValueMoveTypeAndFieldNameTest;
 import com.skyon.function.FunMapValueMoveTypeAndFieldNmae;
 import com.skyon.type.TypeTrans;
 import com.skyon.utils.DataStreamToTable;
@@ -27,10 +28,12 @@ import java.io.IOException;
 import java.util.*;
 
 import static com.skyon.app.AppPerFormOperations.getUid;
+import static com.skyon.utils.ParameterUtils.removeBeforeFirstSpecialSymbol;
 import static com.skyon.utils.ParameterUtils.removeTailLastSpecialSymbol;
 
 public class StoreSink {
 
+    Table table;
     /*The table name of the resulting table*/
     private String rstbname;
     /*Insert the output statement of the result table*/
@@ -54,7 +57,11 @@ public class StoreSink {
         if (RunMode.START_MODE.equals(properties.getProperty(ParameterName.RUM_MODE))){
             initPre(properties.getProperty(ParameterName.SINK_SQL));
             getSchemaAndTable();
+        } else {
+            selesql = removeBeforeFirstSpecialSymbol(removeTailLastSpecialSymbol(properties.getProperty(ParameterName.SINK_SQL),")", true), "(",true);
+            table = dbTableEnv.sqlQuery(selesql);
         }
+
     }
 
     /**
@@ -64,6 +71,10 @@ public class StoreSink {
     private void initPre(String sinkSql){
         String[] sp = removeTailLastSpecialSymbol(sinkSql, ")", true).split("\\(", 2);
         selesql = sp[1].trim();
+        String[] sp_2 = selesql.split("\\s+", 2);
+        if (!SourceType.MYSQL_CDC.equals(properties.getProperty(ParameterName.SOURCE_TYPE))){
+            selesql = sp_2[0] + " " + ParameterValue.PROCTIME + "," + sp_2[1];
+        }
         rstbname = sp[0].trim().split("\\s+")[2];
         resultTable = "CREATE TABLE " +  rstbname +" (";
         if (properties.getProperty(ParameterName.SINK_TYPE).equals(SinkType.SINK_HBASE)){
@@ -76,7 +87,7 @@ public class StoreSink {
      * @return
      */
     private void getSchemaAndTable(){
-        Table table = dbTableEnv.sqlQuery(selesql);
+        table = dbTableEnv.sqlQuery(selesql);
         TableSchema schema = table.getSchema();
         String[] fieldNames = schema.getFieldNames();
         String hbaseColumn = "";
@@ -111,7 +122,9 @@ public class StoreSink {
             if (fieldType.equals("STRING")){
                 fieldType = indexfieldNameAndType.getOrDefault(fieldName, fieldType);
             }
-            resultTable = resultTable + fieldName + " " + fieldType  + ",";
+            if (!fieldName.equals(ParameterValue.PROCTIME)){
+                resultTable = resultTable + fieldName + " " + fieldType  + ",";
+            }
             nt.put(fieldName, fieldType);
         }
         if (selesql.contains("ROW")){
@@ -121,6 +134,16 @@ public class StoreSink {
         }
     }
 
+    private String getOutputSql(){
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("INSERT INTO ").append(rstbname).append(" SELECT ");
+        for (String s : nt.keySet()) {
+            if (!s.equals(ParameterValue.PROCTIME)){
+                stringBuilder.append(s).append(",");
+            }
+        }
+        return removeTailLastSpecialSymbol(stringBuilder.toString(), ",", false) + " FROM result_table";
+    }
 
     /**
      * To sink to an external storage system(Hbase, JDBC，ES)
@@ -132,8 +155,7 @@ public class StoreSink {
             testResultOutput();
         } else {
             SingleOutputStreamOperator<String> stringDataStream = resultToString(rstbname, ParameterName.SINK_SQL);
-            String outputSql = "INSERT INTO " + rstbname + " SELECT * FROM result_table";
-            DataStreamToTable.registerTable(dbTableEnv, stringDataStream,"result_table", false, nt);
+            DataStreamToTable.registerTable(dbTableEnv, stringDataStream,"result_table", false, nt, null);
             if (properties.getProperty(ParameterName.SINK_TYPE).equals(SinkType.SINK_KAFKA)) {
                 createOutPutTopic();
                 getKafkaCreateTable();
@@ -150,7 +172,7 @@ public class StoreSink {
                 StoreUtils.of(resultTable).createIndexWithMappings();
             }
             dbTableEnv.executeSql(resultTable);
-            dbTableEnv.createStatementSet().addInsertSql(outputSql).execute();
+            dbTableEnv.createStatementSet().addInsertSql(getOutputSql()).execute();
         }
     }
 
@@ -170,15 +192,13 @@ public class StoreSink {
 
     public SingleOutputStreamOperator<String> resultToString(String resultTable, String uidPrefix) {
         String uid = getUid(uidPrefix, resultTable);
-        Table table = dbTableEnv.sqlQuery(selesql);
         return dbTableEnv.toAppendStream(table, Row.class, uid)
                 .map(FunMapValueMoveTypeAndFieldNmae.of(table.getSchema().getFieldNames()));
     }
 
     public SingleOutputStreamOperator<String> resultToString() {
-        Table table = dbTableEnv.sqlQuery(selesql);
         return dbTableEnv.toAppendStream(table, Row.class)
-                .map(FunMapValueMoveTypeAndFieldNmae.of(table.getSchema().getFieldNames()));
+                .map(FunMapValueMoveTypeAndFieldNameTest.of(table.getSchema().getFieldNames()));
     }
 
     private void testResultOutput() {
@@ -268,7 +288,7 @@ public class StoreSink {
         if (RunMode.START_MODE.equals(properties.getProperty(ParameterName.RUM_MODE))){
             KafkaUtils.createKafkaTopic(zkUtils, rstbname, Integer.parseInt(properties.getProperty(ParameterName.KAFKA_PARTITION)), Integer.parseInt(properties.getProperty(ParameterName.TOPIC_REPLICATION, "1")));
         } else {
-            KafkaUtils.createKafkaTopic(zkUtils, rstbname, Integer.parseInt(properties.getProperty(ParameterName.KAFKA_PARTITION)), 1);
+            KafkaUtils.createKafkaTopic(zkUtils, properties.getProperty(ParameterName.TEST_TOPIC_NAME), Integer.parseInt(properties.getProperty(ParameterName.KAFKA_PARTITION)), 1);
         }
         KafkaUtils.clostZkUtils(zkUtils);
     }

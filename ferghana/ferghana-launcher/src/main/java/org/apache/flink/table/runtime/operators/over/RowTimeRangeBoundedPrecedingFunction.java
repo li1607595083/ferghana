@@ -26,6 +26,7 @@ import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.typeutils.ListTypeInfo;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.streaming.api.TimerService;
 import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
 import org.apache.flink.table.data.JoinedRowData;
 import org.apache.flink.table.data.RowData;
@@ -35,6 +36,7 @@ import org.apache.flink.table.runtime.generated.GeneratedAggsHandleFunction;
 import org.apache.flink.table.runtime.typeutils.RowDataTypeInfo;
 import org.apache.flink.table.types.logical.LogicalType;
 import org.apache.flink.util.Collector;
+import org.apache.flink.util.OutputTag;
 import org.apache.flink.util.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -163,20 +165,20 @@ public class RowTimeRangeBoundedPrecedingFunction<K> extends KeyedProcessFunctio
         }
         // check if the data is expired, if not, save the data and register event time timer
         if (triggeringTs > lastTriggeringTs) {
-            List<RowData> data = inputState.get(triggeringTs);
-            if (null != data) {
-                data.add(input);
-                inputState.put(triggeringTs, data);
-            } else {
-                data = new ArrayList<RowData>();
-                data.add(input);
-                inputState.put(triggeringTs, data);
-                // register event time timer
-                // 增加延迟触发时间
-                ctx.timerService().registerEventTimeTimer(triggeringTs);
+            if (lastTriggeringTs != 0L || triggeringTs > ctx.timerService().currentWatermark()){
+                List<RowData> data = inputState.get(triggeringTs);
+                if (null != data) {
+                    data.add(input);
+                    inputState.put(triggeringTs, data);
+                } else {
+                    data = new ArrayList<RowData>();
+                    data.add(input);
+                    inputState.put(triggeringTs, data);
+                    ctx.timerService().registerEventTimeTimer(triggeringTs);
+                }
+                ctx.timerService().currentWatermark();
+                registerCleanupTimer(ctx, triggeringTs);
             }
-            ctx.timerService().currentWatermark();
-            registerCleanupTimer(ctx, triggeringTs);
         }
     }
 
@@ -219,7 +221,7 @@ public class RowTimeRangeBoundedPrecedingFunction<K> extends KeyedProcessFunctio
         List<RowData> inputs = inputState.get(timestamp);
         if (null != inputs) {
 
-            int dataListIndex = 0;
+            int dataListIndex;
             RowData accumulators = accState.value();
 
             // initialize when first run or failover recovery per key

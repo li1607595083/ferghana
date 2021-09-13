@@ -15,8 +15,9 @@ public class ParameterValue {
     // 处理时间字段名
     public static String PROCTIME = "proctime";
     // mysql cdc 新增数据类型字段
-    public static String CDC_TYPE = "CDC_TYPE";
+    public static String CDC_TYPE = "CDC_OP";
     // 测试时,测流输出的 id
     public static String SIDE_OUTPUT = "side-output";
-
+    // sql 计算语句的表名
+    public static String TMP_TABLE = "tmp_table";
 }

@@ -2,14 +2,11 @@ package com.skyon.main;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import com.dtstack.flink.api.java.MyLocalStreamEnvironment;
 import com.dtstack.flinkx.config.DataTransferConfig;
 import com.dtstack.flinkx.config.SpeedConfig;
-import com.dtstack.flinkx.constants.ConfigConstant;
 import com.dtstack.flinkx.kafka.writer.KafkaWriter;
 import com.dtstack.flinkx.oraclelogminer.reader.OraclelogminerReader;
 import com.dtstack.flinkx.reader.BaseDataReader;
-import com.dtstack.flinkx.test.PluginNameConstants;
 import com.dtstack.flinkx.writer.BaseDataWriter;
 import com.skyon.app.AppPerFormOperations;
 import com.skyon.app.AppRegisFunction;
@@ -18,31 +15,21 @@ import com.skyon.bean.RunMode;
 import com.skyon.bean.SourceType;
 import com.skyon.utils.FlinkUtils;
 import com.skyon.utils.ParameterUtils;
-import org.apache.commons.lang.StringUtils;
-
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.runtime.jobgraph.SavepointRestoreSettings;
-import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSink;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
-import org.apache.flink.streaming.api.environment.CheckpointConfig;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.types.Row;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-
 import static com.skyon.utils.ParameterUtils.parseStrToProperties;
 
 /**
@@ -76,7 +63,7 @@ public class MianAppProcesTest {
             Map gloabParameter = parseStrToProperties(properties.getProperty(ParameterName.GLOAB_PARAMETER));
             dbEnv.getConfig().setGlobalJobParameters(ParameterTool.fromMap(gloabParameter));
             // 创建一个 AppPerFormOperations 实例
-            AppPerFormOperations appOneStreamOver = AppPerFormOperations.of(properties, dbTableEnv);
+            AppPerFormOperations appOneStreamOver = AppPerFormOperations.of(properties, dbTableEnv, dbEnv);
             // 创建数据源表，包括单个数据源(kafka,mysql,oracle),双流join(两个topic)
             appOneStreamOver.createSource();
             // 执行数据维维表创建语句
@@ -87,12 +74,11 @@ public class MianAppProcesTest {
             appOneStreamOver.twoStreamConcat();
             // 用于计算部分
             if (properties.getProperty(ParameterName.SOURCE_TYPE).equals(SourceType.ONE_STREAM) || properties.getProperty(ParameterName.SOURCE_TYPE).equals(SourceType.TWO_STREAM_JOIN)) {
-                appOneStreamOver.deVariableExec();
-                Tuple2<SingleOutputStreamOperator<String>, LinkedHashMap<String, String>> resutl = appOneStreamOver.variableExec();
+                Tuple2<SingleOutputStreamOperator<String>, LinkedHashMap<String, String>> result = appOneStreamOver.variableExec();
                 // 创建测试使用的topic, 用于存储计算结果，以便前端读取
-                appOneStreamOver.testMOde(resutl);
+                appOneStreamOver.testMOde(result);
                 // 非测试模式
-                appOneStreamOver.runMode(resutl);
+                appOneStreamOver.runMode(result);
             } else if (properties.getProperty(ParameterName.SOURCE_TYPE).equals(SourceType.MYSQL_CDC)){
                 appOneStreamOver.cdcMySqlAsyncResult();
             }
