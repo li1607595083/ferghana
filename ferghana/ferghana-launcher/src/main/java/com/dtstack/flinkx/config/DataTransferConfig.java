@@ -121,10 +121,6 @@ public class DataTransferConfig extends AbstractConfig {
         HashMap job =  ((HashMap)map.get("job"));
         LinkedTreeMap reader = ((LinkedTreeMap)((LinkedTreeMap)((ArrayList)job.get("content")).get(0)).get("reader"));
         String schema = reader.get("schema").toString();
-        String[] schemas = schema.split(",");
-        for (String field : schemas) {
-            LogParser.fields.add(field.split(":")[0]);
-        }
 
         LinkedTreeMap parameter = (LinkedTreeMap)reader.get("parameter");
         String cat = parameter.get("cat").toString();
@@ -141,6 +137,8 @@ public class DataTransferConfig extends AbstractConfig {
         newcat.substring(0,newcat.length() - 2);
         parameter.put("cat",newcat);
         parameter.put("pavingData",true);
+//        parameter.put("queryTimeout",3000);
+        parameter.put("schema",schema);
 
         Map log = new LinkedTreeMap();
         log.put("isLogger",false);
