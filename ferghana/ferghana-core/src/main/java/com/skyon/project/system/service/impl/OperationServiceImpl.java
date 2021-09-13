@@ -4,21 +4,32 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.skyon.project.system.domain.*;
+import com.skyon.project.system.mapper.OperationMonitorMapper;
+import com.skyon.project.system.mapper.TVariablePackageManagerMapper;
+import com.skyon.project.system.service.ITVariablePackageManagerService;
 import com.skyon.project.system.service.OperationService;
 import com.skyon.project.system.util.HttpUtil;
 import com.skyon.project.system.util.PropertiesUtil;
+import com.skyon.project.system.util.StatusUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 @Service
 public class OperationServiceImpl implements OperationService {
 
 
     private static final String FLINKWEBADDRESS = "flink_web_address"; // 启动脚本路径
+
+    @Autowired
+    private TVariablePackageManagerMapper tVariablePackageManagerMapper;
+
+    @Autowired
+    private OperationMonitorMapper operationMonitorMapper;
 
     @Override
     public List getJobDetail(List<TVariablePackageManager> list) {
@@ -202,11 +213,73 @@ public class OperationServiceImpl implements OperationService {
         return HttpUtil.httpConnLog(url);
     }
 
+    @Override
+    public Map getRuningJob() {
+        TVariablePackageManager pk = new TVariablePackageManager();
+        pk.setRuningState("1");
+        List<TVariablePackageManager> runingList = tVariablePackageManagerMapper.selectTVariablePackageManagerList(pk);
+        pk.setRuningState("0");
+        List<TVariablePackageManager> stopList = tVariablePackageManagerMapper.selectTVariablePackageManagerList(pk);
+        Map map = new HashMap();
+        map.put("runing", runingList.size());
+        map.put("stop", stopList.size());
+        return map;
+    }
+
+    @Override
+    public List<TVariablePackageManager> getRuningJobList() {
+        TVariablePackageManager pk = new TVariablePackageManager();
+        pk.setRuningState("1");
+        List<TVariablePackageManager> runingList = tVariablePackageManagerMapper.selectTVariablePackageManagerList(pk);
+        return runingList;
+    }
+
+    @Override
+    public Map getCoreAndMemoryInfo() throws IOException, InterruptedException {
+        StatusUtil statusUtil = new StatusUtil();
+        List<Map<String, Double>> list = statusUtil.getStatus();
+        Map result = new HashMap();
+        result.put("coreList", list.get(0));
+        result.put("memoryList", list.get(1));
+        return result;
+    }
+
     // 将时间搓的转换为 0天7时31分23秒 的 格式
     private String timeTran(Object timeString) {
         Long duration = new Long(timeString.toString());
         return duration / (3600000 * 24) + "天" + (duration % (3600000 * 24)) / 3600000 + "时"
                 + ((duration % (3600000 * 24)) % 3600000) / 60000 + "分"
                 + (((duration % (3600000 * 24)) % 3600000) % 60000) / 1000 + "秒";
+    }
+
+    public int insertOperationMonitor(OperationMonitor operationMonitor){
+        return operationMonitorMapper.insertOperationMonitor(operationMonitor);
+    }
+
+    @Override
+    public Map<String, List<OperationMonitor>> selectOperationMonitor(OperationMonitor operationMonitor) {
+        Map<String, List<OperationMonitor>> map = new HashMap();
+        List<OperationMonitor> list = operationMonitorMapper.selectOperationMonitor(operationMonitor);
+        List<String> arr = new ArrayList<String>();
+        list.forEach(item -> {
+            if(arr.indexOf(item.getMonitorType()) == -1){
+                arr.add(item.getMonitorType());
+                List<OperationMonitor> temp = new ArrayList<>();
+                temp.add(item);
+                map.put(item.getMonitorType(), temp);
+            }
+            else {
+                List<OperationMonitor> temp = map.get(item.getMonitorType());
+                temp.add(item);
+                map.put(item.getMonitorType(), temp);
+            }
+        });
+        return map;
+    }
+
+    // 清空过期数据
+    @Override
+    public int deleteOperationMonitor() {
+        return operationMonitorMapper.deleteOperationMonitor();
     }
 }
