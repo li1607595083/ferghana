@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.skyon.project.system.mapper.OperationMonitorMapper">
+
+    <resultMap type="OperationMonitor" id="OperationMonitorResult">
+        <id     property="monitorId"      column="monitor_id" />
+        <result property="monitorType" column="monitor_type" />
+        <result property="monitorTime"    column="monitor_time" />
+        <result property="monitorValue"    column="monitor_value" />
+        <result property="createTime"    column="create_time" />
+        <result property="jobId"   column="job_id"   />
+    </resultMap>
+
+    <sql id="selectOperationMonitorSql">
+        select monitor_id, monitor_type, monitor_time, monitor_value, job_id, create_time from `operation_monitor`
+    </sql>
+
+    <insert id="insertOperationMonitor" parameterType="OperationMonitor" useGeneratedKeys="true" keyProperty="monitorId">
+        insert into operation_monitor
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="monitorType != null  and monitorType != ''">monitor_type,</if>
+            <if test="monitorTime != null  and monitorTime != ''">monitor_time,</if>
+            <if test="monitorValue != null  and monitorValue != ''">monitor_value,</if>
+            <if test="jobId != null  and jobId != ''">job_id,</if>
+            create_time
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="monitorType != null  and monitorType != ''">#{monitorType},</if>
+            <if test="monitorTime != null  and monitorTime != ''">#{monitorTime},</if>
+            <if test="monitorValue != null  and monitorValue != ''">#{monitorValue},</if>
+            <if test="jobId != null  and jobId != ''">#{jobId},</if>
+            sysdate()
+        </trim>
+    </insert>
+
+    <select id="selectOperationMonitor" parameterType="OperationMonitor" resultMap="OperationMonitorResult">
+        <include refid="selectOperationMonitorSql" />
+        <where>
+            <if test="jobId != null  and jobId != ''"> and job_id = #{jobId}</if>
+        </where>
+        and TO_DAYS(create_time) = TO_DAYS(now())
+        order by create_time asc
+    </select>
+
+    <delete id="deleteOperationMonitor" parameterType="int">
+        delete from `operation_monitor` where TO_DAYS(create_Time) &lt; TO_DAYS(now())
+    </delete>
+
+</mapper>

@@ -29,6 +29,7 @@ public class ParameterUtils {
         // 直接转换为字符串,转换后为JSON格式
         String meta = new String(decoded);
         JSONObject jsonObject = JSON.parseObject(meta);
+        System.out.println(jsonObject.toJSONString());
         // 以迭代器的形式返回
         Set<Map.Entry<String, Object>> encryParameterSet = jsonObject.entrySet();
         // 将解密后参数存放到  Properties 对象中加
@@ -86,16 +87,27 @@ public class ParameterUtils {
             // 由于前端生成的 sinkSql 主键放在了后面的位置，因此需要进行调整,主键需要在首位;
             String[] fieldAndTable = removeBeforeFirstSpecialSymbol(sinkSql, "(", true)
                     .replaceAll("from", "FROM").split("FROM", 2);
-            // 获取字段，取出主键
-            String indexField = removeTailLastSpecialSymbol(fieldAndTable[0].split("\\s+", 2)[1], ",", false);
-            // 重新拼接
-            stringBuilder
-                    .append("(")
-                    .append("SELECT ")
-                    .append(properties.getProperty(ParameterName.SOURCE_PRIMARY_KEY))
-                    .append(", ")
-                    .append(indexField).append(" FROM ")
-                    .append(fieldAndTable[1]);
+            if (!SourceType.MYSQL_CDC.equals(properties.getProperty(ParameterName.SOURCE_TYPE))){
+                // 获取字段，取出主键
+                String indexField = removeTailLastSpecialSymbol(fieldAndTable[0].trim().split("\\s+", 2)[1], ",", false);
+                // 重新拼接
+                stringBuilder
+                        .append("(")
+                        .append("SELECT ")
+                        .append(properties.getProperty(ParameterName.SOURCE_PRIMARY_KEY))
+                        .append(", ")
+                        .append(indexField).append(" FROM ")
+                        .append(fieldAndTable[1]);
+            } else {
+                stringBuilder
+                        .append("(")
+                        .append(fieldAndTable[0])
+                        .append(", ")
+                        .append(ParameterValue.CDC_TYPE)
+                        .append(" FROM ")
+                        .append(fieldAndTable[1]);
+            }
+
             properties.setProperty(ParameterName.SINK_SQL, stringBuilder.toString());
 
         }
@@ -166,6 +178,7 @@ public class ParameterUtils {
         String result = reverse.split(separator, 2)[1];
         return StringUtils.reverse(result);
     }
+
 
     /**
      * @desc 对链接配置名，以及配置值进行格式化
@@ -302,7 +315,7 @@ public class ParameterUtils {
      * @param isSpecialSymbol 是否为特殊符号
      * @return
      */
-    private static String removeTailFirstSpecialSymbol(String str, String symblo, boolean isSpecialSymbol){
+    public static String removeTailFirstSpecialSymbol(String str, String symblo, boolean isSpecialSymbol){
         // 指定分割符号
         String separator = isSpecialSymbol ? String.format("\\%s", symblo) : symblo;
         return str.split(separator, 2)[0];
@@ -310,13 +323,13 @@ public class ParameterUtils {
 
 
     /**
-     * @desc 删除字符串中指定符号(首位位)的前面部分
+     * @desc 删除字符串中指定符号(首位)的前面部分
      * @param str 目标字符串
      * @param symblo 指定符号
      * @param isSpecialSymbol 是否为特殊符号
      * @return
      */
-    private static String removeBeforeFirstSpecialSymbol(String str, String symblo, boolean isSpecialSymbol){
+    public static String removeBeforeFirstSpecialSymbol(String str, String symblo, boolean isSpecialSymbol){
         // 指定分割符号
         String separator = isSpecialSymbol ? String.format("\\%s", symblo) : symblo;
         return str.split(separator, 2)[1];
@@ -414,8 +427,6 @@ public class ParameterUtils {
         sourceTableSqlDeal(properties);
         // 对数据维表创建语句进一步处理
         dimTableSqlDeal(properties);
-        // 对计算指标进一步处理
-        getSqlSet(properties);
         // 获取 Flink 的全局参数
         getGlobParameter(properties);
         // 根据运行模式修改参数值
@@ -427,22 +438,6 @@ public class ParameterUtils {
         sinkSqlDeal(properties);
     }
 
-    private static void getSqlSet(Properties properties) {
-        String sqlSet = "";
-        if (properties.getProperty(ParameterName.ORIGINAL_VARIABLE_SQL) != null){
-            sqlSet +=  properties.getProperty(ParameterName.ORIGINAL_VARIABLE_SQL) + ";";
-        }
-        if (properties.getProperty(ParameterName.VARIABLE_SQLS) != null){
-            sqlSet +=  properties.getProperty(ParameterName.VARIABLE_SQLS) + ";";
-        }
-        if (properties.getProperty(ParameterName.DEVARIABLE_SQLS) != null){
-            for (String sql : properties.getProperty(ParameterName.DEVARIABLE_SQLS).split("[|]")) {
-                // 执行派生变量的sql语句，并进行合并成一个DataStream
-                sqlSet += sql.split("@")[1] + ";";
-            }
-        }
-        properties.put(ParameterName.SQL_SET, sqlSet);
-    }
 
     /**
      * @desc 解析 josn 串

@@ -1,9 +1,12 @@
 package com.skyon.utils;
 
 import com.skyon.app.AppPerFormOperations;
+import com.skyon.bean.WaterMarkGeneratorCounuser;
 import com.skyon.function.FunMapJsonForPars;
+import org.apache.flink.api.common.eventtime.*;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
@@ -11,12 +14,18 @@ import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.table.expressions.Expression;
 import org.apache.flink.types.Row;
+import org.apache.hadoop.util.hash.Hash;
 
+import java.sql.Time;
+import java.time.Duration;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.apache.flink.table.api.Expressions.$;
+import static org.apache.flink.table.api.Expressions.e;
+import static org.apache.flink.table.api.Expressions.localTimestamp;
 
 /**
  * @DESCRIPTION:
@@ -25,8 +34,8 @@ import static org.apache.flink.table.api.Expressions.$;
  */
 public class DataStreamToTable {
 
-    public static   void registerTable(StreamTableEnvironment dbTableEnv, DataStream<String> dataStream, String tableName, Boolean flag, LinkedHashMap<String, String> singleFieldTypeHashMap) {
-        TableSchema tableSchema = new TableSchema(singleFieldTypeHashMap).invoke();
+    public static   void registerTable(StreamTableEnvironment dbTableEnv, SingleOutputStreamOperator<String> dataStream, String tableName, Boolean flag, LinkedHashMap<String, String> singleFieldTypeHashMap, String timeField) {
+        TableSchema tableSchema = new TableSchema(singleFieldTypeHashMap, timeField).invoke();
         Expression[] expressions = tableSchema.getExpressions();
         String sch = tableSchema.getSch();
         RowTypeInfo rowTypeInfo = tableSchema.getRowTypeInfo();
@@ -46,9 +55,11 @@ public class DataStreamToTable {
         private Expression[] expressions;
         private String sch;
         private RowTypeInfo rowTypeInfo;
+        private String timeField;
 
-        public TableSchema(LinkedHashMap<String, String> singleFieldTypeHashMap) {
+        public TableSchema(LinkedHashMap<String, String> singleFieldTypeHashMap, String timeField) {
             this.singleFieldTypeHashMap = singleFieldTypeHashMap;
+            this.timeField = timeField;
         }
 
         public Expression[] getExpressions() {
@@ -75,9 +86,19 @@ public class DataStreamToTable {
                 String name = next.getKey();
                 String type = next.getValue();
                 nameArr[i] = "`" + name + "`";
-                typeArr[i] = Types.STRING;
-                expressions[i] = $(name);
-                sch = sch + "CAST(" + name + " AS " +  type + ") AS " + name + ", ";
+                if (type.startsWith("TIMESTAMP")){
+                    typeArr[i] = Types.SQL_TIMESTAMP;
+                    sch = sch +  name + ", ";
+                    if (timeField != null && timeField.equals(name)){
+                        expressions[i] = $(name).rowtime();
+                    } else {
+                        expressions[i] = $(name);
+                    }
+                } else {
+                    typeArr[i] = Types.STRING;
+                    expressions[i] = $(name);
+                    sch = sch + "CAST(" + name + " AS " +  type + ") AS " + name + ", ";
+                }
                 i++;
             }
             sch  = sch.trim();

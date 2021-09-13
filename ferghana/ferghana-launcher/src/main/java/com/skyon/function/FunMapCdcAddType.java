@@ -31,7 +31,7 @@ public class FunMapCdcAddType extends RichMapFunction<Tuple2<Boolean, Row>, Stri
     }
 
     @Override
-    public String map(Tuple2<Boolean, Row> tp2) throws Exception {
+    public String map(Tuple2<Boolean, Row> tp2) {
         HashMap<String, String> fieldNameAndFieldValue = new HashMap<>();
         int index = 0;
         Row value = tp2.f1;
@@ -45,8 +45,10 @@ public class FunMapCdcAddType extends RichMapFunction<Tuple2<Boolean, Row>, Stri
                     index++;
                 }
                 fieldNameAndFieldValue.put("CDC_OP", op_type);
+                return JSONObject.toJSON(fieldNameAndFieldValue).toString();
+            } else {
+                return null;
             }
-            return JSONObject.toJSON(fieldNameAndFieldValue).toString();
         } else {
             return null;
         }

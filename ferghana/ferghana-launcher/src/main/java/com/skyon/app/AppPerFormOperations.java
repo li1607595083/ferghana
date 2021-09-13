@@ -2,6 +2,7 @@ package com.skyon.app;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.google.gson.JsonObject;
 import com.skyon.bean.*;
 import com.skyon.function.*;
 import com.skyon.sink.KafkaSink;
@@ -9,26 +10,36 @@ import com.skyon.sink.StoreSink;
 import com.skyon.type.TypeTrans;
 import com.skyon.utils.DataStreamToTable;
 import com.skyon.utils.KafkaUtils;
+import com.skyon.utils.ParameterUtils;
 import kafka.utils.ZkUtils;
+import org.apache.commons.lang3.time.FastDateFormat;
+import org.apache.flink.api.common.eventtime.*;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
+import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
+import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableSchema;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.table.expressions.Expression;
 import org.apache.flink.table.types.DataType;
 import org.apache.flink.types.Row;
+import org.jetbrains.annotations.NotNull;
 import org.omg.CORBA.DATA_CONVERSION;
 
+import java.awt.*;
+import java.text.ParseException;
 import java.util.*;
 import static com.skyon.app.AppInputTestData.inputDataToHbase;
 import static com.skyon.app.AppInputTestData.inputDataToJdbc;
-import static org.apache.flink.table.api.Expressions.$;
-import static org.apache.flink.table.api.Expressions.lit;
+import static org.apache.flink.table.api.Expressions.*;
 
 /**
  * @DESCRIBE 主应用程序，执行操作类；
@@ -37,6 +48,9 @@ public class AppPerFormOperations {
     /*参数属性*/
     private Properties properties;
     private StreamTableEnvironment dbTableEnv;
+    private StreamExecutionEnvironment dbEnv;
+    // 初始化表
+    private String initTableName = "";
 
     public AppPerFormOperations() {}
 
@@ -44,15 +58,17 @@ public class AppPerFormOperations {
      * @desc 对成员变量赋值
      * @param properties
      */
-    public AppPerFormOperations(Properties properties, StreamTableEnvironment dbTableEnv) {
+    public AppPerFormOperations(Properties properties, StreamTableEnvironment dbTableEnv, StreamExecutionEnvironment dbEnv) {
         // 成员变量引用
         this.properties = properties;
         this.dbTableEnv = dbTableEnv;
+        this.dbEnv = dbEnv;
     }
 
     public void queryRegisterView(String querySql, String name){
         Table table = dbTableEnv.sqlQuery(querySql);
         dbTableEnv.createTemporaryView(name, table);
+        initTableName = name;
     }
 
     /**
@@ -94,7 +110,34 @@ public class AppPerFormOperations {
         if (SourceType.TWO_STREAM_JOIN.equals(properties.getProperty(ParameterName.SOURCE_TYPE))){
             Table table = dbTableEnv.sqlQuery(properties.getProperty(ParameterName.TWO_STREAM_JOIN_SQL));
             dbTableEnv.createTemporaryView(properties.getProperty(ParameterName.TWO_STREAM_JOIN_REGISTER_TABLE_NAME),table);
+            initTableName = properties.getProperty(ParameterName.TWO_STREAM_JOIN_REGISTER_TABLE_NAME);
         }
+    }
+
+    private int getSqlNumbers(){
+        String aggPartitionSqls = properties.getProperty(ParameterName.AGG_PARTITION_SQL);
+        String transitionSqls = properties.getProperty(ParameterName.TRANSITION_SQL);
+        String aggNoPartitionSqls = properties.getProperty(ParameterName.AGG_NO_PARTITION_SQL);
+        String deriveSqls = properties.getProperty(ParameterName.DERIVE_SQL);
+        int  couts = 0;
+        couts = couts + (aggPartitionSqls != null ? aggPartitionSqls.split(";").length : 0);
+        couts = couts + (transitionSqls != null ? transitionSqls.split(";").length : 0);
+        couts = couts + (aggNoPartitionSqls != null ? aggNoPartitionSqls.split(";").length : 0);
+        couts = couts + (deriveSqls != null ? deriveSqls.split(";").length : 0);
+        return couts;
+    }
+
+    private  ArrayList<String> getSqlSets(){
+        ArrayList<String> strings = new ArrayList<>();
+        String aggPartitionSqls = properties.getProperty(ParameterName.AGG_PARTITION_SQL);
+        String transitionSqls = properties.getProperty(ParameterName.TRANSITION_SQL);
+        String aggNoPartitionSqls = properties.getProperty(ParameterName.AGG_NO_PARTITION_SQL);
+        String deriveSqls = properties.getProperty(ParameterName.DERIVE_SQL);
+        if (aggPartitionSqls != null) strings.add(aggPartitionSqls);
+        if (transitionSqls != null) strings.add(transitionSqls);
+        if (aggNoPartitionSqls != null) strings.add(aggNoPartitionSqls);
+        if (deriveSqls != null) strings.add(deriveSqls);
+        return strings;
     }
 
 
@@ -102,26 +145,48 @@ public class AppPerFormOperations {
      * @desc 执行变量
      */
     public Tuple2<SingleOutputStreamOperator<String>, LinkedHashMap<String, String>> variableExec() {
-        Tuple2<DataStream<Tuple2<String, String>>, LinkedHashMap<String, String>> union = indexUnion(properties.getProperty(ParameterName.SQL_SET), ParameterName.SQL_SET);
-        SingleOutputStreamOperator<String> result = mergerIndicators(union.f0, Integer.parseInt(properties.getProperty(ParameterName.FIELD_OUT_NUMBER)), "keyed-uid", properties.getProperty(ParameterName.WATERMARK).split("[|]")[0]);
-        return Tuple2.of(result, union.f1);
-    }
-
-
-    /**
-     * @desc 执行派生变量
-     */
-    public void deVariableExec() {
-        if (properties.getProperty(ParameterName.DEVARIABLE_SQLS) != null){
-            for (String deVariableSqls : properties.getProperty(ParameterName.DEVARIABLE_SQLS).split("[|]")) {
-                String[] split = deVariableSqls.split("@");
-                String[] arr_udi = deVariableSqls.replaceAll("\\s.", "").split("");
-                Arrays.sort(arr_udi);
-                Tuple2<DataStream<Tuple2<String, String>>, LinkedHashMap<String, String>> dataStreamLinkedHashMapTuple2 = sqlQueryAndUnion(split[0], Arrays.toString(arr_udi));
-                SingleOutputStreamOperator<String> singleDeVarSplic = mergerIndicators(dataStreamLinkedHashMapTuple2.f0, Integer.parseInt(split[3]), Arrays.toString(arr_udi), properties.getProperty(ParameterName.WATERMARK).split("[|]")[0]);
-                DataStreamToTable.registerTable(dbTableEnv,singleDeVarSplic,  split[2], false, dataStreamLinkedHashMapTuple2.f1);
+        Tuple2<SingleOutputStreamOperator<String>, LinkedHashMap<String, String>> result = null;
+        boolean isStart = false;
+        boolean isEnd;
+        int tmpTanleNameNum = 0;
+        int sqlCounts = getSqlNumbers();
+        String execSql;
+        for (String sqlSet : getSqlSets()) {
+            for (String sql : sqlSet.split(";")) {
+                execSql = getExecSql(isStart, tmpTanleNameNum, sql);
+                isStart = true;
+                sqlCounts -= 1;
+                if ((sqlCounts  == 0)) isEnd = true; else isEnd = false;
+                Tuple2<SingleOutputStreamOperator<Tuple2<Long, String>>, LinkedHashMap<String, String>> sqlExec = sqlExec(execSql, isEnd);
+                if (!isEnd){
+                    registerTableView(tmpTanleNameNum, sqlExec);
+                } else {
+                    result = Tuple2.of(sqlExec.f0.map(value -> value.f1), sqlExec.f1);
+                }
+                tmpTanleNameNum += 1;
             }
         }
+        return result;
+    }
+
+    private void registerTableView(int tmpTanleNameNum, Tuple2<SingleOutputStreamOperator<Tuple2<Long, String>>, LinkedHashMap<String, String>> sqlExec) {
+        String registerTableName = ParameterValue.TMP_TABLE + "_" + tmpTanleNameNum;
+        SingleOutputStreamOperator<String> map = sqlExec.f0.assignTimestampsAndWatermarks(
+                WatermarkStrategy.forGenerator((WatermarkGeneratorSupplier<Tuple2<Long, String>>) context -> new WaterMarkGeneratorCounuser(0))
+                        .withTimestampAssigner((SerializableTimestampAssigner<Tuple2<Long, String>>) (element, recordTimestamp) -> element.f0)
+        ).map(value -> value.f1).filter(Objects::nonNull);
+        DataStreamToTable.registerTable(dbTableEnv, map, registerTableName, false, sqlExec.f1, properties.getProperty(ParameterName.WATERMARK).split("[|]")[0]);
+    }
+
+    @NotNull
+    private String getExecSql(boolean isStart, int tmpTanleNameNum, String sql) {
+        String execSql;
+        if (!isStart){
+            execSql  = sql.replaceFirst(ParameterValue.TMP_TABLE, initTableName);
+        } else {
+            execSql = sql.replaceFirst(ParameterValue.TMP_TABLE,(ParameterValue.TMP_TABLE + "_" + (tmpTanleNameNum - 1)));
+        }
+        return execSql;
     }
 
     public void testMOde(Tuple2<SingleOutputStreamOperator<String>, LinkedHashMap<String, String>> result) throws Exception {
@@ -132,17 +197,15 @@ public class AppPerFormOperations {
             KafkaUtils.createKafkaTopic(zkUtils, testTopicName);
             KafkaUtils.clostZkUtils(zkUtils);
             if (properties.getProperty(ParameterName.SINK_SQL) != null){
-                DataStreamToTable.registerTable(dbTableEnv,result.f0, properties.getProperty(ParameterName.MIDDLE_TABLE_NAME), true,result.f1);
+                DataStreamToTable.registerTable(dbTableEnv,result.f0, properties.getProperty(ParameterName.MIDDLE_TABLE_NAME), true,result.f1, null);
                 sink(result.f1);
-            } else if (properties.getProperty(ParameterName.DEVARIABLE_SQLS) != null){
-                DataStreamToTable.registerTable(dbTableEnv,result.f0,properties.getProperty(ParameterName.MIDDLE_TABLE_NAME), true,result.f1);
+            } else if (properties.getProperty(ParameterName.DECISION_SQL) != null){
+                DataStreamToTable.registerTable(dbTableEnv,result.f0,properties.getProperty(ParameterName.MIDDLE_TABLE_NAME), true,result.f1, null);
                 SingleOutputStreamOperator<String> singleOutputStreamOperator = resultToString(properties.getProperty(ParameterName.DECISION_SQL), ParameterName.DECISION_SQL);
-                singleOutputStreamOperator.addSink(KafkaSink.untransaction(testTopicName, properties.getProperty(ParameterName.TEST_BROKER_LIST)))
-                        .name("SINK_OUTPUT_RESUTL");
+                singleOutputStreamOperator.addSink(KafkaSink.untransaction(testTopicName, properties.getProperty(ParameterName.TEST_BROKER_LIST)));
             } else {
                 SingleOutputStreamOperator<String> resultDeal = result.f0.map(new FunTestMapOutput());
-                resultDeal.addSink(KafkaSink.untransaction(testTopicName, properties.getProperty(ParameterName.TEST_BROKER_LIST)))
-                        .name("SINK_OUTPUT_RESUTL");
+                resultDeal.addSink(KafkaSink.untransaction(testTopicName, properties.getProperty(ParameterName.TEST_BROKER_LIST)));
             }
 
         }
@@ -152,7 +215,7 @@ public class AppPerFormOperations {
     public  void runMode(Tuple2<SingleOutputStreamOperator<String>, LinkedHashMap<String, String>> result) throws Exception {
         if (RunMode.START_MODE.equals(properties.getProperty(ParameterName.RUM_MODE)) && properties.getProperty(ParameterName.SINK_SQL) != null){
             // 将拼接后的值再注册成一张表，用于后续的决策引擎使用
-            DataStreamToTable.registerTable(dbTableEnv,result.f0,properties.getProperty(ParameterName.MIDDLE_TABLE_NAME), true, result.f1);
+            DataStreamToTable.registerTable(dbTableEnv,result.f0,properties.getProperty(ParameterName.MIDDLE_TABLE_NAME), true, result.f1, null);
             sink(result.f1);
         }
     }
@@ -161,13 +224,13 @@ public class AppPerFormOperations {
         // 获取注册表的所有数据
         String querySql = "SELECT * FROM " + properties.getProperty(ParameterName.CDC_SOURCE_TABLE_NAME);
         Table table = dbTableEnv.sqlQuery(querySql);
-        LinkedHashMap<String, String> schema = getSchema(table);
+        LinkedHashMap<String, String> schema = getSchema(table, false);
         schema.put(ParameterValue.CDC_TYPE, "STRING");
         // 筛选所需要的同步类型数据(新增,更新，删除)，添加数据类型字段
         SingleOutputStreamOperator<String> data_deal = dbTableEnv.toRetractStream(table, Row.class)
                 .map(FunMapCdcAddType.of(table.getSchema().getFieldNames(), properties.getProperty(ParameterName.CDC_ROW_KIND)))
                 .filter(Objects::nonNull);
-        DataStreamToTable.registerTable(dbTableEnv,data_deal,properties.getProperty(ParameterName.MIDDLE_TABLE_NAME),false,schema);
+        DataStreamToTable.registerTable(dbTableEnv,data_deal,properties.getProperty(ParameterName.MIDDLE_TABLE_NAME),false,schema, null);
         sink(new HashMap<>());
     }
 
@@ -187,13 +250,18 @@ public class AppPerFormOperations {
      * @param table
      * @return
      */
-    public static LinkedHashMap<String, String> getSchema(Table table) {
+    public static LinkedHashMap<String, String> getSchema(Table table, boolean isResult) {
         LinkedHashMap<String, String> fieldNamdType = new LinkedHashMap<>();
         org.apache.flink.table.api.TableSchema schema = table.getSchema();
         String[] fieldNames = schema.getFieldNames();
         for (String fieldName : fieldNames) {
             Optional<DataType> fieldDataType = schema.getFieldDataType(fieldName);
-            fieldNamdType.put(fieldName, TypeTrans.getType(fieldDataType.get().toString()));
+            if (!isResult){
+                fieldNamdType.put(fieldName, TypeTrans.getType(fieldDataType.get().toString()));
+            } else {
+                fieldNamdType.put(fieldName, "STRING");
+            }
+
         }
         return fieldNamdType;
     }
@@ -211,6 +279,11 @@ public class AppPerFormOperations {
             // 单个 kafka 数据源
             if (sourcetype.equals(SourceType.ONE_STREAM)){
                 dbTableEnv.executeSql(sourceSqlSets[0]);
+                if (properties.getProperty(ParameterName.DIMENSION_TABLE) == null){
+                    initTableName = ParameterUtils
+                            .removeTailFirstSpecialSymbol(sourceSqlSets[0], "(", true)
+                            .split("\\s+")[2].replaceAll("`", "");
+                }
             // 双流 join
             } else if (sourcetype.equals(SourceType.TWO_STREAM_JOIN)){
                 for (String source : sourceSqlSets) {
@@ -227,6 +300,11 @@ public class AppPerFormOperations {
             // 单个 kafka 数据源
             if (sourcetype.equals(SourceType.ONE_STREAM)){
                 dbTableEnv.executeSql(sourceSqlSets[0]);
+                if (properties.getProperty(ParameterName.DIMENSION_TABLE) == null){
+                    initTableName = ParameterUtils
+                            .removeTailFirstSpecialSymbol(sourceSqlSets[0], "(", true)
+                            .split("\\s+")[2].replaceAll("`", "");
+                }
             // 双流 join
             } else if (sourcetype.equals(SourceType.TWO_STREAM_JOIN)){
                 for (int i = 0; i < sourceSqlSets.length; i++) {
@@ -240,8 +318,8 @@ public class AppPerFormOperations {
      * @param properties
      * @return 创建一个 AppPerFormOperations 实例，并返回；
      */
-    public static AppPerFormOperations of(Properties properties,StreamTableEnvironment dbTableEnv){
-        return new AppPerFormOperations(properties, dbTableEnv);
+    public static AppPerFormOperations of(Properties properties,StreamTableEnvironment dbTableEnv,StreamExecutionEnvironment dbEnv){
+        return new AppPerFormOperations(properties, dbTableEnv, dbEnv);
     }
 
 
@@ -268,12 +346,12 @@ public class AppPerFormOperations {
     }
 
 
-    public SingleOutputStreamOperator<String> resultToString(String sinkSql, String uidPrefix) {
-        Table table = dbTableEnv.sqlQuery(sinkSql);
+    public SingleOutputStreamOperator<String> resultToString(String sql, String uidPrefix) {
+        Table table = dbTableEnv.sqlQuery(sql);
         org.apache.flink.table.api.TableSchema schema = table.getSchema();
         String[] fieldNames = schema.getFieldNames();
         String uid = uidPrefix;
-        uid = getUid(uid, sinkSql);
+        uid = getUid(uid, sql);
         SingleOutputStreamOperator<String> resut = dbTableEnv.toAppendStream(table, Row.class, uid)
                 .map(FunMapValueMoveTypeAndFieldNmae.of(fieldNames));
         return resut;
@@ -284,48 +362,23 @@ public class AppPerFormOperations {
      * Execute the SQL and convert it to DataStream and merge it into a single stream while stitching together field names and field types
      * @return DataStream<String>
      */
-    public Tuple2<DataStream<Tuple2<String, String>>, LinkedHashMap<String, String>> indexUnion(String sqlSet,String uidPrefix) {
-        DataStream<Tuple2<String, String>> db_init = null;
-        LinkedHashMap<String, String> fieldAndType= new LinkedHashMap<>();
-        ArrayList<DataStream<Tuple2<String, String>>> arr_db = new ArrayList<>();
-        for (String s : sqlArrQuery(sqlSet.split(";"))) {
-            String uid = getUid(uidPrefix, s);
-            String dealSql = getOverUnboundedString(s);
-            dealSql = addTimeField(dealSql);
-            Table table = dbTableEnv.sqlQuery(dealSql);
-            fieldAndType = getSchema(table);
-            if (db_init == null){
-                db_init = dbTableEnv.toAppendStream(table, Row.class, uid)
-                        .process(FunMapValueAddTypeAadFieldName.of(table.getSchema().getFieldNames(), fieldAndType,properties.getProperty(ParameterName.SOURCE_PRIMARY_KEY)));
-            } else {
-                arr_db.add(dbTableEnv.toAppendStream(table, Row.class, uid)
-                        .process(FunMapValueAddTypeAadFieldName.of(table.getSchema().getFieldNames(), fieldAndType,properties.getProperty(ParameterName.SOURCE_PRIMARY_KEY))));
-            }
-        }
-        for (DataStream<Tuple2<String, String>> dataStream : arr_db) {
-            db_init = db_init.union(dataStream);
-        }
-        return Tuple2.of(db_init, fieldAndType);
-    }
-
-
-    /**
-     * @desc 给每个计算指标添加上时间字段
-     * @param s
-     */
-    private String addTimeField(String s){
-        String[] split = s.trim().split("\\s+", 2);
-        boolean flag = false;
-        for (String field : split[1].replaceAll("from", "FROM").split("FROM")[0].split(",")) {
-            if (field.trim().equals(properties.getProperty(ParameterName.WATERMARK).split("[|]")[0].trim())){
-                flag = true;
-            }
-        }
+    public Tuple2<SingleOutputStreamOperator<Tuple2<Long, String>>, LinkedHashMap<String, String>> sqlExec(String sql, boolean flag) {
+        String uid = getUid("",sql);
+        String dealSql = getOverUnboundedString(sql);
+        Table table = dbTableEnv.sqlQuery(dealSql);
+        LinkedHashMap<String, String> schema = getSchema(table, flag);
+        SingleOutputStreamOperator<Tuple2<Long, String>> process;
         if (!flag){
-            return split[0] + " " + properties.getProperty(ParameterName.WATERMARK).split("[|]")[0] + "," + split[1];
+            process = dbTableEnv.toAppendStream(table, Row.class, uid)
+                    .process(FunMapValueAddFieldName.of(table.getSchema().getFieldNames(), dbEnv.getParallelism(), properties.getProperty(ParameterName.WATERMARK).split("[|]", 2)[0]))
+                    .keyBy(value -> value.f0)
+                    .process(FunKeyGetWaterMark.of());
         } else {
-            return s;
+            process = dbTableEnv.toAppendStream(table, Row.class, uid)
+                    .process(FunMapValueAddTypeAadFieldName.of(table.getSchema().getFieldNames(), schema));
         }
+
+        return Tuple2.of(process, schema);
     }
 
 
@@ -333,28 +386,30 @@ public class AppPerFormOperations {
      * @desc 执行派生变量所依赖的基础变量，并合并成为一个 DataStream
      * @return DataStream<String>
      */
-    public Tuple2<DataStream<Tuple2<String, String>>, LinkedHashMap<String, String>> sqlQueryAndUnion(String sqlSet, String uidPrefix) {
+    public Tuple3<DataStream<Tuple2<String, String>>, LinkedHashMap<String, String>, Integer> sqlQueryAndUnion(String sqlSet, String uidPrefix) {
+        int counts  = 0;
         DataStream<Tuple2<String, String>> db_init = null;
         LinkedHashMap<String, String> fieldAndType = new LinkedHashMap<>();
         ArrayList<DataStream<Tuple2<String, String>>> arr_db = new ArrayList<>();
         for (String s : sqlArrQuery(sqlSet.split(";"))) {
             String uid = getUid(uidPrefix, s);
             String dealSql = getOverUnboundedString(s);
-            dealSql = addTimeField(dealSql);
             Table table = dbTableEnv.sqlQuery(dealSql);
-            fieldAndType  = getSchema(table);
+            fieldAndType.putAll(getSchema(table, false));
             if (db_init == null){
                 db_init = dbTableEnv.toAppendStream(table, Row.class, uid)
                         .process(FunMapGiveSchema.of(table.getSchema().getFieldNames(),properties.getProperty(ParameterName.SOURCE_PRIMARY_KEY)));
+                counts++;
             } else {
                 arr_db.add(dbTableEnv.toAppendStream(table, Row.class, uid)
                         .process(FunMapGiveSchema.of(table.getSchema().getFieldNames(),properties.getProperty(ParameterName.SOURCE_PRIMARY_KEY))));
+                counts++;
             }
         }
         for (DataStream<Tuple2<String, String>> dataStream : arr_db) {
             db_init = db_init.union(dataStream);
         }
-        return Tuple2.of(db_init, fieldAndType);
+        return Tuple3.of(db_init, fieldAndType, counts);
     }
 
     /**
@@ -392,10 +447,10 @@ public class AppPerFormOperations {
      * @param db_init
      * @return
      */
-    public SingleOutputStreamOperator<String> mergerIndicators(DataStream<Tuple2<String, String>> db_init, Integer fieldOutNum, String uid, String watermark) {
+    public SingleOutputStreamOperator<String> mergerIndicators(DataStream<Tuple2<String, String>> db_init, int counts, String uid, String watermark) {
         SingleOutputStreamOperator<String> keyedProcess_indicators_merge = db_init
                 .keyBy(value -> value.f0)
-                .process(FunKeyedProValCon.of(fieldOutNum, watermark)).uid(uid);
+                .process(FunKeyedProValCon.of(counts, watermark)).uid(uid);
         return keyedProcess_indicators_merge;
     }
 }

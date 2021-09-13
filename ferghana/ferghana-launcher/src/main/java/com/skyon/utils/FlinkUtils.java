@@ -3,6 +3,7 @@ package com.skyon.utils;
 import com.skyon.bean.ParameterName;
 import com.skyon.bean.ParameterValue;
 import com.skyon.bean.RunMode;
+import com.skyon.bean.SourceType;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.streaming.api.CheckpointingMode;
@@ -34,6 +35,7 @@ public class FlinkUtils {
         // 如果为非测试模式,开启checkpoint
         if (RunMode.START_MODE.equals(properties.getProperty(ParameterName.RUM_MODE))){
             setCheckPointingConfig(properties, env);
+            env.setMaxParallelism(128);
         }
         return env;
     }
@@ -61,24 +63,22 @@ public class FlinkUtils {
      * @param env DataStream 运行环境；
      */
     private static void setCheckPointingConfig(Properties properties, StreamExecutionEnvironment env) {
-        // 开启checkpoint,并指定checkpoint的触发间隔,以及checkpoint的模式
-        env.enableCheckpointing(Integer.parseInt(properties.getProperty(ParameterName.CHECKPOINT_INTERVAL,2 * 60 * 1000 + "")), CheckpointingMode.EXACTLY_ONCE);
-        // 设置checkpoint超时时间
-        env.getCheckpointConfig().setCheckpointTimeout(Integer.parseInt(properties.getProperty(ParameterName.CHECKPOINT_TIME_OUT, 2 * 60 * 1000 + "")));
-        // 设置checkpoint之间的最小间隔时间
-        env.getCheckpointConfig().setMinPauseBetweenCheckpoints(Integer.parseInt(properties.getProperty(ParameterName.BETWEEN_CHECKPOINT_INTERVAL, 60 * 1000 + "")));
-        // 设置checkpoint的最大并行度
-        env.getCheckpointConfig().setMaxConcurrentCheckpoints(1);
-        // 当程序停止时,保留checkpoint的状态数据, 默认会删除
-        env.getCheckpointConfig().enableExternalizedCheckpoints(CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);
-        // 优先从checkpoint进行恢复操作,而不是savepoint
-        env.getCheckpointConfig().setPreferCheckpointForRecovery(true);
-        // 允许checkpoint失败的次数
-        env.getCheckpointConfig().setTolerableCheckpointFailureNumber(Integer.parseInt(properties.getProperty(ParameterName.CHECKPOINT_FAILURE_NUMBER, 3 + "")));
-        // 开启checkpoint未对齐模式
-        env.getCheckpointConfig().enableUnalignedCheckpoints();
-        // 重启策略，固定次数重启策略
-        env.setRestartStrategy(RestartStrategies.fixedDelayRestart(Integer.parseInt(properties.getProperty(ParameterName.RESTART_STRATEGY_NUMBER, 3 + "")), Time.of(Integer.parseInt(properties.getProperty(ParameterName.RESTART_STRATEGY_DELAY_TIME, 10 + "")), TimeUnit.SECONDS)));
+            // 开启checkpoint,并指定checkpoint的触发间隔,以及checkpoint的模式
+            env.enableCheckpointing(Integer.parseInt(properties.getProperty(ParameterName.CHECKPOINT_INTERVAL,2 * 60 * 1000 + "")), CheckpointingMode.EXACTLY_ONCE);
+            // 设置checkpoint超时时间
+            env.getCheckpointConfig().setCheckpointTimeout(Integer.parseInt(properties.getProperty(ParameterName.CHECKPOINT_TIME_OUT, 2 * 60 * 1000 + "")));
+            // 设置checkpoint之间的最小间隔时间
+            env.getCheckpointConfig().setMinPauseBetweenCheckpoints(Integer.parseInt(properties.getProperty(ParameterName.BETWEEN_CHECKPOINT_INTERVAL, 60 * 1000 + "")));
+            // 设置checkpoint的最大并行度
+            env.getCheckpointConfig().setMaxConcurrentCheckpoints(1);
+            // 当程序停止时,保留checkpoint的状态数据, 默认会删除
+            env.getCheckpointConfig().enableExternalizedCheckpoints(CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);
+            // 允许checkpoint失败的次数
+            env.getCheckpointConfig().setTolerableCheckpointFailureNumber(Integer.parseInt(properties.getProperty(ParameterName.CHECKPOINT_FAILURE_NUMBER, 3 + "")));
+//             开启checkpoint未对齐模式
+//            env.getCheckpointConfig().enableUnalignedCheckpoints();
+            // 重启策略，固定次数重启策略
+            env.setRestartStrategy(RestartStrategies.fixedDelayRestart(Integer.parseInt(properties.getProperty(ParameterName.RESTART_STRATEGY_NUMBER, 3 + "")), Time.of(Integer.parseInt(properties.getProperty(ParameterName.RESTART_STRATEGY_DELAY_TIME, 10 + "")), TimeUnit.SECONDS)));
     }
 
     /**
