@@ -40,8 +40,9 @@ public class MianAppProcesTest {
     public static void main(String[] args) throws Exception {
         // 对加密(Base64)参数进行解密
         byte[] decoded = Base64.getDecoder().decode(args[0]);
-        // 直接转换为字符串,转换后为JSON格式
+//         直接转换为字符串,转换后为JSON格式
         String meta = new String(decoded);
+//        String meta = "{\"sinkSql\":{\"job\":{\"content\":[{\"reader\":{\"schema\":\"ENAME:STRING,JOB:STRING,EMPNO:INT\",\"parameter\":{\"password\":\"LOGMINER\",\"cat\":\"I,U,D\",\"jdbcUrl\":\"jdbc:oracle:thin:@master:1521:xe \",\"readPosition\":\"all\",\"table\":[\"LOGMINER.EMP\"],\"username\":\"LOGMINER\"},\"name\":\"oraclelogminerreader\"},\"writer\":{\"parameter\":{\"producerSettings\":{\"bootstrap.servers\":\"master:9092\"},\"timezone\":\"UTC\",\"topic\":\"kafka\"},\"name\":\"kafkawriter\"}}]}}}";
         if (meta.startsWith("{\"sinkSql\"")) {
             JSONObject jsonObject = JSON.parseObject(meta);
             JSONObject job = (JSONObject) jsonObject.get("sinkSql");

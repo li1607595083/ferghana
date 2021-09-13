@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 public class CheckWarningUtil {
@@ -242,27 +243,106 @@ public class CheckWarningUtil {
         return mailList;
     }
 
-    private static boolean isBackPressured(String isBackPressuredSql, String database) {
-        List<QueryResult.Series> series = null;
-        QueryResult flink = influxdbConnection.query(new Query(isBackPressuredSql, database));
-        List<QueryResult.Result> results = flink.getResults();
-        for (QueryResult.Result result : results) {
-            series = result.getSeries();
+//    private static boolean isBackPressured(String isBackPressuredSql, String database) {
+//        List<QueryResult.Series> series = null;
+//        QueryResult flink = influxdbConnection.query(new Query(isBackPressuredSql, database));
+//        List<QueryResult.Result> results = flink.getResults();
+//        for (QueryResult.Result result : results) {
+//            series = result.getSeries();
+//        }
+//        return series != null;
+//    }
+
+    /**
+     * @desc 获取是否出现被压
+     * @param sql
+     * @param database
+     * @return
+     */
+    private static boolean isBackPressured(String sql, String database) {
+        return getOneQueryResult(sql,database).getSeries() != null;
+    }
+
+//    private static double getValue(String lastFailNumbersSql, String database) {
+//        QueryResult queryResult = influxdbConnection.query(new Query(lastFailNumbersSql, database));
+//        List<QueryResult.Result> results = queryResult.getResults();
+//        List<List<Object>> values = results.get(0).getSeries().get(0).getValues();
+//        double current = (double)values.get(0).get(1);
+//        double last = (double)values.get(values.size() - 1).get(1);
+//        return  current - last;
+//    }
+
+    /**
+     * @desc 用以获取近五分钟的 task 重启次数，checkpoint 失败次数
+     * @param sql
+     * @param database
+     * @return
+     */
+    private static double getValue(String sql, String database) {
+        double counts  = 0;
+        QueryResult.Result oneQueryResult = getOneQueryResult(sql, database);
+        if (oneQueryResult.getSeries() != null) {
+            List<List<Object>> queryResultFieldValue = getQueryResultFieldValue(oneQueryResult);
+            if (queryResultFieldValue != null && queryResultFieldValue.size() > 0) {
+                List<Object> firstLine = queryResultFieldValue.get(0);
+                List<Object> lastLine = queryResultFieldValue.get(queryResultFieldValue.size() - 1);
+                double firstValue = (double)(firstLine.get(1) == null ? 0.0 : firstLine.get(1));
+                double lastValue = (double)(lastLine.get(1) == null ? 0.0 : lastLine.get(1));
+                if (queryResultFieldValue.size() == 1){
+                    counts = firstValue;
+                } else {
+                    counts = firstValue - lastValue;
+                }
+            }
         }
-        return series != null;
+        return counts;
     }
 
-    private static double getValue(String lastFailNumbersSql, String database) {
-        QueryResult queryResult = influxdbConnection.query(new Query(lastFailNumbersSql, database));
-        List<QueryResult.Result> results = queryResult.getResults();
-        List<List<Object>> values = results.get(0).getSeries().get(0).getValues();
-        double current = (double)values.get(0).get(1);
-        double last = (double)values.get(values.size() - 1).get(1);
-        return  current - last;
-    }
-
+    /**
+     * @desc 获取近五分钟的平均延迟
+     * @param sql
+     * @param database
+     * @return
+     */
     private static double getAvg(String sql, String database) {
-        QueryResult queryResult = influxdbConnection.query(new Query(sql, database));
-        return (double)queryResult.getResults().get(0).getSeries().get(0).getValues().get(0).get(1);
+        double avg = 0;
+        QueryResult.Result oneQueryResult = getOneQueryResult(sql, database);
+        if (oneQueryResult.getSeries() != null){
+            List<List<Object>> queryResultFieldValue = getQueryResultFieldValue(oneQueryResult);
+            if (queryResultFieldValue != null && queryResultFieldValue.size() > 0){
+                for (List<Object> values : queryResultFieldValue) {
+                    avg  = (double) (values.get(1) == null ? 0.0 : values.get(1));
+                }
+            }
+        }
+        return avg;
     }
+
+    /**
+     * @desc 获取单个sql查询结果
+     * @param sql
+     * @param database
+     * @return
+     */
+    private static QueryResult.Result getOneQueryResult(String sql, String database){
+        // results.getResults()是同时查询多条SQL语句的返回值，此处我们只有一条SQL，所以只取第一个结果集即可
+        QueryResult queryResult = influxdbConnection.query(new Query(sql, database));
+        return queryResult.getResults().get(0);
+    }
+
+    /**
+     * @desc 获取字段值
+     * @param result
+     * @return
+     */
+    private static List<List<Object>> getQueryResultFieldValue(QueryResult.Result result){
+        return result.getSeries().stream().map(QueryResult.Series::getValues).collect(Collectors.toList()).get(0);
+    }
+    
+
+
+//    private static double getAvg(String sql, String database) {
+//        QueryResult queryResult = influxdbConnection.query(new Query(sql, database));
+//        return (double)queryResult.getResults().get(0).getSeries().get(0).getValues().get(0).get(1);
+//    }
 }

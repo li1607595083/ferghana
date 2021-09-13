@@ -586,7 +586,7 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
         Map map1 = setResultTableSql(pk, runFlag, millis);
 
         // 输出参数sql
-        mapParam.put("sinkSql", map1.get("resutltSql"));
+        mapParam.put("sinkSql", map1.get("resultSql"));
 
 
         mapParam.put("fieldOutNum", (int) map1.get("outVariableNum") + 1 + num);

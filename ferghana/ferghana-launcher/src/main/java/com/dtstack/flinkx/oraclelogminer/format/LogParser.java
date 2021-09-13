@@ -19,7 +19,6 @@
 
 package com.dtstack.flinkx.oraclelogminer.format;
 
-import com.dtstack.flinkx.config.DataTransferConfig;
 import com.dtstack.flinkx.oraclelogminer.entity.QueueData;
 import com.dtstack.flinkx.util.SnowflakeIdWorker;
 import net.sf.jsqlparser.JSQLParserException;
@@ -68,6 +67,11 @@ public class LogParser {
 
     public LogParser(LogMinerConfig config) {
         this.config = config;
+        String schema = config.getSchema();
+        String[] schemas = schema.split(",");
+        for (String field : schemas) {
+            fields.add(field.split(":")[0]);
+        }
     }
 
     private static String cleanString(String str) {
@@ -101,7 +105,7 @@ public class LogParser {
         for (String key : afterDataMap.keySet()){
             String value = cleanString(valueList.get(i).toString());
             afterDataMap.put(key, value);
-            beforeDataMap.put(key, null);
+//            beforeDataMap.put(key, null);
             i++;
         }
     }
@@ -139,23 +143,21 @@ public class LogParser {
                 String col = cleanString(expr.getLeftExpression().toString());
                 String value = cleanString(expr.getRightExpression().toString());
                 beforeDataMap.put(col, value);
-                afterDataMap.put(col, null);
+//                afterDataMap.put(col, null);
             }
         });
     }
 
-    public QueueData parse(QueueData pair, boolean isOracle10) throws JSQLParserException {
+    public QueueData parse(QueueData pair) throws JSQLParserException {
         Map<String, Object> logData = pair.getData();
         String schema = MapUtils.getString(logData, "schema");
         String tableName = MapUtils.getString(logData, "tableName");
         String operation = MapUtils.getString(logData, "operation");
         String sqlLog = MapUtils.getString(logData, "sqlLog");
+        LOG.debug("before alter sqlLog, sqlLog = {}",sqlLog);
         String sqlRedo = sqlLog.replace("IS NULL", "= NULL");
-        //只有oracle10需要进行toDate toTimestamp转换
-        LOG.debug("before parse toDate/toTimestamp sqlRedo = {}",sqlRedo);
-        if (isOracle10) {
-            sqlRedo = parseToTimeStamp(parseToDate(sqlRedo));
-        }
+        sqlRedo = parseToTimeStamp(parseToDate(sqlRedo));
+
         Timestamp timestamp = (Timestamp)MapUtils.getObject(logData, "opTime");
 
         Map<String,Object> message = new LinkedHashMap<>();
@@ -175,6 +177,7 @@ public class LogParser {
         }
         LinkedHashMap<String,String> afterDataMap = new LinkedHashMap<>();
         LinkedHashMap<String,String> beforeDataMap = new LinkedHashMap<>();
+        LinkedHashMap<String,String> returnMap = new LinkedHashMap<>();
 
         if (stmt instanceof Insert){
             operation = "I";
@@ -187,10 +190,6 @@ public class LogParser {
             parseDeleteStmt((Delete) stmt, beforeDataMap, afterDataMap);
         }
         message.put("CDC_OP", operation);
-        System.out.println(fields.size());
-        System.out.println(fields.get(0));
-        System.out.println(fields.get(1));
-        System.out.println(fields.get(2));
         if (config.getPavingData()) {
             if (operation.equals("I")) {
                 afterDataMap.forEach((key, val) ->

@@ -19,14 +19,14 @@
 
 package com.dtstack.flinkx.oraclelogminer.format;
 
+import com.dtstack.flinkx.inputformat.BaseRichInputFormat;
+import com.dtstack.flinkx.restore.FormatState;
 import org.apache.flink.core.io.GenericInputSplit;
 import org.apache.flink.core.io.InputSplit;
 import org.apache.flink.types.Row;
 
-import com.dtstack.flinkx.inputformat.BaseRichInputFormat;
-import com.dtstack.flinkx.restore.FormatState;
-
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.Map;
 
 /**
@@ -60,7 +60,14 @@ public class OracleLogMinerInputFormat extends BaseRichInputFormat {
 
     private void initPosition() {
         if (null != formatState && formatState.getState() != null) {
-            positionManager.updatePosition((Long)formatState.getState());
+            BigDecimal position;
+            //升级之后，进行续跑，以前版本的值是long，需要转换为BigDecimal
+            if(formatState.getState() instanceof  Long){
+                position = new BigDecimal(formatState.getState().toString());
+            }else{
+                position = (BigDecimal) formatState.getState();
+            }
+            positionManager.updatePosition(position);
         }
     }
 

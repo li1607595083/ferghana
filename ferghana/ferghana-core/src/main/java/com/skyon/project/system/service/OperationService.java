@@ -2,6 +2,7 @@ package com.skyon.project.system.service;
 
 import com.skyon.project.system.domain.*;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -43,4 +44,22 @@ public interface OperationService {
 
     // 获取自定义的日志记录
     public String getStdoutLog(String application, String taskmanagerId);
+
+    // 获取运行中、停止作业数量
+    public Map getRuningJob();
+
+    // 获取运行中的作业
+    public List<TVariablePackageManager> getRuningJobList() throws IOException, InterruptedException;
+
+    // 获取CPU资源、内存资源信息
+    public Map getCoreAndMemoryInfo() throws IOException, InterruptedException;
+
+    // 插入运维监控数据
+    public int insertOperationMonitor(OperationMonitor operationMonitor);
+
+    // 分组查询作业当前检控数据
+    public Map<String, List<OperationMonitor>> selectOperationMonitor(OperationMonitor operationMonitor);
+
+    // 清空过期数据
+    public int deleteOperationMonitor();
 }

@@ -10,6 +10,8 @@ import com.skyon.project.system.service.OperationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -162,4 +164,43 @@ public class OperationController extends BaseController {
         return AjaxResult.success(result);
     }
 
+
+    /**
+     *  查询CPU资源信息、查询内存资源信息、查询作业信息
+     */
+    @RequestMapping(value = "/info", method = RequestMethod.GET)
+    @ResponseBody
+    public AjaxResult getInfo() throws IOException, InterruptedException {
+        Map map = operationService.getCoreAndMemoryInfo();
+        map.put("runingjob", operationService.getRuningJob());
+        return AjaxResult.success(map);
+    }
+
+    /**
+     *  查询作业监控图表信息
+     */
+    @GetMapping(value = "/chart-info/{jobId}")
+    @PostMapping
+    public AjaxResult getChartInfo(@PathVariable("jobId") String jobId) {
+        Map map = new HashMap();
+        OperationMonitor operationMonitor = new OperationMonitor();
+        operationMonitor.setJobId(jobId);
+        map = operationService.selectOperationMonitor(operationMonitor);
+        return AjaxResult.success(map);
+    }
+
+    /**
+     * 查询已启动变量包
+     */
+    @GetMapping(value = "/start-list")
+    public TableDataInfo getStartlist() {
+
+        TVariablePackageManager pk = new TVariablePackageManager();
+        pk.setRuningState("1");
+        List<TVariablePackageManager> managers = pkService.selectTVariablePackageManagerList(pk);
+
+//        List result = operationService.getJobDetail(managers);
+//        List<JobRes> jobRes = operationService.parseJobRes(result);
+        return getDataTable(managers);
+    }
 }
