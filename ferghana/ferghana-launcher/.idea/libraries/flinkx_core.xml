@@ -1,0 +1,12 @@
+<component name="libraryTable">
+  <library name="flinkx-core">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/flinkx-core.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/flinkx-kafka-writer.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/flinkx-kb-core.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/flinkx-kb-writer.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
