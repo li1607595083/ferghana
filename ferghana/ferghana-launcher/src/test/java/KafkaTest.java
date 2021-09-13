@@ -27,13 +27,13 @@ public class KafkaTest {
 
     @Test
     public void createKafkaTopic() {
-        AdminUtils.createTopic(zkUtils, "metadata_input_time", 1, 1, new Properties(), RackAwareMode.Enforced$.MODULE$);
+        AdminUtils.createTopic(zkUtils, "order_main_table_detail", 2, 1, new Properties(), RackAwareMode.Enforced$.MODULE$);
     }
 
     //kafka_sink_topic
     @Test
     public void deleteKafkaTopic(){
-        AdminUtils.deleteTopic(zkUtils, "sibas");
+        AdminUtils.deleteTopic(zkUtils, "order_main_table_detail");
     }
 
     @Test
