@@ -179,6 +179,10 @@ public class TDataSourceServiceImpl implements ITDataSourceService {
 
             sqlString = JSON.toJSONString(job);
         }
+        //拼接可选参数
+        sqlString = sqlString.substring(0, sqlString.length() - 1);
+        sqlString = sqlString + "," + dataSource.getOptionalParam() + ")";
+
         return sqlString;
     }
 

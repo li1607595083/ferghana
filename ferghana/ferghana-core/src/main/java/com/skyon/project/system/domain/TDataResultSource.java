@@ -95,6 +95,12 @@ public class TDataResultSource extends BaseEntity
     @Excel(name = "描述")
     private String description;
 
+    /**
+     * 可选参数
+     */
+    @Excel(name = "可选参数")
+    private String optionalParam;
+
     @Transient
     private Object[] dynamicItem;
 
@@ -273,6 +279,14 @@ public class TDataResultSource extends BaseEntity
         return description;
     }
 
+    public String getOptionalParam() {
+        return optionalParam;
+    }
+
+    public void setOptionalParam(String optionalParam) {
+        this.optionalParam = optionalParam;
+    }
+
     public Object[] getDynamicItem() {
         return dynamicItem;
     }
@@ -298,6 +312,7 @@ public class TDataResultSource extends BaseEntity
             .append("schemaDefine", getSchemaDefine())
             .append("dataBaseType", getDataBaseType())
             .append("description", getDescription())
+            .append("optionalParam", getOptionalParam())
             .append("createTime", getCreateTime())
             .toString();
     }

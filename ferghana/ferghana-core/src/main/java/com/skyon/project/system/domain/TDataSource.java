@@ -120,6 +120,11 @@ public class TDataSource extends BaseEntity {
     @Excel(name = "dataBaseType")
     private String dataBaseType;
 
+    /**
+     * 可选参数
+     */
+    @Excel(name = "可选参数")
+    private String optionalParam;
 
     /**
      * 描述
@@ -350,6 +355,14 @@ public class TDataSource extends BaseEntity {
         this.waterMarkTime = waterMarkTime;
     }
 
+    public String getOptionalParam() {
+        return optionalParam;
+    }
+
+    public void setOptionalParam(String optionalParam) {
+        this.optionalParam = optionalParam;
+    }
+
     @Override
     public String toString() {
         return "TDataSource{" +
@@ -377,6 +390,7 @@ public class TDataSource extends BaseEntity {
                 ", waterMarkName='" + waterMarkName + '\'' +
                 ", waterMarkTime='" + waterMarkTime + '\'' +
                 ", dataBaseType='" + dataBaseType + '\'' +
+                ", optionalParam='" + optionalParam + '\'' +
                 ", description='" + description + '\'' +
                 ", createTableSql='" + createTableSql + '\'' +
                 ", dynamicItem=" + Arrays.toString(dynamicItem) +

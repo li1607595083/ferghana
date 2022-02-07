@@ -102,7 +102,7 @@ public class TVariableCenter extends BaseEntity {
     /**
      * 集群名
      */
-    private String clusterName;
+    private String redisAddr;
 
     // 派生变量模板类型 01四则运算 02 计算引擎
     private String deriveVariableModelType;
@@ -224,12 +224,12 @@ public class TVariableCenter extends BaseEntity {
         this.statisticsGroupItem = statisticsGroupItem;
     }
 
-    public String getClusterName() {
-        return clusterName;
+    public String getRedisAddr() {
+        return redisAddr;
     }
 
-    public void setClusterName(String clusterName) {
-        this.clusterName = clusterName;
+    public void setRedisAddr(String redisAddr) {
+        this.redisAddr = redisAddr;
     }
 
     public String getVersionShow() {

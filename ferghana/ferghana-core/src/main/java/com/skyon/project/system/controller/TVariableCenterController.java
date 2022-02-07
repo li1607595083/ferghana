@@ -165,8 +165,8 @@ public class TVariableCenterController extends BaseController {
                                 || (newVa.getRedisValue() != null && newVa.getRedisValue().equals(oldVa.getRedisValue()))) { // redis value
                             if ((newVa.getRedisFunction() == null && oldVa.getRedisFunction() == null)
                                     || (newVa.getRedisFunction() != null && newVa.getRedisFunction().equals(oldVa.getRedisFunction()))) { // redis方法
-                                if ((newVa.getClusterName() == null && oldVa.getClusterName() == null)
-                                        || (newVa.getClusterName() != null && newVa.getClusterName().equals(oldVa.getClusterName()))) { // redis集群名
+                                if ((newVa.getRedisAddr() == null && oldVa.getRedisAddr() == null)
+                                        || (newVa.getRedisAddr() != null && newVa.getRedisAddr().equals(oldVa.getRedisAddr()))) { // redis集群名
                                     if ((newVa.getStatisticsConditions() == null && oldVa.getStatisticsConditions() == null)
                                             || (newVa.getStatisticsConditions() != null && newVa.getStatisticsConditions().equals(oldVa.getStatisticsConditions()))) { // redis条件
                                         flag = true; // 都没变

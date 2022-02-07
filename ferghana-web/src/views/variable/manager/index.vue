@@ -184,15 +184,8 @@
 
           <!--        普通查询展示模块        -->
           <div v-show="normalDiv">
-            <el-form-item label="集群名" class="el-col-12" prop="clusterName">
-              <el-select v-model="form.clusterName" placeholder="请选择集群名" clearable style="width: 100%" :disabled="detailViem">
-                <el-option
-                  v-for="data in dimensionDataOptions"
-                  :key="data.value"
-                  :label="data.label"
-                  :value="data.value"
-                />
-              </el-select>
+            <el-form-item label="redis地址" class="el-col-12" prop="redisAddr">
+              <el-input v-model="form.redisAddr" type="text" placeholder="请输入redis地址" :disabled="detailViem"/>
             </el-form-item>
             <el-form-item label="redis方法" class="el-col-12" prop="redisFunction">
               <el-select v-model="form.redisFunction" @change="redisFunctionChange" placeholder="请选择模板类型" clearable
@@ -811,7 +804,7 @@
                                         <div v-show="sourceTableValueItem">
                                           <el-scrollbar class="el-scrollbar-show">
                                             <span style="font-size: 16px;font-weight: bold">{{dataSourceName}}</span>
-                    
+
                                             <el-table :data="form.sourceTableValue" border ref="multipleTable" tooltip-effect="dark"
                                                       style="width: 100%; margin-top: 10px"
                                                       empty-text="未选择输入参数表">
@@ -826,10 +819,8 @@
                                                           </el-tooltip>
                                                   </template>
                                                   <template scope="scope">
-                                                   <el-form-item label-width="0px" :prop="col.dataName.indexOf('主键') > 0 ? 'sourceTableValue.'+scope.$index+'.' + col.dataItem :
-                                                                     col.dataName.indexOf('水印') > 0 ? 'sourceTableValue.'+scope.$index+'.' + col.dataItem : ''"
-                                                                  :rules="col.dataName.indexOf('主键') > 0 ? testRules.primaryKey :
-                                                                     col.dataName.indexOf('水印') > 0 ? testRules.waterMark :[{ required: false }]">
+                                                   <el-form-item label-width="0px" :prop="col.dataName.indexOf('水印') > 0 ? 'sourceTableValue.'+scope.$index+'.' + col.dataItem : ''"
+                                                                  :rules="col.dataName.indexOf('水印') > 0 ? testRules.waterMark :[{ required: false }]">
                                                       <el-input v-model="scope.row[col.dataItem]" placeholder="请输入内容" />
                                                     </el-form-item>
                                                   </template>
@@ -846,12 +837,12 @@
                                             </el-table>
                                           </el-scrollbar>
                                         </div>
-                    
+
                                         <!--  数据源表(二)                   -->
                                         <div v-show="twoSourceTableValueItem" style="margin-top: 10px">
                                           <el-scrollbar class="el-scrollbar-show">
                                             <span style="font-size: 16px;font-weight: bold">{{dataSourceTwoName}}</span>
-                    
+
                                             <el-table :data="form.twoSourceTableValue" border ref="multipleTable" tooltip-effect="dark"
                                                       style="width: 100%; margin-top: 10px"
                                                       empty-text="未选择输入参数表">
@@ -866,10 +857,8 @@
                                                           </el-tooltip>
                                                   </template>
                                                   <template scope="scope">
-                                                    <el-form-item label-width="0px" :prop="col.dataName.indexOf('主键') > 0 ? 'twoSourceTableValue.'+scope.$index+'.' + col.dataItem :
-                                                                     col.dataName.indexOf('水印') > 0 ? 'twoSourceTableValue.'+scope.$index+'.' + col.dataItem : ''"
-                                                                  :rules="col.dataName.indexOf('主键') > 0 ? testRules.twoPrimaryKey :
-                                                                     col.dataName.indexOf('水印') > 0 ? testRules.twoWaterMark :[{ required: false }]">
+                                                    <el-form-item label-width="0px" :prop="col.dataName.indexOf('水印') > 0 ? 'twoSourceTableValue.'+scope.$index+'.' + col.dataItem : ''"
+                                                                  :rules="col.dataName.indexOf('水印') > 0 ? testRules.twoWaterMark :[{ required: false }]">
                                                       <el-input v-model="scope.row[col.dataItem]" placeholder="请输入内容" />
                                                     </el-form-item>
                                                   </template>
@@ -886,8 +875,8 @@
                                             </el-table>
                                           </el-scrollbar>
                                         </div>
-                    
-                    
+
+
                                         <!--  数据维表                   -->
                                         <div v-show="dimensionTableValueItem" style="margin-top: 10px">
                                           <el-scrollbar class="el-scrollbar-show">
@@ -931,7 +920,7 @@
                                         </div>
                                       </el-form>
                                     </el-tab-pane>
-                    
+
                                     <el-tab-pane label="测试结果" name="second">
                                       <div class="table">
                                         <el-table
@@ -1376,8 +1365,8 @@
           variableFactor: [
             {required: true, message: "变量因子不能为空", trigger: "blur"}
           ],
-          clusterName: [
-            {required: true, message: "集群名不能为空", trigger: "blur"}
+          redisAddr: [
+            {required: true, message: "redis地址不能为空", trigger: "blur"}
           ],
           statisticsCountModel: [
             {required: true, message: "计算模板不能为空", trigger: "blur"}
@@ -1782,7 +1771,7 @@
             // this.open = false;
             if (this.form.variableType === '01') { // 基础变量
               if (this.form.variableModelType === '01') { // 普通查询
-                // this.form.clusterName = this.form.clusterName.toString();
+                // this.form.redisAddr = this.form.redisAddr.toString();
               } else if (this.form.variableModelType === '02') { // 统计查询
                 this.form.statisticsConditionOption = JSON.stringify(this.form.conditionTable);
                 // 变量因子的数据类型赋值
@@ -1892,21 +1881,21 @@
       setSourceTableCol() {
         this.listResultDimension = [];
         // 主键字段排第一位
-        this.sourceTableCol.push({
-          dataItem: this.sourceTwoCol[1],
-          dataName: this.sourceTwoCol[1] + "-主键",
-          relations: []
-        })
+        // this.sourceTableCol.push({
+        //   dataItem: this.sourceTwoCol[1],
+        //   dataName: this.sourceTwoCol[1] + "-主键",
+        //   relations: []
+        // })
         // 水印字段展示在最后一列
         this.sourceTableCol.push({
           dataItem: this.sourceTwoCol[0],
           dataName: this.sourceTwoCol[0] + "-水印",
         })
-        this.twoSourceTableCol.push({
-          dataItem: this.twoSourceTwoCol[1],
-          dataName: this.twoSourceTwoCol[1] + "-主键",
-          relations: []
-        })
+        // this.twoSourceTableCol.push({
+        //   dataItem: this.twoSourceTwoCol[1],
+        //   dataName: this.twoSourceTwoCol[1] + "-主键",
+        //   relations: []
+        // })
         this.twoSourceTableCol.push({
           dataItem: this.twoSourceTwoCol[0],
           dataName: this.twoSourceTwoCol[0] + "-水印",
@@ -1916,7 +1905,7 @@
           for (let i = 0; i < this.variableFactorOptions.length; i++) {
             if (this.variableFactorOptions[i].label === this.form.redisKey) {
               let split = this.form.redisKey.split(".");
-              if (this.sourceTableCol[0].dataItem !== split[1] && this.sourceTableCol[1].dataItem !== split[1]) { // 去重
+              if (this.sourceTableCol[0].dataItem !== split[1] ) { // 去重
                 this.sourceTableCol.push({
                   dataItem: this.form.redisKey,
                   dataName: this.form.redisKey,
@@ -2079,7 +2068,7 @@
           for (let i = 0; i < this.variableFactorOptions.length; i++) {
             if (this.variableFactorOptions[i].label === this.form.variableFactor) {
               let split = this.form.variableFactor.split(".");
-              if (this.sourceTableCol[0].dataItem !== split[1] && this.sourceTableCol[1].dataItem !== split[1]) { // 去重
+              if (this.sourceTableCol[0].dataItem !== split[1]) { // 去重
                 this.sourceTableCol.push({
                   dataItem: this.form.variableFactor,
                   dataName: this.form.variableFactor,
@@ -2093,7 +2082,7 @@
             if (this.variableFactorTwoOptions[i].label === this.form.variableFactor) {
               this.twoSourceTableValueItem = true;
               let split = this.form.variableFactor.split(".");
-              if (this.twoSourceTableCol[0].dataItem !== split[1] && this.twoSourceTableCol[1].dataItem !== split[1]) { // 去重
+              if (this.twoSourceTableCol[0].dataItem !== split[1]) { // 去重
                 this.twoSourceTableCol.push({
                   dataItem: this.form.variableFactor,
                   dataName: this.form.variableFactor,
@@ -2949,11 +2938,11 @@
             if (this.form.variableType === '01') { //基础变量
               this.setSourceTableCol();
             } else if (this.form.variableType === '02') { // 派生变量
-              // 主键字段排第一位
-              this.sourceTableCol.push({
-                dataItem: this.sourceTwoCol[1],
-                dataName: this.sourceTwoCol[1] + "-主键"
-              });
+              // // 主键字段排第一位
+              // this.sourceTableCol.push({
+              //   dataItem: this.sourceTwoCol[1],
+              //   dataName: this.sourceTwoCol[1] + "-主键"
+              // });
               this.sourceTableCol.push({
                 dataItem: this.sourceTwoCol[0],
                 dataName: this.sourceTwoCol[0] + "-水印"
@@ -2990,10 +2979,10 @@
             // 给测试的结果列赋值表头    主键 和 变量英文名称
             // testResultCol
             this.testResultCol = [];
-            this.testResultCol.push({
-              dataName: this.sourceTwoCol[1],
-              dataItem: this.sourceTwoCol[1],
-            })
+            // this.testResultCol.push({
+            //   dataName: this.sourceTwoCol[1],
+            //   dataItem: this.sourceTwoCol[1],
+            // })
             this.testResultCol.push({
               dataName: this.form.variableNameEn,
               dataItem: this.form.variableNameEn
@@ -3133,7 +3122,7 @@
           this.deriveVariableDiv = true;
           this.deriveProcessModelShow = false;
           this.decisionEngineDiv = true;
-          this.rules.clusterName[0].required = false;
+          this.rules.redisAddr[0].required = false;
           this.rules.variableModelType[0].required = false;
           this.rules.deriveVariableSql[0].required = true;
           this.form.variableModelType = "";
@@ -3393,25 +3382,25 @@
       },
       // 模板类型为01时的校验
       normalCheck() {
-        this.rules.clusterName[0].required = true;
+        this.rules.redisAddr[0].required = true;
         this.rules.statisticsCountModel[0].required = false;
         this.rules.variableFactor[0].required = false;
       },
       // 模板类型为统计查询时的校验
       countCheck() {
-        this.rules.clusterName[0].required = false;
+        this.rules.redisAddr[0].required = false;
         this.rules.statisticsCountModel[0].required = true;
         this.rules.variableFactor[0].required = true;
       },
       // 模板类型为数据加工时的校验
       processCheck() {
-        this.rules.clusterName[0].required = false;
+        this.rules.redisAddr[0].required = false;
         this.rules.statisticsCountModel[0].required = false;
         this.rules.variableFactor[0].required = false;
       },
       // 模板类型为自定义查询时的校验
       selfQueryCheck() {
-        this.rules.clusterName[0].required = false;
+        this.rules.redisAddr[0].required = false;
         this.rules.statisticsCountModel[0].required = false;
         this.rules.variableFactor[0].required = false;
       },
@@ -3466,6 +3455,8 @@
             }
           }
           that.form.deriveEngineTable = resp.data.rows[0];
+          console.log('that.form.deriveInputParams');
+          console.log(that.form.deriveInputParams);
           let parse1 = JSON.parse(that.form.deriveInputParams);
           for (let i = 0; i < that.form.deriveEngineTable.length; i++) {
             for (let j = 0; j < parse1.length; j++) {
@@ -3772,14 +3763,14 @@
                   // 只有JDBC的时候才有第三级
                   if (resp.data.rows[j].connectorType === '02') {
                     that.dimensionDataOptions[i].dimensionSchemas.push({
-                      label: resp.data.rows[j].clusterName,
-                      value: resp.data.rows[j].clusterName,
+                      label: resp.data.rows[j].redisAddr,
+                      value: resp.data.rows[j].redisAddr,
                       dimensionSchemas: []
                     });
                   } else {
                     that.dimensionDataOptions[i].dimensionSchemas.push({
-                      label: resp.data.rows[j].clusterName,
-                      value: resp.data.rows[j].clusterName
+                      label: resp.data.rows[j].redisAddr,
+                      value: resp.data.rows[j].redisAddr
                     });
                   }
                 }
@@ -3881,7 +3872,7 @@
           description: undefined,
           deriveProcessModel: undefined,
           variableModelType: "01",
-          clusterName: undefined,
+          redisAddr: undefined,
           statisticsCountModel: undefined,
           statisticsModel: undefined,
           statisticsNum: undefined,
@@ -4057,8 +4048,8 @@
         }).then(function (resp) {
           for (let i = 0; i < resp.data.rows.length; i++) {
             that.dimensionDataOptions.push({
-              value: resp.data.rows[i].clusterName,
-              label: resp.data.rows[i].clusterName,
+              value: resp.data.rows[i].redisAddr,
+              label: resp.data.rows[i].redisAddr,
             });
           }
         }).catch(resp => {
@@ -4261,7 +4252,7 @@
                  if (this.form.variableType === '01') {  // 基础变量
                   this.setSourceTableCol();
                   if (this.form.variableModelType === '01') { // 普通查询
-                    // this.form.clusterName = this.form.clusterName.toString();
+                    // this.form.redisAddr = this.form.redisAddr.toString();
                     this.form.statisticsConditionOption = JSON.stringify(this.form.conditionTable);
                   } else if (this.form.variableModelType === '02') { // 统计查询
                     this.form.statisticsConditionOption = JSON.stringify(this.form.conditionTable);

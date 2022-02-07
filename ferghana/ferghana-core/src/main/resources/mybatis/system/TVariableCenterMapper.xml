@@ -15,7 +15,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="description"    column="description"    />
         <result property="variableModelType"    column="variable_Model_Type"    />
         <result property="variableFactor"    column="variable_Factor"    />
-        <result property="clusterName"    column="cluster_Name"    />
+        <result property="redisAddr"    column="redis_Addr"    />
         <result property="redisFunction"    column="redis_function"    />
         <result property="redisValue"    column="redis_value"    />
         <result property="redisKey"    column="redis_key"    />
@@ -54,7 +54,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <sql id="selectTVariableCenterVo">
         select variable_id, variable_name, variable_name_EN,variable_classification, variable_type, t.description,version_Num,version_Show,
-         variable_Model_Type, variable_factor, cluster_Name,redis_function,redis_value,redis_key,redis_Self_Function_item,statistics_Self_Function_item,
+         variable_Model_Type, variable_factor, redis_Addr,redis_function,redis_value,redis_key,redis_Self_Function_item,statistics_Self_Function_item,
          statistics_count_model,statistics_model,statistics_num,statistics_cycle,user_Defined_Sql,derive_Variable_Sql,redis_Element_Distinct,global_variable_start_time,global_variable_stop_time,
          statistics_condition_option,statistics_conditions,process_model,process_input_params,sql_context,derive_base_Variable,
          test_source_Table_Col,test_dimension_Table_Col,statistics_Group_Item,derive_Variable_Model_Type,derive_Process_Model,derive_Input_Params,
@@ -130,7 +130,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="description != null  and description != ''">description,</if>
             <if test="variableModelType != null  and variableModelType != ''">variable_Model_Type,</if>
             <if test="variableFactor != null  and variableFactor != ''">variable_Factor,</if>
-            <if test="clusterName != null  and clusterName != ''">cluster_Name,</if>
+            <if test="redisAddr != null  and redisAddr != ''">redis_Addr,</if>
             <if test="redisFunction != null  and redisFunction != ''">redis_function,</if>
             <if test="redisValue != null  and redisValue != ''">redis_value,</if>
             <if test="redisKey != null  and redisKey != ''">redis_key,</if>
@@ -175,7 +175,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="description != null  and description != ''">#{description},</if>
             <if test="variableModelType != null  and variableModelType != ''">#{variableModelType},</if>
             <if test="variableFactor != null  and variableFactor != ''">#{variableFactor},</if>
-            <if test="clusterName != null  and clusterName != ''">#{clusterName},</if>
+            <if test="redisAddr != null  and redisAddr != ''">#{redisAddr},</if>
             <if test="redisFunction != null  and redisFunction != ''">#{redisFunction},</if>
             <if test="redisValue != null  and redisValue != ''">#{redisValue},</if>
             <if test="redisKey != null  and redisKey != ''">#{redisKey},</if>
@@ -226,7 +226,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="description != null  and description != ''">description = #{description},</if>
             <if test="variableModelType != null  and variableModelType != ''">variable_Model_Type = #{variableModelType},</if>
             <if test="variableFactor != null  and variableFactor != ''">variable_Factor = #{variableFactor},</if>
-            <if test="clusterName != null  and clusterName != ''">cluster_Name = #{clusterName},</if>
+            <if test="redisAddr != null  and redisAddr != ''">redis_Addr = #{redisAddr},</if>
             <if test="redisFunction != null  and redisFunction != ''">redis_function = #{redisFunction},</if>
             <if test="redisValue != null  and redisValue != ''">redis_value = #{redisValue},</if>
             <if test="redisKey != null  and redisKey != ''">redis_key = #{redisKey},</if>

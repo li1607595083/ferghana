@@ -13,16 +13,13 @@ import com.skyon.project.system.domain.TDataSource;
 import com.skyon.project.system.service.ITDataSourceService;
 import com.skyon.project.system.service.ITDatasourceFieldService;
 import joptsimple.internal.Strings;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 数据源表 Controller
@@ -89,13 +86,13 @@ public class TDataSourceController extends BaseController {
             map.put("value", object.get("dataBaseType"));
             list1.add(map);
         }
-        String markName = tDataSource.getWaterMarkName();
-        if (!Strings.isNullOrEmpty(markName)) {
-            Map map = new HashMap();
-            map.put("key", markName);
-            map.put("value", "TIMESTAMP(3)");
-            list1.add(map);
-        }
+//        String markName = tDataSource.getWaterMarkName();
+//        if (!Strings.isNullOrEmpty(markName)) {
+//            Map map = new HashMap();
+//            map.put("key", markName);
+//            map.put("value", "TIMESTAMP(3)");
+//            list1.add(map);
+//        }
         // 水印 主键
         List list2 = new ArrayList();
         String waterMarkName = tDataSource.getWaterMarkName();
@@ -119,7 +116,7 @@ public class TDataSourceController extends BaseController {
     public AjaxResult add(@RequestBody TDataSource tDataSource) {
 
         // 新增时，需往t_datasource_field添加字段 , 01 代表 数据源表
-        fieldService.insertTDatasourceField(tDataSource.getTableName(), tDataSource.getDynamicItem(), "01");
+        fieldService.insertTDatasourceField(tDataSource.getTableName(), tDataSource.getDynamicItem(), "01",tDataSource.getConnectorType());
 
         return toAjax(tDataSourceService.insertTDataSource(tDataSource));
     }
@@ -134,7 +131,8 @@ public class TDataSourceController extends BaseController {
     public AjaxResult edit(@RequestBody TDataSource tDataSource) {
 
         // 修改的字段 同时把t_datasource_field里的字段给修改了 01 : 数据源表
-        fieldService.updatefieldName(tDataSource.getDynamicItem(), "01");
+        fieldService.updatefieldName(tDataSource.getDynamicItem(), "01",
+                tDataSource.getConnectorType(),tDataSource.getTableName());
 
         return toAjax(tDataSourceService.updateTDataSource(tDataSource));
     }
@@ -156,5 +154,127 @@ public class TDataSourceController extends BaseController {
         fieldService.deleteTDatasourceField(tableNames, "01");
 
         return toAjax(tDataSourceService.deleteTDataSourceByIds(dataSourceIds));
+    }
+
+
+    @RequestMapping(value = "/paramValidate/{optionalParam}", method = RequestMethod.GET)
+    @ResponseBody
+    public AjaxResult paramValidate(@PathVariable("optionalParam") String optionalParam) {
+        String msg = "";
+        String connectorFlag = optionalParam.substring(optionalParam.length() - 2);
+        optionalParam = optionalParam.substring(0, optionalParam.length() - 2);
+
+        if (optionalParam.startsWith(",") || optionalParam.endsWith(",")) {
+            msg = "参数格式不正确";
+            return AjaxResult.success(msg);
+        }
+
+        if ("00".equals(connectorFlag)) {
+            return AjaxResult.success(msg);
+        }
+
+        String optionalParamContent = "{" + optionalParam + "}";
+        optionalParamContent = optionalParamContent.replaceAll("\'", "\"");
+        optionalParamContent = optionalParamContent.replaceAll("=", ":");
+        //数据源表连接参数
+        //kafka
+        String[] kafkaRequiredParam = {"connector", "topic", "properties.bootstrap.servers", "properties.group.id", "scan.startup.mode", "format"};
+        String[] kafkaOptionalParam = {"scan.startup.specific-offsets", "scan.startup.timestamp-millis"};
+        //mysql-cdc
+        String[] mysqlCdcRequiredParam = {"connector", "hostname", "username", "password", "database-name", "table-name", "port"};
+        String[] mysqlCdcOptionalParam = {"server-time-zone", "server-id", "debezium.connect.keep.alive", "debezium.table.ignore.builtin", "debezium.database.ssl.mode", "debezium.binlog.buffer.size", "debezium.snapshot.mode", "debezium.snapshot.locking.mode", "debezium.snapshot.include.collection.list", "debezium.snapshot.select.statement.overrides", "debezium.min.row.count.to.stream.results", "debezium.heartbeat.interval.ms", "debezium.heartbeat.topics.prefix", "debezium.database.initial.statements", "debezium.snapshot.delay.ms", "debezium.snapshot.fetch.size", "debezium.snapshot.lock.timeout.ms", "debezium.enable.time.adjuster", "debezium.source.struct.version", "debezium.sanitize.field.names", "debezium.skipped.operations", "debezium.signal.data.collection", "debezium.incremental.snapshot.chunk.size", "debezium.read.only", "debezium.provide.transaction.metadata"};
+
+        //数据维表连接参数
+        //redis
+        String[] redisRequiredParam = {"connector", "mode", "single-node", "cluster-nodes"};
+        String[] redisOptionalParam = {"password", "database", "hashname", "lookup.cache.max-rows", "lookup.cache.ttl", "lookup.max-retries", "value.format"};
+        //oracle and mysql
+        String[] oracleAndMysqlRequiredParam = {"connector", "url", "table-name", "driver", "username", "password"};
+        String[] oracleAndMysqlOptionalParam = {"lookup.cache.max-rows", "lookup.cache.ttl", "lookup.max-retries"};
+        //hbase
+        String[] hbaseRequiredParam = {"connector", "table-name", "zookeeper.quorum"};
+        String[] hbaseOptionalParam = {"zookeeper.znode.parent"};
+
+
+        if (StringUtils.isNotEmpty(optionalParam)) {
+            //1、先判断是否为json格式；
+            if (isJson(optionalParamContent)) {
+                JSONObject jsonObject = JSON.parseObject(optionalParamContent);
+                Iterator<String> keys = jsonObject.keySet().iterator();
+                while (keys.hasNext()) {
+                    String key = keys.next();
+                    AjaxResult ajaxResult = null;
+                    //2、再判断参数是否重复、是否正确；
+                    if ("01".equals(connectorFlag)) {
+                        ajaxResult = paramJudge(kafkaRequiredParam, kafkaOptionalParam, key);
+                    } else if ("02".equals(connectorFlag)) {
+                        ajaxResult = paramJudge(mysqlCdcRequiredParam, mysqlCdcOptionalParam, key);
+                    } else if ("03".equals(connectorFlag)) {
+                        ajaxResult = paramJudge(redisRequiredParam, redisOptionalParam, key);
+                    } else if ("04".equals(connectorFlag)) {
+                        ajaxResult = paramJudge(oracleAndMysqlRequiredParam, oracleAndMysqlOptionalParam, key);
+                    } else if ("05".equals(connectorFlag)) {
+                        ajaxResult = paramJudge(hbaseRequiredParam, hbaseOptionalParam, key);
+                    }
+
+                    if (null != ajaxResult) {
+                        return ajaxResult;
+                    }
+                }
+            } else {
+                msg = "参数格式不正确";
+            }
+        }
+
+        return AjaxResult.success(msg);
+    }
+
+    /**
+     * 判断可选参数是否正确
+     *
+     * @param requiredParam
+     * @param optionalParam
+     * @param key
+     * @return
+     */
+    public AjaxResult paramJudge(String[] requiredParam, String[] optionalParam, String key) {
+        String msg;
+        if (Arrays.asList(requiredParam).contains(key)) {
+            msg = key + " 参数已添加";
+        } else if (Arrays.asList(optionalParam).contains(key)) {
+            return null;
+        } else {
+            msg = key + " 参数不存在";
+        }
+        return AjaxResult.success(msg);
+    }
+
+    /**
+     * 判断字符串是否为json格式
+     *
+     * @param content
+     * @return
+     */
+    public static boolean isJson(String content) {
+        if (StringUtils.isEmpty(content)) {
+            return false;
+        }
+        boolean isJsonObject = true;
+        boolean isJsonArray = true;
+        try {
+            JSONObject.parseObject(content);
+        } catch (Exception e) {
+            isJsonObject = false;
+        }
+        try {
+            JSONObject.parseArray(content);
+        } catch (Exception e) {
+            isJsonArray = false;
+        }
+        //不是json格式
+        if (!isJsonObject && !isJsonArray) {
+            return false;
+        }
+        return true;
     }
 }

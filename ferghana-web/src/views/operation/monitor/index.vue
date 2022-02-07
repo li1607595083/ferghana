@@ -22,7 +22,7 @@
           <el-row type="flex">
             <div class="card-from-select-box">
               <div class="card-from-select">
-                <label class="el-form-item__label">变量包</label>
+                <label class="el-form-item__label">运行中作业</label>
                 <el-select v-model="from.packageValue" style="width: 70%;" placeholder="请选择" size="small"
                   @change="loadData">
                   <el-option v-for="(item, index) in packageOptions" :key="index" :label="item.variablePackName"
@@ -33,7 +33,7 @@
 
             <div class="card-from-select-box">
               <div class="card-from-select">
-                <label class="el-form-item__label">时间颗粒度</label>
+                <label class="el-form-item__label">时间细粒度</label>
                 <el-select v-model="from.granularity" style="width: 70%;" placeholder="请选择" size="small"
                   @change="loadData">
                   <el-option v-for="(item, index) in granularityOptions" :key="index" :label="item.dictLabel"
@@ -127,8 +127,8 @@
         },
         setting_two: {
           labelMap: {
-            jobMangerHead: "jobManger堆使用",
-            taskMangerHead: "taskManger堆使用",
+            jobMangerHead: "jobManger堆使用率",
+            taskMangerHead: "taskManger堆使用率",
             avgComputerDuration: "计算延迟",
             numRecordsOut: "数据输出条数"
           }
@@ -145,7 +145,7 @@
         avgComputerDuration: null,
         numRecordsOut: null,
         cardData: [{
-          name: "CPU资源",
+          name: "集群CPU资源",
           unit: "CU",
           content: [{
             name: "共计",
@@ -161,7 +161,7 @@
             color: "#EF7930"
           }]
         }, {
-          name: "内存资源",
+          name: "集群内存资源",
           unit: "GB",
           content: [{
             name: "共计",
@@ -177,7 +177,7 @@
             color: "#EF7930"
           }]
         }, {
-          name: "作业",
+          name: "集群作业信息",
           unit: "个",
           content: [{
             name: "运行中",

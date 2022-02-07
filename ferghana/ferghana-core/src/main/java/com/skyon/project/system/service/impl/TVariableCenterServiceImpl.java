@@ -143,7 +143,7 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
             if ("01".equals(variable.getVariableModelType())) {   // 模板类型为普通查询时
                 sb.append("SELECT ");
                 // 查询主键
-                sb.append(variable.getSourceKey()).append(", ");
+                sb.append("*").append(", ");
                 //select redis_query(methodName, key, field / null) from 数据源表 join 数据维表  ；  or 新join 表
                 sb.append("redis_query(");
                 String key = variable.getRedisKey();
@@ -183,7 +183,7 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
             } else if ("02".equals(variable.getVariableModelType())) {   // 模板类型为统计查询时
                 sb.append("SELECT ");
                 // 查询主键
-                sb.append(variable.getSourceKey()).append(", ");
+                sb.append("*").append(", ");
                 // 统计计算模板
                 sb.append(joinStatisticsCountModel(variable.getStatisticsCountModel(), variable.getVariableFactor(), variable.getStatisticsConditions(), resultTableName, variable.getStatisticsSelfFunctionItem()));
                 // 统计周期的判断
@@ -266,34 +266,34 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
 //                        }
 //                    }
 
-                    sb.append(" FROM(SELECT ").append(variable.getSourceKey()).append(",").append("IF(");// 主键
+                    sb.append(" FROM(SELECT ").append("*").append(",").append("IF(");// 主键
 
 
                     sb.append(variable.getStatisticsConditions()).append(","); // 条件
                     sb.append(variableFactor).append(",CAST(ifFalseSetNull() AS ")
                             .append(variable.getVariableFactorType()).append(")) AS ")
                             .append(variable.getVariableFactor() + "_RE");  // 变量因子及类型 _RE为当求值字段为主键时，加的区分辨识,改成只要有where添加，都加
-                    if (variable.getStatisticsGroupItem() != null) {
-                        ArrayList statisticsGroup = (ArrayList) variable.getStatisticsGroupItem();
-                        if (statisticsGroup != null && statisticsGroup.size() > 0) {
-                            String group = "";
-                            for (int i = 0; i < statisticsGroup.size(); i++) {
-                                Map map = (Map) statisticsGroup.get(i);
-                                String groupField = map.get("groupField").toString();
-                                String groupFunction = map.get("groupFunction").toString();
-                                if (!Strings.isNullOrEmpty(groupField)) {
-                                    group = group + groupField + ",";
-                                    sb.append(",").append(group.substring(0, group.length() - 1)); // 分组的字段
-                                }
-                            }
-                        }
-                    }
+//                    if (variable.getStatisticsGroupItem() != null) {
+//                        ArrayList statisticsGroup = (ArrayList) variable.getStatisticsGroupItem();
+//                        if (statisticsGroup != null && statisticsGroup.size() > 0) {
+//                            String group = "";
+//                            for (int i = 0; i < statisticsGroup.size(); i++) {
+//                                Map map = (Map) statisticsGroup.get(i);
+//                                String groupField = map.get("groupField").toString();
+//                                String groupFunction = map.get("groupFunction").toString();
+//                                if (!Strings.isNullOrEmpty(groupField)) {
+//                                    group = group + groupField + ",";
+//                                    sb.append(",").append(group.substring(0, group.length() - 1)); // 分组的字段
+//                                }
+//                            }
+//                        }
+//                    }
                     // 水印字段的判断
-                    if (!Strings.isNullOrEmpty(variable.getWatermark())) {
-                        sb.append(",").append(variable.getWatermark());
-                    } else {
-                        sb.append(",proctime");
-                    }
+//                    if (!Strings.isNullOrEmpty(variable.getWatermark())) {
+//                        sb.append(",").append(variable.getWatermark());
+//                    } else {
+//                        sb.append(",proctime");
+//                    }
                     sb.append(" FROM " + resultTableName);
                     sb.append(") AS tmp");
                 } else {
@@ -304,7 +304,7 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
             } else if ("03".equals(variable.getVariableModelType())) {  // 数据加工
                 sb.append("SELECT ");
                 //  主键
-                sb.append(variable.getSourceKey()).append(",");
+                sb.append("*").append(",");
                 // select 函数英文名（） from 数据源表;
                 sb.append(variable.getSelfFunctionNameCn()).append("(");
                 // 组装参数
@@ -348,7 +348,7 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
                 }
                 sb.append(s, 0, s.length() - 1).append("@");
                 // select 编辑区 as 英文名 from
-                sb.append("SELECT ").append(variable.getSourceKey()).append(",").append(variable.getDeriveVariableSql().replaceAll("@", ""))
+                sb.append("SELECT ").append("*").append(",").append(variable.getDeriveVariableSql().replaceAll("@", ""))
                         .append(" as ").append(variable.getVariableNameEn()).append(" FROM ");
                 // 合成的表名 uuid 随机
                 String uuid = "A" + UUID.randomUUID().toString().replaceAll("-", "");
@@ -401,7 +401,7 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
                 }
                 sb.append(s, 0, s.length() - 1).append("@");
                 // select 编辑区 as 英文名 from
-                sb.append("SELECT ").append(variable.getSourceKey()).append(",").append("if(").append(variable.getDeriveVariableSql().replaceAll("@", ""))
+                sb.append("SELECT ").append("*").append(",").append("if(").append(variable.getDeriveVariableSql().replaceAll("@", ""))
                         .append(",1,0)").append(" as ").append(variable.getVariableNameEn()).append(" FROM ");
                 // 合成的表名 uuid 随机
                 String uuid = "A" + UUID.randomUUID().toString().replaceAll("-", "");
@@ -777,7 +777,7 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
 //        decisionSql:SELECT bod_decision('SQFQZ',CUST_NO,TRADE_ID,TRADE_AMOUNT,TRADE_AMOUNT123) FROM 表名 表名：变量测试：TestTopicName
         StringBuilder sd = new StringBuilder();
         TSelfFunction tSelfFunction = tSelfFunctionMapper.selectTSelfFunctionById(new Long(variable.getDeriveProcessModel()));
-        sd.append("SELECT ").append(variable.getSourceKey()).append(",").append(tSelfFunction.getFunctionName()).append("(");
+        sd.append("SELECT ").append("*").append(",").append(tSelfFunction.getFunctionName()).append("(");
 
 //        [{"selfFuncParam":"source1","outParam":"1112"},{"selfFuncParam":"source2","outParam":"222"},{"selfFuncParam":"sourceMap","outParam":["ad","e"]}]
         JSONArray deriveInputParams = (JSONArray) JSONObject.parse(variable.getDeriveInputParams());

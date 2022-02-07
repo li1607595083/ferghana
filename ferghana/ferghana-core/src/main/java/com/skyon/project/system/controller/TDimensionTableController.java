@@ -166,8 +166,8 @@ public class TDimensionTableController extends BaseController {
     public AjaxResult add(@RequestBody TDimensionTable tDimensionTable) {
 
         // 新增时，需往t_datasource_field添加字段 , 02 代表 数据维表
-        if ("02".equals(tDimensionTable.getConnectorType())) {
-            fieldService.insertTDatasourceField(tDimensionTable.getDimensionName(), tDimensionTable.getSchemaDefine(), "02");
+        if ("06".equals(tDimensionTable.getConnectorType())) {
+            fieldService.insertTDatasourceField(tDimensionTable.getDimensionName(), tDimensionTable.getSchemaDefine(), "02", tDimensionTable.getConnectorType());
         }
 
         return toAjax(tDimensionTableService.insertTDimensionTable(tDimensionTable));
@@ -181,10 +181,9 @@ public class TDimensionTableController extends BaseController {
     @PutMapping
     public AjaxResult edit(@RequestBody TDimensionTable tDimensionTable) {
 
-        if ("02".equals(tDimensionTable.getConnectorType())) {
-            // 修改的字段 同时把t_datasource_field里的字段给修改了 02 : 数据维表
-            fieldService.updatefieldName(tDimensionTable.getSchemaDefine(), "02");
-        }
+        // 修改的字段 同时把t_datasource_field里的字段给修改了 02 : 数据维表
+        fieldService.updatefieldName(tDimensionTable.getSchemaDefine(), "02",
+                tDimensionTable.getConnectorType(), tDimensionTable.getDimensionName());
 
         return toAjax(tDimensionTableService.updateTDimensionTable(tDimensionTable));
     }

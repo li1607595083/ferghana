@@ -1,3 +1,4 @@
+import request from '@/utils/request'
 /**
  * @param {string} path
  * @returns {Boolean}
@@ -116,6 +117,105 @@ export function unContainSpace(rule, value, callback) {
   const reg =  /^[^ ]+$/;
   if ((!reg.test(value)) && value != '') {
     callback(new Error('不能包含空格'));
+  } else {
+    callback();
+  }
+}
+
+//可选参数内容校验
+export function paramValidate(optionalParam) {
+  return request({
+    url: '/source/manage/paramValidate/' + optionalParam,
+    method: 'get'
+  })
+}
+
+//可选参数内容校验器，不支持校验的连接器类型
+export function optionalParamValidator(rule, value, callback) {
+  if (value !== '' && null != value) {
+    paramValidate(value + '00').then(response => {
+      let validateResult = response.msg
+    })
+  } else {
+    callback();
+  }
+}
+
+//可选参数内容校验器，数据源表连接器类型kafka
+export function kafkaOptionalParamValidator(rule, value, callback) {
+  if (value !== '' && null != value) {
+    paramValidate(value + '01').then(response => {
+      let validateResult = response.msg
+      if ('' != (validateResult)) {
+        callback(new Error(validateResult));
+      } else {
+        callback();
+      }
+    })
+  } else {
+    callback();
+  }
+}
+
+//可选参数内容校验器，数据源表连接器类型mysql-cdc
+export function mysqlCdcOptionalParamValidator(rule, value, callback) {
+  if (value !== '' && null != value) {
+    paramValidate(value + '02').then(response => {
+      let validateResult = response.msg
+      if ('' != (validateResult)) {
+        callback(new Error(validateResult));
+      } else {
+        callback();
+      }
+    })
+  } else {
+    callback();
+  }
+}
+
+//可选参数内容校验器，数据维表连接器类型redis
+export function redisOptionalParamValidator(rule, value, callback) {
+  if (value !== '' && null != value) {
+    paramValidate(value + '03').then(response => {
+      let validateResult = response.msg
+      if ('' != (validateResult)) {
+        callback(new Error(validateResult));
+      } else {
+        callback();
+      }
+    })
+  } else {
+    callback();
+  }
+}
+
+//可选参数内容校验器，数据维表连接器类型oracle/mysql
+export function oracleAndMysqlOptionalParamValidator(rule, value, callback) {
+  if (value !== '' && null != value) {
+    paramValidate(value + '04').then(response => {
+      let validateResult = response.msg
+      if ('' != (validateResult)) {
+        callback(new Error(validateResult));
+      } else {
+        callback();
+      }
+    })
+  } else {
+    callback();
+  }
+}
+
+//可选参数内容校验器，数据维表连接器类型hbase
+export function hbaseOptionalParamValidator(rule, value, callback) {
+  if (value !== '' && null != value) {
+    paramValidate(value + '05').then(response => {
+      let validateResult = response.msg
+      if ('' != (validateResult)) {
+        callback(new Error(validateResult));
+      } else {
+        callback();
+      }
+    })
   } else {
     callback();
   }

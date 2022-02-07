@@ -27,6 +27,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="esPrimaryKey"    column="es_Primary_Key"    />
         <result property="schemaDefine"    column="schema_define"    />
         <result property="zookeeperAddress"    column="zookeeper_address"    />
+        <result property="optionalParam"    column="optional_param"    />
         <result property="hbaseTableName"    column="hbase_table_name"    />
         <result property="hbaseSchemaDefine"    column="hbase_schema_define"    />
         <result property="rowkey"    column="rowkey"    />
@@ -47,8 +48,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <sql id="selectTDimensionTableVo">
         select dimension_id, dimension_name, connector_type, data_source, description, redis_address, redis_data_type, redis_key,hbase_create_sql,es_create_sql,jdbc_create_sql,cluster_Name,
-         redis_key_field,redis_Schema_Define, jdbc_url_address, jdbc_drive, jdbc_user_name, jdbc_user_pwd,jdbc_Primary_Key,es_Index,es_Url_Address,es_Primary_Key, schema_define, zookeeper_address,
-          hbase_table_name,hbase_schema_define,rowkey,dimension_Name_ZH, create_time, update_time,create_by,create_id,update_by from t_dimension_table t
+         redis_key_field,redis_Schema_Define, jdbc_url_address, jdbc_drive, jdbc_user_name, jdbc_user_pwd,jdbc_Primary_Key,es_Index,es_Url_Address,es_Primary_Key, schema_define, zookeeper_address,optional_param,
+          hbase_table_name,hbase_schema_define,rowkey,dimension_Name_ZH,mode, create_time, update_time,create_by,create_id,update_by from t_dimension_table t
     </sql>
 
     <select id="selectTDimensionTableList" parameterType="TDimensionTable" resultMap="TDimensionTableResult">
@@ -121,6 +122,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="esPrimaryKey != null  and esPrimaryKey != ''">es_Primary_Key,</if>
             <if test="schemaDefine != null  and schemaDefine != ''">schema_define,</if>
             <if test="zookeeperAddress != null  and zookeeperAddress != ''">zookeeper_address,</if>
+            <if test="optionalParam != null  and optionalParam != ''">optional_param,</if>
+            <if test="mode != null  and mode != ''">mode,</if>
             <if test="hbaseTableName != null  and hbaseTableName != ''">hbase_table_name,</if>
             <if test="hbaseSchemaDefine != null  and hbaseSchemaDefine != ''">hbase_schema_define,</if>
             <if test="hbaseCreateSql != null  and hbaseCreateSql != ''">hbase_create_sql,</if>
@@ -154,6 +157,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="esPrimaryKey != null  and esPrimaryKey != ''">#{esPrimaryKey},</if>
             <if test="schemaDefine != null  and schemaDefine != ''">#{schemaDefine},</if>
             <if test="zookeeperAddress != null  and zookeeperAddress != ''">#{zookeeperAddress},</if>
+            <if test="optionalParam != null  and optionalParam != ''">#{optionalParam},</if>
+            <if test="mode != null  and mode != ''">#{mode},</if>
             <if test="hbaseTableName != null  and hbaseTableName != ''">#{hbaseTableName},</if>
             <if test="hbaseSchemaDefine != null  and hbaseSchemaDefine != ''">#{hbaseSchemaDefine},</if>
             <if test="hbaseCreateSql != null  and hbaseCreateSql != ''">#{hbaseCreateSql},</if>
@@ -190,6 +195,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="esIndex != null  and esIndex != ''">es_Index = #{esIndex},</if>
             <if test="esPrimaryKey != null  and esPrimaryKey != ''">es_Primary_Key = #{esPrimaryKey},</if>
             <if test="schemaDefine != null  and schemaDefine != ''">schema_define = #{schemaDefine},</if>
+            <if test="optionalParam != null  and optionalParam != ''">optional_param = #{optionalParam},</if>
+            <if test="mode != null  and mode != ''">mode = #{mode},</if>
             <if test="zookeeperAddress != null  and zookeeperAddress != ''">zookeeper_address = #{zookeeperAddress},</if>
             <if test="hbaseTableName != null  and hbaseTableName != ''">hbase_table_name = #{hbaseTableName},</if>
             <if test="hbaseSchemaDefine != null  and hbaseSchemaDefine != ''">hbase_Schema_Define = #{hbaseSchemaDefine},</if>

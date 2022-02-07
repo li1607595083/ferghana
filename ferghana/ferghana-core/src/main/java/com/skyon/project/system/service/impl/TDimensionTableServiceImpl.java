@@ -50,43 +50,18 @@ public class TDimensionTableServiceImpl implements ITDimensionTableService {
 
 
     private void joinSchema(TDimensionTable tDimensionTable) {
-        String redisSchemaDefine = tDimensionTable.getRedisSchemaDefine();
-        if (!Strings.isNullOrEmpty(redisSchemaDefine)) {
-            JSONArray parse = (JSONArray) JSONObject.parse(redisSchemaDefine);
-            tDimensionTable.setRedisDynamicItem(parse.toArray());
-        }
-//        String redisSchemaDefine = tDimensionTable.getRedisKey();
-//        if (!Strings.isNullOrEmpty(redisSchemaDefine)) {
-//            List parse = (List) JSONObject.parse(redisSchemaDefine);
-//            Object[] oejectArr = new Object[parse.size()];
-//            final int[] j = {0};
-//            for (int i = 0; i < parse.size(); i++) {
-//                Map o = (Map) parse.get(i);
-//                o.forEach((key, Value) -> {
-//                    HashMap<String, Object> hashMap = new HashMap<>();
-//                    hashMap.put("redisKey", key);
-//                    hashMap.put("redisKeyField", Value);
-//                    oejectArr[j[0]] = hashMap;
-//                    j[0] = j[0] + 1;
-//                });
-//
-//            }
-//            tDimensionTable.setRedisDynamicItem(oejectArr);
-//        }
-
-        // 转换 jdbc 的json
+        // 转换 redis 的json
         if ("02".equals(tDimensionTable.getConnectorType())) {
             // 查询数据源表字段的使用情况
             List<TDatasourceField> tDatasourceFields = fieldMapper.
                     selectTDatasourceFieldByName(tDimensionTable.getDimensionName(), "02");
 
-            String jdbcSchemaDefine = tDimensionTable.getSchemaDefine();
-            String jdbcPrimaryKey = tDimensionTable.getJdbcPrimaryKey();
+            String redisSchemaDefine = tDimensionTable.getSchemaDefine();
 
-            JSONArray array = JSON.parseArray(jdbcSchemaDefine);
+            JSONArray array = JSON.parseArray(redisSchemaDefine);
             for (int i = 0; i < array.size(); i++) {
                 JSONObject o = (JSONObject) array.get(i);
-                Object schemaDefine = o.get("jdbcKey");
+                Object schemaDefine = o.get("redisKey");
                 if (tDatasourceFields != null) {
                     for (int j = 0; j < tDatasourceFields.size(); j++) {
                         TDatasourceField tDatasourceField = tDatasourceFields.get(i);
@@ -99,7 +74,7 @@ public class TDimensionTableServiceImpl implements ITDimensionTableService {
                     }
                 }
             }
-            tDimensionTable.setJdbcDynamicItem(array.toArray());
+            tDimensionTable.setRedisDynamicItem(array.toArray());
         }
 
         // 转换 es 的json
@@ -137,6 +112,33 @@ public class TDimensionTableServiceImpl implements ITDimensionTableService {
                 }
             }
             tDimensionTable.setEsDynamicItem(array.toArray());
+        }
+        // 转换 jdbc 的json
+        else if ("06".equals(tDimensionTable.getConnectorType()) || "07".equals(tDimensionTable.getConnectorType())) {
+            // 查询数据源表字段的使用情况
+            List<TDatasourceField> tDatasourceFields = fieldMapper.
+                    selectTDatasourceFieldByName(tDimensionTable.getDimensionName(), "02");
+
+            String jdbcSchemaDefine = tDimensionTable.getSchemaDefine();
+            String jdbcPrimaryKey = tDimensionTable.getJdbcPrimaryKey();
+
+            JSONArray array = JSON.parseArray(jdbcSchemaDefine);
+            for (int i = 0; i < array.size(); i++) {
+                JSONObject o = (JSONObject) array.get(i);
+                Object schemaDefine = o.get("jdbcKey");
+                if (tDatasourceFields != null) {
+                    for (int j = 0; j < tDatasourceFields.size(); j++) {
+                        TDatasourceField tDatasourceField = tDatasourceFields.get(i);
+                        String fieldName = tDatasourceField.getFieldName();
+                        if (schemaDefine.equals(fieldName)) {
+                            o.put("isUsed", tDatasourceField.getIsUsed());
+                            o.put("fieldId", tDatasourceField.getId());
+                            break;
+                        }
+                    }
+                }
+            }
+            tDimensionTable.setJdbcDynamicItem(array.toArray());
         }
 
 
@@ -259,11 +261,24 @@ public class TDimensionTableServiceImpl implements ITDimensionTableService {
         return tDimensionTableMapper.insertTDimensionTable(tDimensionTable);
     }
 
-    // 拼接建表sql
+    /**
+     * 拼接建表sql
+     *
+     * @param table
+     */
     private void joinDimensionTableSql(TDimensionTable table) {
         String connectorType = table.getConnectorType();
         StringBuilder sb = new StringBuilder();
-        if ("02".equals(connectorType)) { // jdbc
+
+        if ("02".equals(connectorType)) {
+            sb.append(" CREATE TABLE `").append(table.getDimensionName())
+                    .append("` ( ").append(schemaTransform(table.getSchemaDefine(), connectorType))
+                    .append(" ,PRIMARY KEY (`").append(table.getJdbcPrimaryKey()).append("`)").append(" NOT ENFORCED) WITH ")
+                    .append(" ('connector' = 'redis'").append("',")
+                    .append("'mode' = '").append(table.getMode()).append("',")
+                    .append(table.getMode().equals("single-node")?"'single-node' = '":"'cluster-nodes' = '").append(table.getRedisAddress()).append("')");
+            table.setJdbcCreateSql(sb.substring(0, sb.length() - 1) + "," + table.getOptionalParam() + ")");
+        } else if ("06".equals(connectorType) || "07".equals(connectorType)) {
             sb.append(" CREATE TABLE `").append(table.getDimensionName())
                     .append("` ( ").append(schemaTransform(table.getSchemaDefine(), connectorType))
                     .append(" ,PRIMARY KEY (`").append(table.getJdbcPrimaryKey()).append("`)").append(" NOT ENFORCED) WITH ")
@@ -272,15 +287,16 @@ public class TDimensionTableServiceImpl implements ITDimensionTableService {
                     .append("'username' = '").append(table.getJdbcUserName()).append("',")
                     .append("'password' = '").append(table.getJdbcUserPwd()).append("',")
                     .append("'table-name' = '").append(table.getDimensionName()).append("')");
-            table.setJdbcCreateSql(sb.toString());
-        } else if ("03".equals(connectorType)) { // hbase
+            table.setJdbcCreateSql(sb.substring(0, sb.length() - 1) + "," + table.getOptionalParam() + ")");
+        } else if ("03".equals(connectorType)) {
             String[] split = table.getDimensionName().split(":");
             sb.append(" CREATE TABLE `").append(split[1]).append("`(`").append(table.getRowkey()).append("` STRING, ");
             String hbaseSchemaDefine = table.getHbaseSchemaDefine();
             JSONArray objects = JSON.parseArray(hbaseSchemaDefine);
             StringBuilder sb2 = new StringBuilder();
             for (int i = 0; i < objects.size(); i++) {
-                JSONObject liezu = (JSONObject) objects.get(i); // 列族
+                // 列族
+                JSONObject liezu = (JSONObject) objects.get(i);
                 JSONObject div1 = (JSONObject) liezu.get("div1");
                 JSONArray hbaseColumnFamilyArray = (JSONArray) div1.get("hbaseColumnItem");
                 JSONObject get0 = (JSONObject) hbaseColumnFamilyArray.get(0);
@@ -303,7 +319,7 @@ public class TDimensionTableServiceImpl implements ITDimensionTableService {
                     .append(") NOT ENFORCED ) with ( 'connector' = 'hbase-1.4','table-name' = '")
                     .append(table.getHbaseTableName()).append("',")
                     .append("'zookeeper.quorum' = '").append(table.getZookeeperAddress()).append("')");
-            table.setHbaseCreateSql(sb.toString());
+            table.setHbaseCreateSql(sb.substring(0, sb.length() - 1) + "," + table.getOptionalParam() + ")");
 
         } else if ("04".equals(connectorType)) {
             sb.append(" CREATE TABLE `").append(table.getDimensionName())
@@ -311,14 +327,14 @@ public class TDimensionTableServiceImpl implements ITDimensionTableService {
                     .append(" ,PRIMARY KEY (`").append(table.getEsPrimaryKey()).append("`)").append(" NOT ENFORCED) WITH ")
                     .append(" ('connector' = 'elasticsearch-6', 'hosts' = '").append(table.getEsUrlAddress()).append("',")
                     .append("'index' = '").append(table.getEsIndex()).append("')");
-            table.setEsCreateSql(sb.toString());
+            table.setEsCreateSql(sb.substring(0, sb.length() - 1) + "," + table.getOptionalParam() + ")");
         } else if ("05".equals(connectorType)) {
             sb.append(" CREATE TABLE `").append(table.getDimensionName())
                     .append("` ( ").append(schemaTransform(table.getSchemaDefine(), connectorType))
                     .append(" ,PRIMARY KEY (`").append(table.getEsPrimaryKey()).append("`)").append(" NOT ENFORCED) WITH ")
                     .append(" ('connector' = 'elasticsearch-7', 'hosts' = '").append(table.getEsUrlAddress()).append("',")
                     .append("'index' = '").append(table.getEsIndex()).append("')");
-            table.setEsCreateSql(sb.toString());
+            table.setEsCreateSql(sb.substring(0, sb.length() - 1) + "," + table.getOptionalParam() + ")");
         }
     }
 
@@ -328,15 +344,22 @@ public class TDimensionTableServiceImpl implements ITDimensionTableService {
         if ("02".equals(connectorType)) {
             for (int i = 0; i < array.size(); i++) {
                 JSONObject o = (JSONObject) array.get(i);
-                Object schemaDefine1 = o.get("jdbcKey");
-                Object dataBaseType = o.get("jdbcType");
+                Object schemaDefine1 = o.get("redisKey");
+                Object dataBaseType = o.get("redisType");
                 sb.append("`" + schemaDefine1 + "` " + dataBaseType + ",");
             }
-        } else if ("04".equals(connectorType) || "05".equals(connectorType)) {
+        }else if ("04".equals(connectorType) || "05".equals(connectorType)) {
             for (int i = 0; i < array.size(); i++) {
                 JSONObject o = (JSONObject) array.get(i);
                 Object schemaDefine1 = o.get("esKey");
                 Object dataBaseType = o.get("esType");
+                sb.append("`" + schemaDefine1 + "` " + dataBaseType + ",");
+            }
+        }else if ("06".equals(connectorType) || "07".equals(connectorType)) {
+            for (int i = 0; i < array.size(); i++) {
+                JSONObject o = (JSONObject) array.get(i);
+                Object schemaDefine1 = o.get("jdbcKey");
+                Object dataBaseType = o.get("jdbcType");
                 sb.append("`" + schemaDefine1 + "` " + dataBaseType + ",");
             }
         }
@@ -348,12 +371,18 @@ public class TDimensionTableServiceImpl implements ITDimensionTableService {
 
         Object[] jdbcDynamicItem = tDimensionTable.getJdbcDynamicItem();
         Object[] esDynamicItem = tDimensionTable.getEsDynamicItem();
-        if ("02".equals(tDimensionTable.getConnectorType()))
+        Object[] redisDynamicItem = tDimensionTable.getRedisDynamicItem();
+        if ("02".equals(tDimensionTable.getConnectorType())) {
+            tDimensionTable.setSchemaDefine(JSON.toJSONString(redisDynamicItem));
+        } else if ("04".equals(tDimensionTable.getConnectorType())) {
+            tDimensionTable.setSchemaDefine(JSON.toJSONString(esDynamicItem));
+        } else if ("05".equals(tDimensionTable.getConnectorType())) {
+            tDimensionTable.setSchemaDefine(JSON.toJSONString(esDynamicItem));
+        } else if ("06".equals(tDimensionTable.getConnectorType())) {
             tDimensionTable.setSchemaDefine(JSON.toJSONString(jdbcDynamicItem));
-        else if ("04".equals(tDimensionTable.getConnectorType()))
-            tDimensionTable.setSchemaDefine(JSON.toJSONString(esDynamicItem));
-        else if ("05".equals(tDimensionTable.getConnectorType()))
-            tDimensionTable.setSchemaDefine(JSON.toJSONString(esDynamicItem));
+        } else if ("07".equals(tDimensionTable.getConnectorType())) {
+            tDimensionTable.setSchemaDefine(JSON.toJSONString(jdbcDynamicItem));
+        }
 //        if (jdbcDynamicItem != null && jdbcDynamicItem.length > 0) {
 //            List list = new ArrayList();
 //            for (int i = 0; i < jdbcDynamicItem.length; i++) {

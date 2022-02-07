@@ -211,8 +211,11 @@
           </el-form-item>
         </div>
 
-        <el-form-item label="描述" prop="description" class="el-col-12">
-          <el-input v-model="form.description" placeholder="请输入描述" :disabled="detailViem"/>
+        <el-form-item label="可选参数" prop="optionalParam" class="el-col-24">
+          <el-input v-model="form.optionalParam" placeholder="通常情况下无需添加其他参数" type="textarea"  :disabled="detailViem" v-on:blur="optionalParamValidate()"/>
+        </el-form-item>
+        <el-form-item label="描述" prop="description" class="el-col-24">
+          <el-input v-model="form.description" placeholder="请输入描述"  type="textarea" :disabled="detailViem"/>
         </el-form-item>
 
         <div v-for="(item, index) in form.dynamicItem" :key="index" class="el-col-24">
@@ -235,12 +238,12 @@
                         :rules="rules.dynamicItem.schemaFieldName">
             <el-input v-model="item.schemaFieldName" placeholder="请输入中文名" style="width: 200px" :disabled="detailViem"/>
           </el-form-item>
-          <el-form-item class="el-col-2 elementStyle" :prop="'dynamicItem.' + index + '.primaryKey'">
-            <el-input v-model="item.primaryKey" :disabled="detailViem" v-show="false"/>
-            <el-button @click="primaryKeyCheck(index)" :ref="'ref' + index" :id="'ref' + index"
-                       :disabled="item.isUsed === '1' || detailViem"  style="padding: 10px; margin-left: 90px">主键
-            </el-button>
-          </el-form-item>
+<!--          <el-form-item class="el-col-2 elementStyle" :prop="'dynamicItem.' + index + '.primaryKey'">-->
+<!--            <el-input v-model="item.primaryKey" :disabled="detailViem" v-show="false"/>-->
+<!--            <el-button @click="primaryKeyCheck(index)" :ref="'ref' + index" :id="'ref' + index"-->
+<!--                       :disabled="item.isUsed === '1' || detailViem"  style="padding: 10px; margin-left: 90px">主键-->
+<!--            </el-button>-->
+<!--          </el-form-item>-->
           <el-form-item class="el-col-6">
             <span>
               <el-button @click="addItem" :disabled="detailViem">
@@ -256,8 +259,31 @@
         <!-- 不止一项，用div包裹起来 -->
         <div class="el-col-24">
           <el-form-item label="watermark">
-            <span><el-input v-model="form.waterMarkName" placeholder="请输入水印" style="width: 200px"
-                            :disabled="detailViem"/></span>
+<!--            <span><el-input v-model="form.waterMarkName" placeholder="请输入水印" style="width: 200px"-->
+<!--                            :disabled="detailViem"/></span>-->
+
+<!--            <span><el-select v-model="value" placeholder="请选择水印字段">-->
+<!--              <el-option-->
+<!--                v-for="item in watermarks"-->
+<!--                :key="item.value"-->
+<!--                :label="item.label"-->
+<!--                :value="item.value">-->
+<!--              </el-option>-->
+<!--            </el-select></span>-->
+
+            <span><el-select
+              v-model="form.waterMarkName"
+              placeholder="请选择水印字段"
+              clearable
+              style="width: 200px"
+              :disabled="detailViem"
+              @focus="waterMarkFocus"
+            ><el-option
+              v-for="item in watermarkOption"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value">
+              </el-option></el-select></span>
             <span style="margin-left: 30px"><el-input value="TIMESTAMP(3)" style="width: 200px" disabled="disabled"/></span>
             <span style="margin-left: 30px"><el-input-number :disabled="detailViem" v-model="form.waterMarkTime" :min="0" :max="1000000"/></span>
             <span style="margin-left: 2px">秒</span>
@@ -280,9 +306,10 @@
     delSource,
     addSource,
     updateSource,
-    exportSource
+    exportSource,
+    paramValidate
   } from "@/api/source/manage.js";
-  import{isLegitimateName,unContainSpace} from "@/utils/validate.js";
+  import{isLegitimateName,unContainSpace,kafkaOptionalParamValidator,mysqlCdcOptionalParamValidator,optionalParamValidator} from "@/utils/validate.js";
   import {mapGetters} from "vuex";
 
   export default {
@@ -349,6 +376,8 @@
           dataBaseType: undefined,
           description: undefined
         },
+        //所有TIMESTAMP字段
+        watermarkOption:[],
         // 表单参数
         form: {},
         // 表单校验
@@ -409,6 +438,11 @@
           handleData: [
             {required : true, message: "数据操作必须选择", trigger: "blur"}
           ],
+          optionalParam: [
+            {validator: kafkaOptionalParamValidator, trigger: "blur"},
+            {validator: mysqlCdcOptionalParamValidator, trigger: "blur"},
+            {validator: optionalParamValidator, trigger: "blur"}
+          ],
           dynamicItem: {
             schemaDefine: [
               {required: true, message: "字段不能为空", trigger: "blur"},
@@ -446,7 +480,34 @@
       ]),
     },
     methods: {
-
+      // watermark只能选择TIMESTAMP字段
+      waterMarkFocus() {
+        let label = []
+        let value = []
+        for (let i = 0; i < this.form.dynamicItem.length; i++) {
+          if (this.form.dynamicItem[i].dataBaseType === 'TIMESTAMP') {
+            label.push(this.form.dynamicItem[i].schemaDefine)
+            value.push(this.form.dynamicItem[i].schemaDefine)
+          }
+        }
+        let timestampFileds = []
+        value.forEach((one, index) => {
+          let item = {}
+          item.value = one
+          item.label = label[index]
+          timestampFileds.push(item)
+        })
+        this.watermarkOption = timestampFileds
+      },
+      optionalParamValidate(){
+          if(this.form.connectorType === '01'){
+            this.rules.optionalParam[0].validator = kafkaOptionalParamValidator;
+          }else if(this.form.connectorType === '02'){
+            this.rules.optionalParam[0].validator = mysqlCdcOptionalParamValidator;
+          }else{
+            this.rules.optionalParam[0].validator = optionalParamValidator;
+          }
+      },
       connectorTypeChange(value){
         console.log("---connectorTypeChange");
         console.log(value);
@@ -654,6 +715,8 @@
         this.showSubmitForm = true;
         this.open = true;
         this.title = "添加数据源";
+        this.form.connectorType = "01";
+        this.connectorTypeChange(this.form.connectorType);
       },
       /** 修改按钮操作 */
       handleUpdate(row) {

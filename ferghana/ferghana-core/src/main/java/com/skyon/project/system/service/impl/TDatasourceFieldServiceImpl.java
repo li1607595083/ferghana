@@ -3,6 +3,7 @@ package com.skyon.project.system.service.impl;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.google.common.base.Strings;
 import com.skyon.project.system.domain.TDataSource;
 import com.skyon.project.system.domain.TDatasourceField;
 import com.skyon.project.system.domain.TVariableCenter;
@@ -10,6 +11,7 @@ import com.skyon.project.system.mapper.TDataSourceMapper;
 import com.skyon.project.system.mapper.TDatasourceFieldMapper;
 import com.skyon.project.system.service.ITDataSourceService;
 import com.skyon.project.system.service.ITDatasourceFieldService;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.poi.ss.formula.functions.T;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -114,13 +116,14 @@ public class TDatasourceFieldServiceImpl implements ITDatasourceFieldService {
     /**
      * 新增字段
      *
-     * @param tableName 表名
-     * @param fields    表schema字段
-     * @param tableType 01 数据源表 02 数据维表
+     * @param tableName     表名
+     * @param fields        表schema字段
+     * @param tableType     01 数据源表 02 数据维表
+     * @param connectorType 连接器类型
      * @return int
      */
     @Override
-    public int insertTDatasourceField(String tableName, Object fields, String tableType) {
+    public int insertTDatasourceField(String tableName, Object fields, String tableType, String connectorType) {
         List list = new ArrayList();
         if ("01".equals(tableType)) {
             Object[] dynamicItem = (Object[]) fields;
@@ -136,15 +139,29 @@ public class TDatasourceFieldServiceImpl implements ITDatasourceFieldService {
             }
         } else if ("02".equals(tableType)) {
             JSONArray array = JSON.parseArray(fields.toString());
-            for (int i = 0; i < array.size(); i++) {
-                Map map = new HashMap();
-                JSONObject o = (JSONObject) array.get(i);
-                map.put("tableName", tableName);
-                map.put("tableType", "02");
-                map.put("fieldName", o.get("jdbcKey"));
-                map.put("fieldType", o.get("jdbcType"));
-                map.put("isUsed", "0");
-                list.add(map);
+            //连接器类型为02，代表redis
+            if ("02".equals(connectorType)) {
+                for (int i = 0; i < array.size(); i++) {
+                    Map map = new HashMap();
+                    JSONObject o = (JSONObject) array.get(i);
+                    map.put("tableName", tableName);
+                    map.put("tableType", "02");
+                    map.put("fieldName", o.get("redisKey"));
+                    map.put("fieldType", o.get("redisType"));
+                    map.put("isUsed", "0");
+                    list.add(map);
+                }
+            } else {
+                for (int i = 0; i < array.size(); i++) {
+                    Map map = new HashMap();
+                    JSONObject o = (JSONObject) array.get(i);
+                    map.put("tableName", tableName);
+                    map.put("tableType", "02");
+                    map.put("fieldName", o.get("jdbcKey"));
+                    map.put("fieldType", o.get("jdbcType"));
+                    map.put("isUsed", "0");
+                    list.add(map);
+                }
             }
         }
         return fieldMapper.insertTDatasourceField(list);
@@ -338,7 +355,8 @@ public class TDatasourceFieldServiceImpl implements ITDatasourceFieldService {
      * @param tableType 表类型
      */
     @Override
-    public void updatefieldName(Object fields, String tableType) {
+    public void updatefieldName(Object fields, String tableType, String connectorType, String tableName) {
+        List fieldsNew = new ArrayList();
         Object[] dynamicItem = new Object[0];
         if ("01".equals(tableType)) {
             Object[] array = (Object[]) fields;
@@ -352,16 +370,43 @@ public class TDatasourceFieldServiceImpl implements ITDatasourceFieldService {
             }
             fieldMapper.updateFieldName(dynamicItem);
         } else if ("02".equals(tableType)) {
-            JSONArray array = JSON.parseArray(fields.toString());
-            dynamicItem = new Object[array.size()];
-            for (int i = 0; i < array.size(); i++) {
-                Map map = new HashMap();
-                JSONObject o = (JSONObject) array.get(i);
-                map.put("fieldName", o.get("jdbcKey"));
-                map.put("id", o.get("fieldId"));
-                dynamicItem[i] = map;
+            if("02".equals(connectorType)){
+                JSONArray array = JSON.parseArray(fields.toString());
+                dynamicItem = new Object[array.size()];
+                for (int i = 0; i < array.size(); i++) {
+                    Map map = new HashMap();
+                    JSONObject o = (JSONObject) array.get(i);
+                    map.put("fieldName", o.get("redisKey"));
+                    map.put("id", o.get("fieldId"));
+                    dynamicItem[i] = map;
+                }
+            }else{
+                JSONArray array = JSON.parseArray(fields.toString());
+                dynamicItem = new Object[array.size()];
+                for (int i = 0; i < array.size(); i++) {
+                    Map map = new HashMap();
+                    JSONObject o = (JSONObject) array.get(i);
+                    map.put("fieldName", o.get("jdbcKey"));
+                    map.put("id", o.get("fieldId"));
+
+                    // fieldId 为空的，代表新增字段  添加到 fieldsNew 中
+                    if (o.get("fieldId") == null){
+                        fieldsNew.add(o);
+                    }
+
+                    dynamicItem[i] = map;
+                }
             }
+
         }
+
         fieldMapper.updateFieldName(dynamicItem);
+
+        if(fieldsNew.size()>0){
+            this.insertTDatasourceField(tableName, fieldsNew,  tableType,  connectorType);
+        }
+
     }
+
+
 }

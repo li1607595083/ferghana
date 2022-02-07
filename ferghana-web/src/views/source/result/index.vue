@@ -180,9 +180,13 @@
           </el-form-item>
         </div>
 
+        <el-form-item label="可选参数" prop="optionalParam" class="el-col-24">
+          <el-input v-model="form.optionalParam" placeholder="通常情况下无需添加其他参数" type="textarea" :disabled="detailViem"/>
+        </el-form-item>
         <el-form-item label="描述" prop="description" class="el-col-24">
           <el-input v-model="form.description" placeholder="请输入描述" type="textarea" :disabled="detailViem"/>
         </el-form-item>
+
       </el-form>
       <div slot="footer" class="dialog-footer cl-col-24">
         <el-button type="primary" @click="submitForm" v-show="showSubmitForm">确 定</el-button>
@@ -341,7 +345,9 @@
         console.log(value);
         if ("01" === value) { // kafka
           this.kafkaCheck();
-        } else if ("02" === value) { // jdbc
+        } else if ("05" === value) { // jdbc
+          this.jdbcCheck();
+        }  else if ("06" === value) { // jdbc
           this.jdbcCheck();
         } else if ("03" === value) { // hbase
           this.hbaseCheck();

@@ -56,6 +56,9 @@ public class TDimensionTable extends BaseEntity
 
     private String redisSchemaDefine;
 
+    /** redis运行模式 */
+    private String mode;
+
     /** jdbcURL地址 */
     private String jdbcUrlAddress;
 
@@ -88,6 +91,11 @@ public class TDimensionTable extends BaseEntity
 
     /** zookeeper地址 */
     private String zookeeperAddress;
+
+    /**
+     * 可选参数
+     */
+    private String optionalParam;
 
     /** 表名 */
     private String hbaseTableName;
@@ -226,7 +234,15 @@ public class TDimensionTable extends BaseEntity
         this.jdbcUrlAddress = jdbcUrlAddress;
     }
 
-    public String getJdbcUrlAddress() 
+    public String getMode() {
+        return mode;
+    }
+
+    public void setMode(String mode) {
+        this.mode = mode;
+    }
+
+    public String getJdbcUrlAddress()
     {
         return jdbcUrlAddress;
     }
@@ -385,6 +401,14 @@ public class TDimensionTable extends BaseEntity
         this.jdbcPrimaryKey = jdbcPrimaryKey;
     }
 
+    public String getOptionalParam() {
+        return optionalParam;
+    }
+
+    public void setOptionalParam(String optionalParam) {
+        this.optionalParam = optionalParam;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -406,6 +430,7 @@ public class TDimensionTable extends BaseEntity
             .append("esPrimaryKey", getEsPrimaryKey())
             .append("schemaDefine", getSchemaDefine())
             .append("zookeeperAddress", getZookeeperAddress())
+            .append("optionalParam", getOptionalParam())
             .append("hbaseTableName", getHbaseTableName())
             .append("createTime", getCreateTime())
             .toString();

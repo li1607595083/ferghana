@@ -51,3 +51,11 @@ export function exportSource(query) {
     params: query
   })
 }
+
+//可选参数内容校验
+export function paramValidate(optionalParam){
+  return request({
+    url: '/source/manage/paramValidate/' + optionalParam,
+    method: 'get'
+  })
+}

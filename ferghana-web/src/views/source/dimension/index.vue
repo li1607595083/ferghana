@@ -90,23 +90,61 @@
         </el-form-item>
         <el-form-item label="连接器类型" prop="connectorType" class="el-col-12">
           <el-select v-model="form.connectorType" style="width: 100%" @change="changeConnOptionsSelect"
-            :disabled="detailViem">
+             :disabled="detailViemOnly">
             <el-option v-for="dict in connectorTypeOptions" :key="dict.dictValue" :label="dict.dictLabel"
-              :value="dict.dictValue" />
+              :value="dict.dictValue"/>
           </el-select>
         </el-form-item>
         <el-form-item label="数据来源" prop="dataSource" class="el-col-12">
           <el-input v-model="form.dataSource" placeholder="请输入数据来源" :disabled="detailViem" />
         </el-form-item>
-        <el-form-item label="描述" prop="description" class="el-col-12">
-          <el-input v-model="form.description" placeholder="请输入描述" :disabled="detailViem" />
-        </el-form-item>
-        <el-form-item label="集群名" prop="clusterName" class="el-col-12" v-show="redisItem">
-          <el-input v-model="form.clusterName" placeholder="请输入集群名" :disabled="detailViem" />
+        <el-form-item label="运行模式" prop="mode" class="el-col-12" v-show="redisItem">
+          <el-select v-model="form.mode" style="width: 100%" placeholder="请选择运行模式"  :disabled="detailViem">
+            <el-option v-for="dict in redisRuntimeEnvironment" :key="dict.dictValue" :label="dict.dictLabel"
+                       :value="dict.dictValue" />
+          </el-select>
         </el-form-item>
         <el-form-item label="地址" prop="redisAddress" class="el-col-12" v-show="redisItem">
           <el-input v-model="form.redisAddress" placeholder="master:6379,slave:6379" :disabled="detailViem" />
         </el-form-item>
+
+        <div v-for="(item, index) in form.redisDynamicItem" :key="'E'+index" v-show="redisItem" class="el-col-24">
+          <el-form-item label="schema" class="el-col-6" :prop="'redisDynamicItem.' + index + '.redisKey'" :id="'label' + index"
+                        :rules="rules.redisDynamicItem.redisKey">
+            <el-input v-model="item.redisKey" @change="schemaDefineChange('redis',index)" placeholder="请输入字段"
+                      style="width: 200px" :disabled="item.isUsed === '1' || detailViem" />
+          </el-form-item>
+          <el-form-item class="el-col-5 elementStyle" :prop="'redisDynamicItem.' + index + '.redisType'"
+                        :rules="rules.redisDynamicItem.redisType">
+            <el-select v-model="item.redisType" placeholder="请选择数据类型" clearable style="width: 190px"
+                       :disabled="item.isUsed === '1' || detailViem">
+              <el-option v-for="dict in sysDataBaseTypes" :key="dict.dictValue" :label="dict.dictLabel"
+                         :value="dict.dictValue" />
+            </el-select>
+          </el-form-item>
+          <el-form-item class="el-col-5" :prop="'redisDynamicItem.' + index + '.schemaFieldName'"
+                        :rules="rules.redisDynamicItem.schemaFieldName">
+            <el-input v-model="item.schemaFieldName" placeholder="请输入中文名" style="width: 200px" :disabled="detailViem" />
+          </el-form-item>
+          <el-form-item class="el-col-2 elementStyle" :prop="'jdbcDynamicItem.' + index + '.primaryKey'">
+            <el-input v-model="item.primaryKey" :disabled="detailViem" v-show="false" />
+            <el-button @click="redisprimaryKeyCheck(index)" :ref="'ref' + index" :id="'ref' + index"
+                       :disabled="item.isUsed === '1'" style="padding: 10px;"
+                       :style="{backgroundColor:item.primaryKey !== '' ? '#1890ff' : '#fff',color:item.primaryKey !== '' ? '#fff' : '#C0C4CC',}">
+              主键
+            </el-button>
+          </el-form-item>
+          <el-form-item class="el-col-6">
+            <span>
+              <el-button @click="redisAddItem" :disabled="detailViem">
+                <i class="el-icon-plus" />
+              </el-button>
+              <el-button @click="redisDeleteItem(item, index)" :disabled="item.isUsed === '1'">
+                <i class="el-icon-minus" />
+              </el-button>
+            </span>
+          </el-form-item>
+        </div>
 
         <el-form-item label="URL地址" prop="jdbcUrlAddress" class="el-col-12" v-show="jdbcItem">
           <el-input v-model="form.jdbcUrlAddress" placeholder="请输入URL地址" :disabled="detailViem" />
@@ -131,7 +169,7 @@
         <!-- 动态增加项目 -->
         <!-- 不止一项，用div包裹起来 -->
         <div v-for="(item, index) in form.jdbcDynamicItem" :key="'B'+index" v-show="jdbcItem" class="el-col-24">
-          <el-form-item label="schema" class="el-col-6" :prop="'jdbcDynamicItem.' + index + '.jdbcKey'"
+          <el-form-item label="schema" class="el-col-6" :prop="'jdbcDynamicItem.' + index + '.jdbcKey'" :id="'label' + index"
             :rules="rules.jdbcDynamicItem.jdbcKey">
             <el-input v-model="item.jdbcKey" @change="schemaDefineChange('jdbc',index)" placeholder="请输入字段"
               style="width: 200px" :disabled="item.isUsed === '1' || detailViem" />
@@ -171,12 +209,20 @@
         <el-form-item label="ZK地址" prop="zookeeperAddress" class="el-col-12" v-show="ZKItem">
           <el-input v-model="form.zookeeperAddress" placeholder="master:2181,slave:2181" :disabled="detailViem" />
         </el-form-item>
+
+        <el-form-item label="可选参数" prop="optionalParam" class="el-col-24">
+          <el-input v-model="form.optionalParam" placeholder="通常情况下无需添加其他参数" type="textarea" :disabled="detailViem" v-on:blur="optionalParamValidate()"/>
+        </el-form-item>
+        <el-form-item label="描述" prop="description" class="el-col-24">
+          <el-input v-model="form.description" placeholder="请输入描述" type="textarea" :disabled="detailViem" />
+        </el-form-item>
+
         <el-form-item label="rowkey" prop="rowkey" class="el-col-24" v-show="ZKItem">
           <el-input v-model="form.rowkey" placeholder="请输入rowkey" :disabled="detailViem" />
         </el-form-item>
 
         <div v-for="(item, index) in form.esDynamicItem" :key="'E'+index" v-show="esItem" class="el-col-24">
-          <el-form-item label="schema" class="el-col-6" :prop="'esDynamicItem.' + index + '.esKey'"
+          <el-form-item label="schema" class="el-col-6" :prop="'esDynamicItem.' + index + '.esKey'" :id="'label' + index"
             :rules="rules.esDynamicItem.esKey">
             <el-input v-model="item.esKey" @change="schemaDefineChange('es',index)" placeholder="请输入字段"
               style="width: 200px" :disabled="item.isUsed === '1'" />
@@ -277,7 +323,6 @@
           </div>
         </div>
 
-
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button type="primary" @click="submitForm" :disabled="detailViem">确 定</el-button>
@@ -300,7 +345,11 @@
     isAddressPort,
     isLegitimateName,
     isHbaseName,
-    unContainSpace
+    unContainSpace,
+    hbaseOptionalParamValidator,
+    oracleAndMysqlOptionalParamValidator,
+    redisOptionalParamValidator,
+    optionalParamValidator
   } from "@/utils/validate.js";
   import {mapGetters} from "vuex";
 
@@ -327,10 +376,12 @@
         open: false,
         // 连接器类型字典
         connectorTypeOptions: [],
+        // redis运行环境
+        redisRuntimeEnvironment: [],
         // redis数据类型字典
         redisDataTypeOptions: [],
-        // 默认连接器为redis form.connectorType
-        connectorType: "01",
+        // 默认连接器为redis
+        connectorType: "02",
         // 默认redis 的数据类型为 String
         redisDataType: "01",
         // 控制jdbc的值是否可见
@@ -345,6 +396,7 @@
         sysDataBaseTypes: [],
         // 控制标签是否可修改
         detailViem: false,
+        detailViemOnly: false,
         // 控制redis的key是否可见
         rediskeyItem: false,
         // 只有jdbc、hbase和es才有英文名
@@ -404,9 +456,9 @@
             message: "redis地址不能为空",
             trigger: "blur"
           }, ],
-          clusterName: [{
+          mode: [{
             required: true,
-            message: "集群名不能为空",
+            message: "运行模式不能为空",
             trigger: "blur"
           }, ],
           jdbcUrlAddress: [{
@@ -450,6 +502,9 @@
             message: "字段不能为空",
             trigger: "blur"
           }],
+          optionalParam: [
+            {validator: null, trigger: "blur"}
+          ],
           zookeeperAddress: [{
             required: true,
             message: "ZK地址不能为空",
@@ -502,6 +557,29 @@
               }
             ],
             esType: [{
+              required: true,
+              message: "数据类型不能为空",
+              trigger: "blur"
+            }],
+            schemaFieldName: [{
+              required: true,
+              message: "中文名不能为空",
+              trigger: "blur"
+            }]
+          },
+          redisDynamicItem: {
+            redisKey: [{
+              required: true,
+              message: "字段不能为空",
+              trigger: "blur"
+            },
+              {
+                validator: isLegitimateName,
+                message: "格式不合法",
+                trigger: "blur"
+              }
+            ],
+            redisType: [{
               required: true,
               message: "数据类型不能为空",
               trigger: "blur"
@@ -575,10 +653,13 @@
       this.getDicts("sys_dimension_conn_type").then(response => {
         this.connectorTypeOptions = response.data;
       });
+      this.getDicts("redis_runtime_environment").then(response => {
+        this.redisRuntimeEnvironment = response.data;
+      });
       this.getDicts("redis_data_type").then(response => {
         this.redisDataTypeOptions = response.data;
       });
-      this.getDicts("sys_data_base_type").then(response => {
+      this.getDicts("datasource_schema_type").then(response => {
         this.sysDataBaseTypes = response.data;
       });
     },
@@ -601,25 +682,12 @@
             this.form.esDynamicItem[index].primaryKey = this.form.esDynamicItem[index].esKey
             this.form.esPrimaryKey = this.form.esDynamicItem[index].esKey
           }
+        } else if (type === 'redis') {
+          if (this.form.redisDynamicItem[index].primaryKey !== '') {
+            this.form.redisDynamicItem[index].primaryKey = this.form.redisDynamicItem[index].redisKey
+            this.form.redisPrimaryKey = this.form.redisDynamicItem[index].redisKey
+          }
         }
-      },
-      // redis增加行
-      addRedisDynamicItem() {
-        this.form.redisDynamicItem.push({
-          redisSchemaKey: "",
-          redisSchemaField: "",
-          schemaFieldName: ""
-        });
-      },
-      // redis删除行
-      deleteRedisDynamicItem(item, index) {
-        if (this.form.redisDynamicItem && this.form.redisDynamicItem.length === 1) {
-          this.$alert("不能删除所有的字段", {
-            type: "error"
-          });
-          return false;
-        }
-        this.form.redisDynamicItem.splice(index, 1);
       },
       // jdbc增加行
       jdbcAddItem() {
@@ -629,6 +697,12 @@
           schemaFieldName: "",
           primaryKey: ""
         });
+        // 增加的删除schema的label
+        this.$nextTick(function () {
+          for (let i = 1; i < this.form.jdbcDynamicItem.length; i++) {
+            document.querySelector('#label' + i).firstElementChild.innerHTML = "";
+          }
+        })
       },
       // jdbc删除行
       jdbcDeleteItem(item, index) {
@@ -640,6 +714,31 @@
         }
         this.form.jdbcDynamicItem.splice(index, 1);
       },
+      // redis增加行
+      redisAddItem() {
+        this.form.redisDynamicItem.push({
+          redisKey: "",
+          redisType: "",
+          schemaFieldName: "",
+          primaryKey: ""
+        });
+        // 增加的删除schema的label
+        this.$nextTick(function () {
+          for (let i = 1; i < this.form.redisDynamicItem.length; i++) {
+            document.querySelector('#label' + i).firstElementChild.innerHTML = "";
+          }
+        })
+      },
+      // redis删除行
+      redisDeleteItem(item, index) {
+        if (this.form.redisDynamicItem && this.form.redisDynamicItem.length === 1) {
+          this.$alert("不能删除所有的字段", {
+            type: "error"
+          });
+          return false;
+        }
+        this.form.redisDynamicItem.splice(index, 1);
+      },
       // es增加行
       esAddItem() {
         this.form.esDynamicItem.push({
@@ -648,6 +747,12 @@
           schemaFieldName: "",
           primaryKey: ""
         });
+        // 增加的删除schema的label
+        this.$nextTick(function () {
+          for (let i = 1; i < this.form.esDynamicItem.length; i++) {
+            document.querySelector('#label' + i).firstElementChild.innerHTML = "";
+          }
+        })
       },
       // es删除行
       esDeleteItem(item, index) {
@@ -698,6 +803,20 @@
         //     this.form.jdbcPrimaryKey = this.form.jdbcDynamicItem[index].jdbcKey;
         //   }
         // }
+      },
+      // redis主键选择
+      redisprimaryKeyCheck(index) {
+        // 判断当前字段是否为主键
+        if (this.form.redisDynamicItem[index].primaryKey === '1')
+          this.form.redisDynamicItem[index].primaryKey = '';
+        // 当前字段不为主键，先设置其他字段不为主键，再设置当前字段为主键
+        else {
+          for (let i = 0; i < this.form.redisDynamicItem.length; i++) {
+            this.form.redisDynamicItem[i].primaryKey = '';
+          }
+          this.form.redisDynamicItem[index].primaryKey = '1';
+          this.form.redisPrimaryKey = this.form.redisDynamicItem[index].redisKey;
+        }
       },
       // es主键选择
       esprimaryKeyCheck(index) {
@@ -763,12 +882,28 @@
         }
         this.form.hbaseItem.splice(index, 1);
       },
+      optionalParamValidate(){
+        if(this.form.connectorType === '02'){
+          this.rules.optionalParam[0].validator = redisOptionalParamValidator;
+        }else if(this.form.connectorType === '03') {
+          this.rules.optionalParam[0].validator = hbaseOptionalParamValidator;
+        }else if(this.form.connectorType === '06' || this.form.connectorType === '07' ){
+          this.rules.optionalParam[0].validator = oracleAndMysqlOptionalParamValidator;
+        }else{
+          this.rules.optionalParam[0].validator = optionalParamValidator;
+        }
+      },
       // 改变连接器类型时，展示对应的字段
       changeConnOptionsSelect() {
-        if (this.form.connectorType === "01") {
-          this.redisCheck();
-        } else if (this.form.connectorType === "02") {
+        this.optionalParamValidate();
+        this.$refs.form.validateField("optionalParam");
+
+        if (this.form.connectorType === "06") {
           this.jdbcCheck();
+        } else if (this.form.connectorType === "07") {
+          this.jdbcCheck();
+        }else if (this.form.connectorType === "02") {
+          this.redisCheck();
         } else if (this.form.connectorType === "03") {
           this.hbaseCheck();
         } else if (this.form.connectorType === "04") {
@@ -780,16 +915,16 @@
       // 当前为redis的校验
       redisCheck() {
         this.jdbcItem = false;
-        this.jdbcAndHbaseAndes = false;
+        this.jdbcAndHbaseAndes = true;
         this.ZKItem = false;
         this.redisItem = true;
         this.rediskeyItem = false;
         this.esItem = false;
         this.rules.redisAddress[0].required = true;
-        this.rules.clusterName[0].required = true;
+        this.rules.mode[0].required = true;
         this.rules.jdbcUrlAddress[0].required = false;
-        this.rules.dimensionName[0].required = false;
-        this.rules.dimensionName[1].validator = false;
+        this.rules.dimensionName[0].required = true;
+        this.rules.dimensionName[1].validator = isLegitimateName;
         this.rules.dimensionName[2].validator = false;
         this.rules.jdbcDrive[0].required = false;
         this.rules.jdbcUserName[0].required = false;
@@ -798,6 +933,10 @@
         this.rules.jdbcDynamicItem.jdbcKey[1].required = false;
         this.rules.jdbcDynamicItem.jdbcType[0].required = false;
         this.rules.jdbcDynamicItem.schemaFieldName[0].required = false;
+        this.rules.redisDynamicItem.redisKey[0].required = true;
+        this.rules.redisDynamicItem.redisKey[1].validator = isLegitimateName;
+        this.rules.redisDynamicItem.redisType[0].required = true;
+        this.rules.redisDynamicItem.schemaFieldName[0].required = true;
         this.rules.esDynamicItem.esKey[0].required = false;
         this.rules.esDynamicItem.esKey[1].validator = false;
         this.rules.esDynamicItem.esType[0].required = false;
@@ -827,7 +966,7 @@
         // this.rules.redisKey[0].required = false;
         // this.rules.redisDataType[0].required = false;
         this.rules.redisAddress[0].required = false;
-        this.rules.clusterName[0].required = false;
+        this.rules.mode[0].required = false;
         this.rules.dimensionName[0].required = true;
         this.rules.dimensionName[1].validator = isLegitimateName;
         this.rules.dimensionName[2].validator = false;
@@ -843,6 +982,10 @@
         this.rules.jdbcDynamicItem.jdbcKey[0].required = true;
         this.rules.jdbcDynamicItem.jdbcType[0].required = true;
         this.rules.jdbcDynamicItem.schemaFieldName[0].required = true;
+        this.rules.redisDynamicItem.redisKey[0].required = false;
+        this.rules.redisDynamicItem.redisKey[1].validator = isLegitimateName;
+        this.rules.redisDynamicItem.redisType[0].required = false;
+        this.rules.redisDynamicItem.schemaFieldName[0].required = false;
         this.rules.esDynamicItem.esKey[0].required = false;
         this.rules.esDynamicItem.esKey[1].validator = false;
         this.rules.esDynamicItem.esType[0].required = false;
@@ -870,7 +1013,7 @@
         // this.rules.redisKey[0].required = false;
         // this.rules.redisDataType[0].required = false;
         this.rules.redisAddress[0].required = false;
-        this.rules.clusterName[0].required = false;
+        this.rules.mode[0].required = false;
         // this.rules.redisDynamicItem.redisSchemaKey[0].required = false;
         // this.rules.redisDynamicItem.redisSchemaField[0].required = false;
         // this.rules.redisDynamicItem.schemaFieldName[0].required = false;
@@ -883,6 +1026,10 @@
         this.rules.jdbcDynamicItem.jdbcKey[1].required = false;
         this.rules.jdbcDynamicItem.jdbcType[0].required = false;
         this.rules.jdbcDynamicItem.schemaFieldName[0].required = false;
+        this.rules.redisDynamicItem.redisKey[0].required = true;
+        this.rules.redisDynamicItem.redisKey[1].validator = isLegitimateName;
+        this.rules.redisDynamicItem.redisType[0].required = true;
+        this.rules.redisDynamicItem.schemaFieldName[0].required = true;
         this.rules.esDynamicItem.esKey[0].required = false;
         this.rules.esDynamicItem.esKey[1].validator = false;
         this.rules.esDynamicItem.esType[0].required = false;
@@ -911,7 +1058,7 @@
         this.rediskeyItem = false;
         this.esItem = true;
         this.rules.redisAddress[0].required = false;
-        this.rules.clusterName[0].required = false;
+        this.rules.mode[0].required = false;
         this.rules.jdbcUrlAddress[0].required = false;
         this.rules.dimensionName[0].required = true;
         this.rules.dimensionName[1].validator = isLegitimateName;
@@ -923,6 +1070,10 @@
         this.rules.jdbcDynamicItem.jdbcKey[1].required = false;
         this.rules.jdbcDynamicItem.jdbcType[0].required = false;
         this.rules.jdbcDynamicItem.schemaFieldName[0].required = false;
+        this.rules.redisDynamicItem.redisKey[0].required = true;
+        this.rules.redisDynamicItem.redisKey[1].validator = isLegitimateName;
+        this.rules.redisDynamicItem.redisType[0].required = true;
+        this.rules.redisDynamicItem.schemaFieldName[0].required = true;
         this.rules.esDynamicItem.esKey[0].required = true;
         this.rules.esDynamicItem.esKey[1].validator = isLegitimateName;
         this.rules.esDynamicItem.esType[0].required = true;
@@ -963,6 +1114,10 @@
       connectorTypeFormat(row, column) {
         return this.selectDictLabel(this.connectorTypeOptions, row.connectorType);
       },
+      // redis运行环境字典翻译
+      redisRuntimeEnvironmentFormat(row, column) {
+        return this.selectDictLabel(this.redisRuntimeEnvironment, row.connectorType);
+      },
       // redis数据类型字典翻译
       redisDataTypeFormat(row, column) {
         return this.selectDictLabel(this.redisDataTypeOptions, row.redisDataType);
@@ -992,7 +1147,7 @@
           dataSource: undefined,
           description: undefined,
           redisAddress: undefined,
-          clusterName: undefined,
+          mode: undefined,
           redisDataType: undefined,
           jdbcUrlAddress: undefined,
           jdbcDrive: undefined,
@@ -1023,9 +1178,10 @@
             primaryKey: ""
           }],
           redisDynamicItem: [{
-            redisSchemaKey: "",
-            redisSchemaField: "",
-            schemaFieldName: ""
+            redisKey: "",
+            redisType: "",
+            schemaFieldName: "",
+            primaryKey: ""
           }],
           hbaseItem: [{
             div1: {
@@ -1045,7 +1201,7 @@
           }]
         };
         this.resetForm("form");
-        this.form.connectorType = "01";
+        this.form.connectorType = "02";
         this.form.redisDataType = "01";
       },
       /** 搜索按钮操作 */
@@ -1072,8 +1228,9 @@
         this.open = true;
         this.title = "添加数据维表";
         this.detailViem = false;
+        this.detailViemOnly = false;
         // 初始新增时，数据类型为redis时，取消jdbc和ZK的信息
-        if (this.form.connectorType === '01') {
+        if (this.form.connectorType === '02') {
           this.jdbcItem = false;
           this.ZKItem = false;
           this.redisItem = true;
@@ -1084,6 +1241,7 @@
       /** 详情按钮操作 */
       handleDetail(row) {
         this.detailViem = true;
+        this.detailViemOnly = true;
         // this.reset();
         const dimensionId = row.dimensionId || this.ids;
         getDimension(dimensionId).then(response => {
@@ -1092,9 +1250,11 @@
           this.detailViem = true;
           this.showSubmitForm = false;
           this.title = "查看数据维表";
-          if (this.form.connectorType === "01") {
+          if (this.form.connectorType === "02") {
             this.redisCheck();
-          } else if (this.form.connectorType === "02") {
+          } else if (this.form.connectorType === "06") {
+            this.jdbcCheck();
+          }  else if (this.form.connectorType === "07") {
             this.jdbcCheck();
           } else if (this.form.connectorType === "03") {
             this.hbaseCheck();
@@ -1125,14 +1285,16 @@
         }
         // this.reset();
         this.detailViem = false;
+        this.detailViemOnly = true;
         const dimensionId = row.dimensionId || this.ids;
         getDimension(dimensionId).then(response => {
           this.form = response.data;
-          console.log("----sss");
           console.log(this.form);
-          if (this.form.connectorType === "01") {
+          if (this.form.connectorType === "02") {
             this.redisCheck();
-          } else if (this.form.connectorType === "02") {
+          } else if (this.form.connectorType === "06") {
+            this.jdbcCheck();
+          } else if (this.form.connectorType === "07") {
             this.jdbcCheck();
           } else if (this.form.connectorType === "03") {
             this.hbaseCheck();
@@ -1164,11 +1326,13 @@
           if (valid) {
             // this.clearKeyColor();
             if (this.form.dimensionId !== undefined) {
-              if (this.form.connectorType === "01") {
-                this.form.redisSchemaDefine = JSON.stringify(this.form.redisDynamicItem);
-                this.form.dimensionName = "";
-              }
               if (this.form.connectorType === "02") {
+                this.form.schemaDefine = JSON.stringify(this.form.redisDynamicItem);
+              }
+              if (this.form.connectorType === "06") {
+                this.form.schemaDefine = JSON.stringify(this.form.jdbcDynamicItem);
+              }
+              if (this.form.connectorType === "07") {
                 this.form.schemaDefine = JSON.stringify(this.form.jdbcDynamicItem);
               }
               if (this.form.connectorType === "03") {
@@ -1180,7 +1344,6 @@
               if (this.form.connectorType === "05") {
                 this.form.schemaDefine = JSON.stringify(this.form.esDynamicItem);
               }
-              console.log("---sss");
               console.log(this.form);
               updateDimension(this.form).then(response => {
                 if (response.code === 200) {
@@ -1192,11 +1355,13 @@
                 }
               });
             } else {
-              if (this.form.connectorType === "01") {
-                this.form.redisSchemaDefine = JSON.stringify(this.form.redisDynamicItem);
-                this.form.dimensionName = "";
-              }
               if (this.form.connectorType === "02") {
+                this.form.schemaDefine = JSON.stringify(this.form.redisDynamicItem);
+              }
+              if (this.form.connectorType === "06") {
+                this.form.schemaDefine = JSON.stringify(this.form.jdbcDynamicItem);
+              }
+              if (this.form.connectorType === "07") {
                 this.form.schemaDefine = JSON.stringify(this.form.jdbcDynamicItem);
               }
               if (this.form.connectorType === "03") {
@@ -1208,7 +1373,6 @@
               if (this.form.connectorType === "05") {
                 this.form.schemaDefine = JSON.stringify(this.form.esDynamicItem);
               }
-              // console.log(this.form)
               addDimension(this.form).then(response => {
                 if (response.code === 200) {
                   this.msgSuccess("新增成功");

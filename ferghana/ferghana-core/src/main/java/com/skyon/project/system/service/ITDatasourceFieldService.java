@@ -25,7 +25,7 @@ public interface ITDatasourceFieldService
     public  void updateFiledIsUsed(TVariableCenter tVariableCenter);
 
     // 新增字段 tableType ：01 数据源表 02 数据维表
-    public int insertTDatasourceField(String tableName, Object fields, String tableType);
+    public int insertTDatasourceField(String tableName, Object fields, String tableType,String connectorType);
 
     //
     public void updateIsUsed(TVariableCenter tVariableCenter);
@@ -37,6 +37,6 @@ public interface ITDatasourceFieldService
     public void deleteTDatasourceField(String[] tableNames, String tableType);
 
     // 修改字段名
-    public void updatefieldName(Object fields, String tableType);
+    public void updatefieldName(Object fields, String tableType, String connectorType,String tableName);
 
 }
