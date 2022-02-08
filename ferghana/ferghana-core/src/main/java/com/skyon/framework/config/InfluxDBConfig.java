@@ -11,26 +11,16 @@ import org.springframework.context.annotation.Configuration;
 public class InfluxDBConfig {
 
     /** 地址 **/
-    public static String url;
+    @Value("${influxdb.url}")
+    public String url;
 
     /** 用户 **/
-    public static String userName;
+    @Value("${influxdb.username}")
+    public String userName;
 
     /** 密码 **/
-    public static String passWord;
-
-    @Value("${influxdb.url}")
-    public void setUrl(String url) {
-        InfluxDBConfig.url = url;
-    }
-
-    @Value("${influxdb.username}")
-    public void setUserName(String username) {
-        InfluxDBConfig.userName = username;
-    }
-
     @Value("${influxdb.password}")
-    public void setPassWord(String password) {
-        InfluxDBConfig.passWord = password;
-    }
+    public String passWord;
+
+
 }

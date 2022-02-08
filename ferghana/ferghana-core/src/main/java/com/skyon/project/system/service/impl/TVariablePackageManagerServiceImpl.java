@@ -471,29 +471,29 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
         }
         List<TVariableCenter> list = new ArrayList<>();
         List<TVariableCenter> tVariableCenters = tVariableCenterMapper.selectTVariableCenterByNames(names);
-        list.addAll(tVariableCenters);
-        // 目的是移除派生变量的基础变量
-        ArrayList<TVariableCenter> listDmo = new ArrayList<>();
-        if (tVariableCenters != null && tVariableCenters.size() > 0) {
-            for (int i = 0; i < tVariableCenters.size(); i++) {
-                TVariableCenter tVariableCenter = tVariableCenters.get(i);
-                if ("02".equals(tVariableCenter.getVariableType())
-                        && "01".equals(tVariableCenter.getDeriveVariableModelType())) { // 派生变量
-                    String deriveBaseVariable = tVariableCenter.getDeriveBaseVariable().toString();
-                    JSONArray array = JSON.parseArray(deriveBaseVariable);
-                    for (int j = 0; j < array.size(); j++) {
-                        for (int k = 0; k < list.size(); k++) {
-                            TVariableCenter tVariableCenter1 = list.get(k);
-                            if (tVariableCenter1.getVariableNameEn().equals(array.get(j))) {
-                                listDmo.add(tVariableCenter1);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        list.removeAll(listDmo);
-        return list;
+//        list.addAll(tVariableCenters);
+//        // 目的是移除派生变量的基础变量
+//        ArrayList<TVariableCenter> listDmo = new ArrayList<>();
+//        if (tVariableCenters != null && tVariableCenters.size() > 0) {
+//            for (int i = 0; i < tVariableCenters.size(); i++) {
+//                TVariableCenter tVariableCenter = tVariableCenters.get(i);
+//                if ("02".equals(tVariableCenter.getVariableType())
+//                        && "01".equals(tVariableCenter.getDeriveVariableModelType())) { // 派生变量
+//                    String deriveBaseVariable = tVariableCenter.getDeriveBaseVariable().toString();
+//                    JSONArray array = JSON.parseArray(deriveBaseVariable);
+//                    for (int j = 0; j < array.size(); j++) {
+//                        for (int k = 0; k < list.size(); k++) {
+//                            TVariableCenter tVariableCenter1 = list.get(k);
+//                            if (tVariableCenter1.getVariableNameEn().equals(array.get(j))) {
+//                                listDmo.add(tVariableCenter1);
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//        list.removeAll(listDmo);
+        return tVariableCenters;
     }
 
     @Override
@@ -551,21 +551,32 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
         tVariableCenterService.parseJoinSQl(mapParam, dimensionRelation, map, testDimdata);
         // 拼接条件运行sql
         StringBuilder sb2 = new StringBuilder();
-        StringBuilder sb3 = new StringBuilder();
+        StringBuffer sbAgg = new StringBuffer();
+        StringBuffer sbAggNo = new StringBuffer();
+        StringBuffer sbTran = new StringBuffer();
+        StringBuffer sbDer = new StringBuffer();
         for (int i = 0; i < variableListByIds.size(); i++) {
-            if ("02".equals(variableListByIds.get(i).getVariableType()) &&
-                    "01".equals(variableListByIds.get(i).getDeriveVariableModelType())) {
-                sb2.append(variableListByIds.get(i).getSqlContext()).append("|");
+            if ("02".equals(variableListByIds.get(i).getVariableType())) {
+                sbDer.append(variableListByIds.get(i).getSqlContext()).append(";");
             } else if ("01".equals(variableListByIds.get(i).getVariableType())) {
-                sb3.append(variableListByIds.get(i).getSqlContext()).append(";");
+                TVariableCenter tVariableCenter = variableListByIds.get(i);
+                if (tVariableCenter.getStatisticsModel() != null && "0304050607".contains(tVariableCenter.getStatisticsModel())) { // 03 Over窗口  04 单日窗口  05 单周窗口  06单月窗口  07全局窗口
+                    JSONArray statisticsGroupItem = JSONArray.parseArray(tVariableCenter.getStatisticsGroupItem().toString());
+                    Map o = (Map) statisticsGroupItem.get(0);
+                    if (!StringUtils.isEmpty(String.valueOf(o.get("groupField"))))  // 有分组  key  :  aggPartitionSql
+                        sbAgg.append(tVariableCenter.getSqlContext()).append(";");
+                    else  // 没有分组  key  :  aggNoPartitionSql
+                        sbAggNo.append(tVariableCenter.getSqlContext()).append(";");
+                } else { // 其他  key: transitionSql
+                    sbTran.append(tVariableCenter.getSqlContext()).append(";");
+                }
             }
         }
-        if (sb2.length() > 0) {
-            mapParam.put("deVariableSqls", sb2.toString().substring(0, sb2.length() - 1));
-        }
-        if (sb3.length() > 0) { // 决策引擎依赖的基础变量也放这里
-            mapParam.put("variableSqls", sb3.toString().substring(0, sb3.length() - 1));
-        }
+//        if (sb2.length() > 0) mapParam.put("deVariableSqls", sb2.toString());
+        if (sbAgg.length() > 0) mapParam.put("aggPartitionSql", sbAgg.toString());
+        if (sbAggNo.length() > 0) mapParam.put("aggNoPartitionSql", sbAggNo.toString());
+        if (sbTran.length() > 0) mapParam.put("transitionSql", sbTran.toString());
+        if (sbDer.length() > 0) mapParam.put("deriveSql", sbDer.toString());
         // 字段输出个数   数据加工可能会有多个
         ArrayList variableId = (ArrayList) pk.getVariableId();
         Object[] objects = variableId.toArray();
@@ -827,22 +838,33 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
         }
 
         // 拼接条件运行sql
-        StringBuilder sb2 = new StringBuilder();
-        StringBuilder sb3 = new StringBuilder();
+        StringBuffer sbAgg = new StringBuffer();
+        StringBuffer sbAggNo = new StringBuffer();
+        StringBuffer sbTran = new StringBuffer();
+        StringBuffer sbDer = new StringBuffer();
         for (int i = 0; i < variableListByIds.size(); i++) {
-            if ("02".equals(variableListByIds.get(i).getVariableType())
-                    && "01".equals(variableListByIds.get(i).getDeriveVariableModelType())) { // 如果是派生变量 且是四则运算，加上表名  .append(" tmp_").append(pkManager.getVariablePackEn()).append(";")
-                sb2.append(variableListByIds.get(i).getSqlContext());
+            if ("02".equals(variableListByIds.get(i).getVariableType())) { // 如果是派生变量 且是四则运算，加上表名  .append(" tmp_").append(pkManager.getVariablePackEn()).append(";")
+                sbDer.append(variableListByIds.get(i).getSqlContext());
             } else if ("01".equals(variableListByIds.get(i).getVariableType())) {
-                sb3.append(variableListByIds.get(i).getSqlContext()).append(";");
+                TVariableCenter tVariableCenter = variableListByIds.get(i);
+                if (tVariableCenter.getStatisticsModel() != null && "0304050607".contains(tVariableCenter.getStatisticsModel())) { // 03 Over窗口  04 单日窗口  05 单周窗口  06单月窗口  07全局窗口
+                    JSONArray statisticsGroupItem = JSONArray.parseArray(tVariableCenter.getStatisticsGroupItem().toString());
+                    Map o = (Map) statisticsGroupItem.get(0);
+                    if (!StringUtils.isEmpty(String.valueOf(o.get("groupField"))))  // 有分组  key  :  aggPartitionSql
+                        sbAgg.append(tVariableCenter.getSqlContext()).append(";");
+                    else  // 没有分组  key  :  aggNoPartitionSql
+                        sbAggNo.append(tVariableCenter.getSqlContext()).append(";");
+                } else { // 其他  key: transitionSql
+                    sbTran.append(tVariableCenter.getSqlContext()).append(";");
+                }
             }
         }
-        if (sb2.length() > 0) {
-            mapParam.put("deVariableSqls", sb2.toString());
-        }
-        if (sb3.length() > 0) {
-            mapParam.put("variableSqls", sb3.toString().substring(0, sb3.length() - 1));
-        }
+        if (sbAgg.length() > 0) mapParam.put("aggPartitionSql", sbAgg.toString());
+        if (sbAggNo.length() > 0) mapParam.put("aggNoPartitionSql", sbAggNo.toString());
+        if (sbTran.length() > 0) mapParam.put("transitionSql", sbTran.toString());
+        if (sbDer.length() > 0) mapParam.put("deriveSql", sbDer.toString());
+
+
 
         // 字段输出个数   数据加工可能会有多个
         ArrayList variableId = (ArrayList) pkManager.getVariableId();

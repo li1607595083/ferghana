@@ -14,7 +14,7 @@ ruoyi:
   profile: /home/ferghana/install/flink-1.11.1/lib
   profileTwo: /home/ferghana/software/flink-1.11.1/lib
 #   获取ip地址开关
-  addressEnabled: true
+  addressEnabled: false
 
 # 开发环境配置
 server:
@@ -22,8 +22,8 @@ server:
   port: 8089
   servlet:
     # 应用的访问路径
-#    context-path: /prod-api
-    context-path: /
+    context-path: /prod-api
+#    context-path: /
   tomcat:
     # tomcat的URI编码
     uri-encoding: UTF-8

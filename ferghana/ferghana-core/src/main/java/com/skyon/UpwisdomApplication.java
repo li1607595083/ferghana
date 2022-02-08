@@ -21,10 +21,10 @@ public class UpwisdomApplication
         // System.setProperty("spring.devtools.restart.enabled", "false");
         ConfigurableApplicationContext run = SpringApplication.run(UpwisdomApplication.class, args);
 
-        String[] names = run.getBeanDefinitionNames();
-        for (String name : names) {
-            System.out.println(name);
-        }
+//        String[] names = run.getBeanDefinitionNames();
+//        for (String name : names) {
+//            System.out.println(name);
+//        }
 
 
     }

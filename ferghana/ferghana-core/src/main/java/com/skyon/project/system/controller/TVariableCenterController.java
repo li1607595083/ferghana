@@ -187,7 +187,7 @@ public class TVariableCenterController extends BaseController {
                                     || (newVa.getStatisticsCycle() != null && newVa.getStatisticsCycle().equals(oldVa.getStatisticsCycle()))) { // 统计周期
                                 if ((newVa.getStatisticsConditions() == null && oldVa.getStatisticsConditions() == null)
                                         || (newVa.getStatisticsConditions() != null && newVa.getStatisticsConditions().equals(oldVa.getStatisticsConditions()))) { // 组合条件
-                                        flag = true; // 都没变
+                                    flag = true; // 都没变
                                 }
                             }
                         }
@@ -216,25 +216,23 @@ public class TVariableCenterController extends BaseController {
         }
         return flag;
     }
-
     /**
      * 测试变量管理中心
      */
     @PostMapping("/test")
     public AjaxResult test(@RequestBody TVariableCenter tVariableCenter) {
-        System.out.println("-------------------------1");
+        LOG.info("-------------------------变量测试start----------");
         //根据变量分类-数据源表-主键
         Map mapValue = tVariablePackageManagerService.getKeyByVariableId(tVariableCenter.getVariableClassification());
-        LOG.info("----2:" + mapValue);
+        LOG.info("-----分类-数据源表-主键:{}", mapValue);
         String millis = "topic" + System.currentTimeMillis();
         // 组装测试参数
         String variableTest = tVariableCenterService.variableTest(tVariableCenter, mapValue, millis);
 
-        LOG.info("----3:" + variableTest);
+        LOG.info("----组装测试参数:{}", variableTest);
         // 获取测试结果
         List result = tVariableCenterService.testRun(variableTest, millis);
-        LOG.info("----4:" + result);
-        LOG.info("----5");
+        LOG.info("----获取测试结果:{}", result);
         // 顺序
         ArrayList sourceTableValue = (ArrayList) tVariableCenter.getSourceTableValue();
         String s = "";
@@ -265,7 +263,7 @@ public class TVariableCenterController extends BaseController {
         log.setOperateType("测试");
         logService.insertTVariableOperateLog(log);
         // 值
-        LOG.info("----result:" + s);
+        LOG.info("----result:{}", s);
         return AjaxResult.success(s);
     }
 

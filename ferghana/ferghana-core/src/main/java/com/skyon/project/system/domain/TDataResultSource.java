@@ -94,15 +94,16 @@ public class TDataResultSource extends BaseEntity
     /** 描述 */
     @Excel(name = "描述")
     private String description;
-
     /**
      * 可选参数
      */
     @Excel(name = "可选参数")
     private String optionalParam;
 
+
     @Transient
     private Object[] dynamicItem;
+
 
     public String getEsAddress() {
         return esAddress;

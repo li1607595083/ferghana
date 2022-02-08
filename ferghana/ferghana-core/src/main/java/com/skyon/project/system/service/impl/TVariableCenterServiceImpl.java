@@ -114,36 +114,98 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
         tVariableCenter.setStatisticsSelfFunctionItem(JSON.toJSONString(tVariableCenter.getStatisticsSelfFunctionItem()));
     }
 
+    /**
+     * 拼接派生变量的sql
+     *
+     * @param variable
+     * @param mapParam
+     */
+    public void joinDeriveSql(TVariableCenter variable, Map mapParam) {
+        StringBuffer sbAgg = new StringBuffer();
+        StringBuffer sbAggNo = new StringBuffer();
+        StringBuffer sbTran = new StringBuffer();
+
+        // 判断每一个变量是否是over窗口 且是否分组
+        String deriveBaseVariable = variable.getDeriveBaseVariable().toString();
+        List<String> strings = JSON.parseArray(deriveBaseVariable, String.class);
+        String[] strings1 = strings.toArray(new String[strings.size()]);
+        List<TVariableCenter> tVariableCenters = tVariableCenterMapper.selectTVariableCenterByNames(strings1);
+        String s = "";
+        if (tVariableCenters != null && tVariableCenters.size() > 0) {
+            for (int i = 0; i < tVariableCenters.size(); i++) {
+                TVariableCenter tVariableCenter = tVariableCenters.get(i);
+
+                if (tVariableCenter.getStatisticsModel() != null && "0304050607".contains(tVariableCenter.getStatisticsModel())) { // 03 Over窗口  04 单日窗口  05 单周窗口  06单月窗口  07全局窗口
+                    JSONArray statisticsGroupItem = JSONArray.parseArray(tVariableCenter.getStatisticsGroupItem().toString());
+                    Map o = (Map) statisticsGroupItem.get(0);
+                    if (!StringUtils.isEmpty(String.valueOf(o.get("groupField"))))  // 有分组  key  :  aggPartitionSql
+                        sbAgg.append(tVariableCenter.getSqlContext()).append(";");
+                    else  // 没有分组  key  :  aggNoPartitionSql
+                        sbAggNo.append(tVariableCenter.getSqlContext()).append(";");
+                } else { // 其他  key: transitionSql
+                    sbTran.append(tVariableCenter.getSqlContext()).append(";");
+                }
+            }
+        }
+
+        String sbDer = deriveVariableModelType0103Sql(variable);
+
+        if (sbAgg.length() > 0) mapParam.put("aggPartitionSql", sbAgg.toString());
+        if (sbAggNo.length() > 0) mapParam.put("aggNoPartitionSql", sbAggNo.toString());
+        if (sbTran.length() > 0) mapParam.put("transitionSql", sbTran.toString());
+        if (sbDer.length() > 0) mapParam.put("deriveSql", sbDer);
+    }
+
+    private String deriveVariableModelType0103Sql(TVariableCenter variable){
+        StringBuffer sbDer = new StringBuffer();
+        if ("01".equals(variable.getDeriveVariableModelType())) { // 四则运算  // 单个派生变量  和  对应的基础变量
+            // select 编辑区 as 英文名 from
+            sbDer.append("SELECT *").append(",").
+                    append(variable.getDeriveVariableSql().replaceAll("@", ""))
+                    .append(" as ").append(variable.getVariableNameEn()).append(" FROM tmp_table");
+        } else if ("03".equals(variable.getDeriveVariableModelType())) {    // 逻辑运算
+            // select 编辑区 as 英文名 from
+            sbDer.append("SELECT *").append(",").append("if(").
+                    append(variable.getDeriveVariableSql().replaceAll("@", ""))
+                    .append(",1,0)").append(" as ").append(variable.getVariableNameEn()).append(" FROM tmp_table");
+        }
+        return sbDer.toString();
+    }
+
+
+
     // 拼接条件sql
     @Override
     public String jointSqlContext(JSONArray dimensionName, TVariableCenter variable) {
         StringBuilder sb = new StringBuilder();
 
         // 查询表  如果为join拼接表 新表的格式为: xxxx_join_xxxx   该新表会在启动的时候创建！！！！
-        String resultTableName = "";
+        String resultTableName = "tmp_table";
 
-        if (dimensionName != null && dimensionName.size() > 0) {
-            String name = "";
-            for (int i = 0; i < dimensionName.size(); i++) {
-                JSONObject o = (JSONObject) dimensionName.get(i);
-                String dimensionName1 = o.get("dimensionName").toString();
-                if (!Strings.isNullOrEmpty(dimensionName1)) {
-                    name = name + o.get("dimensionName") + "_join_";
-                    resultTableName = (variable.getSourceTableName() + "_join_" + name.substring(0, name.length() - 6)) + "";
-                } else {
-                    resultTableName = (variable.getSourceTableName()) + "";
-                }
-            }
-        } else {
-            resultTableName = (variable.getSourceTableName()) + "";
-        }
+//        if (dimensionName != null && dimensionName.size() > 0) {
+//            String name = "";
+//            for (int i = 0; i < dimensionName.size(); i++) {
+//                JSONObject o = (JSONObject) dimensionName.get(i);
+//                String dimensionName1 = o.get("dimensionName").toString();
+//                if (!Strings.isNullOrEmpty(dimensionName1)) {
+//                    name = name + o.get("dimensionName") + "_join_";
+//                    resultTableName = (variable.getSourceTableName() + "_join_" + name.substring(0, name.length() - 6)) + "";
+//                } else {
+//                    resultTableName = (variable.getSourceTableName()) + "";
+//                }
+//            }
+//        } else {
+//            resultTableName = (variable.getSourceTableName()) + "";
+//        }
 
         if ("01".equals(variable.getVariableType())) { // 基础变量
 
             if ("01".equals(variable.getVariableModelType())) {   // 模板类型为普通查询时
                 sb.append("SELECT ");
                 // 查询主键
+//                sb.append(variable.getSourceKey()).append(", ");
                 sb.append("*").append(", ");
+
                 //select redis_query(methodName, key, field / null) from 数据源表 join 数据维表  ；  or 新join 表
                 sb.append("redis_query(");
                 String key = variable.getRedisKey();
@@ -183,9 +245,11 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
             } else if ("02".equals(variable.getVariableModelType())) {   // 模板类型为统计查询时
                 sb.append("SELECT ");
                 // 查询主键
+//                sb.append(variable.getSourceKey()).append(", ");
                 sb.append("*").append(", ");
                 // 统计计算模板
-                sb.append(joinStatisticsCountModel(variable.getStatisticsCountModel(), variable.getVariableFactor(), variable.getStatisticsConditions(), resultTableName, variable.getStatisticsSelfFunctionItem()));
+                sb.append(joinStatisticsCountModel(variable.getStatisticsCountModel(), variable.getVariableFactor(),
+                        variable.getStatisticsConditions(), variable.getStatisticsSelfFunctionItem()));
                 // 统计周期的判断
                 if ("03".equals(variable.getStatisticsModel()) || "04".equals(variable.getStatisticsModel())
                         || "05".equals(variable.getStatisticsModel()) || "06".equals(variable.getStatisticsModel()) || "07".equals(variable.getStatisticsModel())) { // over 窗口  单日窗口 单周窗口  单月窗口
@@ -266,7 +330,7 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
 //                        }
 //                    }
 
-                    sb.append(" FROM(SELECT ").append("*").append(",").append("IF(");// 主键
+                    sb.append(" FROM(SELECT *").append(",").append("IF(");// 主键
 
 
                     sb.append(variable.getStatisticsConditions()).append(","); // 条件
@@ -332,82 +396,10 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
                 sb.append(variable.getUserDefinedSql());
             }
         } else if ("02".equals(variable.getVariableType())) { // 派生变量 sqlContext
-
-            if ("01".equals(variable.getDeriveVariableModelType())) { // 四则运算  // 单个派生变量  和  对应的基础变量
-                String deriveBaseVariable = variable.getDeriveBaseVariable().toString();
-                List<String> strings = JSON.parseArray(deriveBaseVariable, String.class);
-                String[] strings1 = strings.toArray(new String[strings.size()]);
-                List<TVariableCenter> tVariableCenters = tVariableCenterMapper.selectTVariableCenterByNames(strings1);
-                String s = "";
-                if (tVariableCenters != null && tVariableCenters.size() > 0) {
-                    for (int i = 0; i < tVariableCenters.size(); i++) {
-                        TVariableCenter tVariableCenter = tVariableCenters.get(i);
-                        String sqlContext = tVariableCenter.getSqlContext();
-                        s = s + sqlContext + ";";
-                    }
-                }
-                sb.append(s, 0, s.length() - 1).append("@");
-                // select 编辑区 as 英文名 from
-                sb.append("SELECT ").append("*").append(",").append(variable.getDeriveVariableSql().replaceAll("@", ""))
-                        .append(" as ").append(variable.getVariableNameEn()).append(" FROM ");
-                // 合成的表名 uuid 随机
-                String uuid = "A" + UUID.randomUUID().toString().replaceAll("-", "");
-                sb.append(uuid).append("@").append(uuid);
-                // 字段个数： 主键+基础变量的个数
-                sb.append("@").append(strings.size() + 1);
-            } else if ("02".equals(variable.getDeriveVariableModelType())) { // 计算引擎   // 多个派生变量  和  对应的基础变量   及单个基础变量
-                // 这里只存函数sql，方便以后变量包调用
-                TSelfFunction tSelfFunction = tSelfFunctionMapper.selectTSelfFunctionById(new Long(variable.getDeriveProcessModel()));
-                sb.append(tSelfFunction.getFunctionName()).append("(");
-
-                JSONArray deriveInputParams = (JSONArray) JSONObject.parse(variable.getDeriveInputParams());
-                JSONArray parse = (JSONArray) JSONObject.parse(tSelfFunction.getInputParam());
-                StringBuilder tmp = new StringBuilder();
-                for (int i = 0; i < parse.size(); i++) {
-                    Map o = (Map) parse.get(i);
-                    Object schemaDefine = o.get("schemaDefine");
-                    Object dataBaseType = o.get("dataBaseType");
-                    for (int j = 0; j < deriveInputParams.size(); j++) {
-                        Map o2 = (Map) deriveInputParams.get(j);
-                        Object selfFuncParam = o2.get("selfFuncParam");
-                        Object type = o2.get("type");
-                        Object outParam = o2.get("outParam");
-                        if (schemaDefine.equals(selfFuncParam)) {
-                            if (dataBaseType.equals(type) && !"map".equals(type)) {
-                                tmp.append("'").append(outParam).append("',");
-                            } else {
-                                JSONArray out = (JSONArray)outParam;
-                                for (int k = 0; k < out.size(); k++) {
-                                    tmp.append(out.get(k)).append(",");
-                                }
-                            }
-
-                        }
-                    }
-                }
-                sb.append(tmp.substring(0,tmp.length()-1)).append(")");
-            } else if ("03".equals(variable.getDeriveVariableModelType())) {
-                String deriveBaseVariable = variable.getDeriveBaseVariable().toString();
-                List<String> strings = JSON.parseArray(deriveBaseVariable, String.class);
-                String[] strings1 = strings.toArray(new String[strings.size()]);
-                List<TVariableCenter> tVariableCenters = tVariableCenterMapper.selectTVariableCenterByNames(strings1);
-                String s = "";
-                if (tVariableCenters != null && tVariableCenters.size() > 0) {
-                    for (int i = 0; i < tVariableCenters.size(); i++) {
-                        TVariableCenter tVariableCenter = tVariableCenters.get(i);
-                        String sqlContext = tVariableCenter.getSqlContext();
-                        s = s + sqlContext + ";";
-                    }
-                }
-                sb.append(s, 0, s.length() - 1).append("@");
-                // select 编辑区 as 英文名 from
-                sb.append("SELECT ").append("*").append(",").append("if(").append(variable.getDeriveVariableSql().replaceAll("@", ""))
-                        .append(",1,0)").append(" as ").append(variable.getVariableNameEn()).append(" FROM ");
-                // 合成的表名 uuid 随机
-                String uuid = "A" + UUID.randomUUID().toString().replaceAll("-", "");
-                sb.append(uuid).append("@").append(uuid);
-                // 字段个数： 主键+基础变量的个数
-                sb.append("@").append(strings.size() + 1);
+            if ("02".equals(variable.getDeriveVariableModelType())){ // 计算引擎
+                sb.append(computEgineSql(variable, "topic" + System.currentTimeMillis()));
+            } else {
+                sb.append(deriveVariableModelType0103Sql(variable));
             }
         }
         // 把所有的表名. 去掉
@@ -429,8 +421,7 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
      * @param VariableFactor       变量因子
      * @return
      */
-    private String joinStatisticsCountModel(String statisticsCountModel, String variableFactor, String conditions,
-                                            String resultTableName, Object selfFunction) {
+    private String joinStatisticsCountModel(String statisticsCountModel, String variableFactor, String conditions, Object selfFunction) {
         // variableFactor的格式为表名.字段  如果有维表就是合成表.字段
         String[] split = variableFactor.split("\\.");
         // 重复情况
@@ -460,7 +451,7 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
         String s = "";
         if ("sum(distinct())".equals(statisticsCountModel)) {
             s = " sum(distinct(" + variableFactor + ")) ";
-        }else if ("count(distinct())".equals(statisticsCountModel)) {
+        } else if ("count(distinct())".equals(statisticsCountModel)) {
             s = " count(distinct(" + variableFactor + ")) ";
         } else {
             s = statisticsCountModel + "(" + variableFactor + ") ";
@@ -590,16 +581,14 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
                                         }
                                         mapTmp.put("testDimdata", dd);
                                     }
-                                }
-                                else if ("04".equals(table.getConnectorType()) && table.getDimensionName().equals(name.substring(5))) { // es
+                                } else if ("04".equals(table.getConnectorType()) && table.getDimensionName().equals(name.substring(5))) { // es
                                     mapTmp.put("dimensionTableSql", table.getEsCreateSql());
                                     mapTmp.put("testDimType", "04");
                                     ArrayList arrlist = (ArrayList) o.get("dimensionTableValue");
                                     if (arrlist != null && arrlist.size() > 0) {
                                         mapTmp.put("testDimdata", parseSplit(arrlist));
                                     }
-                                }
-                                else if ("05".equals(table.getConnectorType()) && table.getDimensionName().equals(name.substring(5))) { // es
+                                } else if ("05".equals(table.getConnectorType()) && table.getDimensionName().equals(name.substring(5))) { // es
                                     mapTmp.put("dimensionTableSql", table.getEsCreateSql());
                                     mapTmp.put("testDimType", "05");
                                     ArrayList arrlist = (ArrayList) o.get("dimensionTableValue");
@@ -652,15 +641,15 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
                                     if ("04".equals(table.getConnectorType()) || "05".equals(table.getConnectorType())) { // es
                                         String relation = o.get("relation").toString();
                                         JSONArray r = JSONArray.parseArray(relation);
-                                        if(!"".equals(es)){
+                                        if (!"".equals(es)) {
                                             es = es + ";";
                                         }
-                                        for(int k=0;k<r.size();k++){
+                                        for (int k = 0; k < r.size(); k++) {
                                             JSONObject a = (JSONObject) r.get(k);
                                             String dimensionDabField = a.get("dimensionDabField").toString();
                                             String sourceDabField = a.get("sourceDabField").toString();
-                                            es = es  + sourceDabField + " = " + dimensionName + "." + dimensionDabField;
-                                            if(k < r.size() - 1){
+                                            es = es + sourceDabField + " = " + dimensionName + "." + dimensionDabField;
+                                            if (k < r.size() - 1) {
                                                 es = es + " AND ";
                                             }
                                         }
@@ -673,14 +662,12 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
                     StringBuilder sb = new StringBuilder();
                     // 新表 create TABLE xxxxx as select s.*,t.* from blackList s left join jdbc2 t on s.id = t.id；
                     String dimensionNameJOIN = s.substring(0, s.length() - 6);
-                    if("".equals(m)){
+                    if ("".equals(m)) {
                         sb.append(es);
-                    }
-                    else if("".equals(es)){
+                    } else if ("".equals(es)) {
                         sb.append("create table `" + map.get("tableName") + "_join_" + dimensionNameJOIN
                                 + "` (select s.*," + t.substring(0, t.length() - 1) + " from " + map.get("tableName") + " s " + m + ")");
-                    }
-                    else if(!"".equals(m) && !"".equals(es)){
+                    } else if (!"".equals(m) && !"".equals(es)) {
                         sb.append("create table `" + map.get("tableName") + "_join_" + dimensionNameJOIN
                                 + "` (select s.*," + t.substring(0, t.length() - 1) + " from " + map.get("tableName") + " s " + m + ");" + es);
                     }
@@ -692,7 +679,7 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
     }
 
     // 双数据源表时拼接 twoStreamJoinSqls 参数
-    public Map parseTwoStreamJoinSQl(Map mapParam,Map map,JSONObject sourceRelation){
+    public Map parseTwoStreamJoinSQl(Map mapParam, Map map, JSONObject sourceRelation) {
         Object sourceDabRelation = map.get("sourceDabRelation");
         Object sourceTwoDabRelation = map.get("sourceTwoDabRelation");
         String sql = "SELECT * FROM " + sourceDabRelation + " LEFT JOIN " + sourceTwoDabRelation + " ON " + sourceDabRelation + "." +
@@ -702,7 +689,7 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
         int highScope = Integer.parseInt(sourceRelation.getString("highScope"));
         sql = sql + " BETWEEN " + sourceTwoDabRelation + "." + map.get("waterMarkTwoName") + (lowScope >= 0 ? " + " : " - ") + "INTERVAL '" + Math.abs(lowScope) + "' SECOND";
         sql = sql + " AND " + sourceTwoDabRelation + "." + map.get("waterMarkTwoName") + (highScope >= 0 ? " + " : " - ") + "INTERVAL '" + Math.abs(highScope) + "' SECOND";
-        mapParam.put("twoStreamJoinSqls",sql+"|"+map.get("tableName")+"_"+map.get("tableTwoName")+"|["+lowScope+","+highScope+"]");
+        mapParam.put("twoStreamJoinSqls", sql + "|" + map.get("tableName") + "_" + map.get("tableTwoName") + "|[" + lowScope + "," + highScope + "]");
         return mapParam;
     }
 
@@ -716,12 +703,11 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
         // 有维表时
         JSONArray dimensionRelation = JSON.parseArray(map.get("dimensionRelation").toString());
         // 如果有两个数据源表，sourceTableSql用分号隔开，新增sourceTableSql参数
-        if(map.containsKey("sourceTwoDabRelation") && StringUtils.isNotEmpty(map.get("sourceTwoDabRelation").toString()) && StringUtils.isNotNull(map.get("sourceTwoDabRelation").toString())){
-            mapParam.put("sourceTableSql", map.get("createTableSql")+";"+map.get("createTableTwoSql"));
+        if (map.containsKey("sourceTwoDabRelation") && StringUtils.isNotEmpty(map.get("sourceTwoDabRelation").toString()) && StringUtils.isNotNull(map.get("sourceTwoDabRelation").toString())) {
+            mapParam.put("sourceTableSql", map.get("createTableSql") + ";" + map.get("createTableTwoSql"));
             JSONObject sourceRelation = JSON.parseObject(map.get("sourceRelation").toString());
-            parseTwoStreamJoinSQl(mapParam,map, sourceRelation);
-        }
-        else{
+            parseTwoStreamJoinSQl(mapParam, map, sourceRelation);
+        } else {
             mapParam.put("sourceTableSql", map.get("createTableSql"));
         }
         ArrayList array = (ArrayList) variable.getTestDimdata();
@@ -732,15 +718,33 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
         JSONArray dimensionName = JSON.parseArray(variableClassification.getDimensionRelation().toString());
 
         if ("01".equals(variable.getVariableType())) { // 基础变量
-            mapParam.put("variableSqls", jointSqlContext(dimensionName, variable));
+            if (variable.getStatisticsModel() != null){
+                if ("0304050607".contains(variable.getStatisticsModel())) { // 03 Over窗口  04 单日窗口  05 单周窗口  06单月窗口  07全局窗口
+                    ArrayList statisticsGroupItem = (ArrayList) variable.getStatisticsGroupItem();
+                    Map o = (Map) statisticsGroupItem.get(0);
+                    if (!StringUtils.isEmpty(String.valueOf(o.get("groupField"))))  // 有分组  key  :  aggPartitionSql
+                        mapParam.put("aggPartitionSql", jointSqlContext(dimensionName, variable));
+                    else  // 没有分组  key  :  aggNoPartitionSql
+                        mapParam.put("aggNoPartitionSql", jointSqlContext(dimensionName, variable));
+
+                } else { // 其他  key: transitionSql
+                    mapParam.put("transitionSql", jointSqlContext(dimensionName, variable));
+                }
+            } else { // 其他  key: transitionSql
+                mapParam.put("transitionSql", jointSqlContext(dimensionName, variable));
+            }
             // fieldOutNum 参数输出个数+主键  若相同的
             mapParam.put("fieldOutNum", "2");
         } else if ("02".equals(variable.getVariableType())) { // 派生变量
-            if ("01".equals(variable.getDeriveVariableModelType())) { // 四则运算  // 单个派生变量  和  对应的基础变量
-                mapParam.put("deVariableSqls", jointSqlContext(dimensionName, variable));
+            if ("01".equals(variable.getDeriveVariableModelType())
+                    || "03".equals(variable.getDeriveVariableModelType())) { // 四则运算 逻辑运算  // 单个派生变量  和  对应的基础变量
+//                mapParam.put("deVariableSqls", jointSqlContext(dimensionName, variable));
+                joinDeriveSql(variable, mapParam);
                 // fieldOutNum 参数输出个数+主键  若相同的
                 mapParam.put("fieldOutNum", "2");
             } else if ("02".equals(variable.getDeriveVariableModelType())) { // 计算引擎
+                // 计算 派生变量-计算引擎 variableSqls deVariableSqls fieldOutNum 的拼接
+                joinVariableDecisionSql(mapParam, variable);
                 // 计算引擎拼接
                 joinDecisionSql(mapParam, variable, millis);
             }
@@ -755,31 +759,59 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
         return JSON.toJSONString(mapParam);
     }
 
-    private void joinDecisionSql(Map mapParam, TVariableCenter variable, String millis) {
-        String deriveBaseVariable = variable.getDeriveBaseVariable().toString();
+
+    /**
+     * 计算 派生变量-计算引擎 variableSqls deVariableSqls fieldOutNum 的拼接
+     *
+     * @param mapParam
+     * @param variable
+     * @param millis   testTopicName
+     */
+    private void joinVariableDecisionSql(Map mapParam, TVariableCenter variable) {
+        String deriveBaseVariable = variable.getDeriveBaseVariable().toString(); // 派生基础变量
         List<String> strings = JSON.parseArray(deriveBaseVariable, String.class);
         String[] strings1 = strings.toArray(new String[strings.size()]);
+        // 基础变量详情
         List<TVariableCenter> tVariableCenters = tVariableCenterMapper.selectTVariableCenterByNames(strings1);
-        StringBuilder sb = new StringBuilder();
         StringBuilder st = new StringBuilder();
+        StringBuffer sbAgg = new StringBuffer();
+        StringBuffer sbAggNo = new StringBuffer();
+        StringBuffer sbTran = new StringBuffer();
+        StringBuffer sbDer = new StringBuffer();
         for (int i = 0; i < tVariableCenters.size(); i++) {
             TVariableCenter tVariableCenter = tVariableCenters.get(i);
             if (tVariableCenter.getVariableType().equals("01")) {
-                sb.append(tVariableCenter.getSqlContext()).append(";");
+                if (tVariableCenter.getStatisticsModel() != null && "0304050607".contains(tVariableCenter.getStatisticsModel())) { // 03 Over窗口  04 单日窗口  05 单周窗口  06单月窗口  07全局窗口
+                    JSONArray statisticsGroupItem = JSONArray.parseArray(tVariableCenter.getStatisticsGroupItem().toString());
+                    Map o = (Map) statisticsGroupItem.get(0);
+                    if (!StringUtils.isEmpty(String.valueOf(o.get("groupField"))))  // 有分组  key  :  aggPartitionSql
+                        sbAgg.append(tVariableCenter.getSqlContext()).append(";");
+                    else  // 没有分组  key  :  aggNoPartitionSql
+                        sbAggNo.append(tVariableCenter.getSqlContext()).append(";");
+                } else { // 其他  key: transitionSql
+                    sbTran.append(tVariableCenter.getSqlContext()).append(";");
+                }
+
             } else if (tVariableCenter.getVariableType().equals("02")
                     && "01".equals(tVariableCenter.getDeriveVariableModelType())) {
                 st.append(tVariableCenter.getSqlContext()).append("|");
             }
         }
-        if (sb.length() > 0) mapParam.put("variableSqls", sb.substring(0, sb.toString().length() - 1));
+        if (sbAgg.length() > 0) mapParam.put("aggPartitionSql", sbAgg.toString());
+        if (sbAggNo.length() > 0) mapParam.put("aggNoPartitionSql", sbAggNo.toString());
+        if (sbTran.length() > 0) mapParam.put("transitionSql", sbTran.toString());
+        if (sbDer.length() > 0) mapParam.put("deriveSql", sbDer.toString());
         if (st.length() > 0) mapParam.put("deVariableSqls", st.substring(0, st.toString().length() - 1));
+        mapParam.put("fieldOutNum", tVariableCenters.size() + 1);
+    }
+
+    private String computEgineSql(TVariableCenter variable, String millis){
         // decisionSql 拼接
-//        decisionSql:SELECT bod_decision('SQFQZ',CUST_NO,TRADE_ID,TRADE_AMOUNT,TRADE_AMOUNT123) FROM 表名 表名：变量测试：TestTopicName
+        // decisionSql:SELECT bod_decision('SQFQZ',CUST_NO,TRADE_ID,TRADE_AMOUNT,TRADE_AMOUNT123) FROM 表名 表名：变量测试：TestTopicName
         StringBuilder sd = new StringBuilder();
         TSelfFunction tSelfFunction = tSelfFunctionMapper.selectTSelfFunctionById(new Long(variable.getDeriveProcessModel()));
-        sd.append("SELECT ").append("*").append(",").append(tSelfFunction.getFunctionName()).append("(");
-
-//        [{"selfFuncParam":"source1","outParam":"1112"},{"selfFuncParam":"source2","outParam":"222"},{"selfFuncParam":"sourceMap","outParam":["ad","e"]}]
+        sd.append("SELECT *").append(",").append(tSelfFunction.getFunctionName()).append("(");
+        //[{"selfFuncParam":"source1","outParam":"1112"},{"selfFuncParam":"source2","outParam":"222"},{"selfFuncParam":"sourceMap","outParam":["ad","e"]}]
         JSONArray deriveInputParams = (JSONArray) JSONObject.parse(variable.getDeriveInputParams());
         JSONArray parse = (JSONArray) JSONObject.parse(tSelfFunction.getInputParam());
         StringBuilder tmp = new StringBuilder();
@@ -796,7 +828,7 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
                     if (dataBaseType.equals(type) && !"map".equals(type)) {
                         tmp.append("'").append(outParam).append("',");
                     } else {
-                        JSONArray out = (JSONArray)outParam;
+                        JSONArray out = (JSONArray) outParam;
                         for (int k = 0; k < out.size(); k++) {
                             tmp.append(out.get(k)).append(",");
                         }
@@ -805,11 +837,22 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
                 }
             }
         }
-        sd.append(tmp.substring(0,tmp.length()-1)).append(")");
+        sd.append(tmp.substring(0, tmp.length() - 1)).append(")");
         sd.append(" AS ").append(variable.getVariableNameEn());
         sd.append(" FROM ").append(millis);
-        mapParam.put("decisionSql", sd.toString());
-        mapParam.put("fieldOutNum", tVariableCenters.size() + 1);
+        return sd.toString();
+    }
+
+
+    /**
+     * 计算 派生变量-计算引擎 decisionSql 的拼接
+     *
+     * @param mapParam
+     * @param variable
+     * @param millis
+     */
+    private void joinDecisionSql(Map mapParam, TVariableCenter variable, String millis) {
+        mapParam.put("decisionSql", computEgineSql(variable,millis));
     }
 
     private List parseSplit(ArrayList listSource) {

@@ -77,7 +77,7 @@ public class TVariableCenter extends BaseEntity {
 
     // 统计-计算模板
     private String statisticsCountModel;
-    // 统计模式 01 滚动窗口  02 滑动窗口
+    // 统计模式 01 滚动窗口  02 滑动窗口  03 Over窗口  04 单日窗口  05 单周窗口  06单月窗口  07全局窗口
     private String statisticsModel;
 
     // 全局窗口开始时间

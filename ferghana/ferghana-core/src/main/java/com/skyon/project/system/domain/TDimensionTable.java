@@ -89,13 +89,14 @@ public class TDimensionTable extends BaseEntity
 
     private String jdbcCreateSql;
 
-    /** zookeeper地址 */
-    private String zookeeperAddress;
-
     /**
      * 可选参数
      */
     private String optionalParam;
+
+    /** zookeeper地址 */
+    private String zookeeperAddress;
+
 
     /** 表名 */
     private String hbaseTableName;
@@ -114,6 +115,15 @@ public class TDimensionTable extends BaseEntity
     private Object[] esDynamicItem;
     @Transient
     private Object[] hbaseItem;
+
+
+    public String getOptionalParam() {
+        return optionalParam;
+    }
+
+    public void setOptionalParam(String optionalParam) {
+        this.optionalParam = optionalParam;
+    }
 
     public String getClusterName() {
         return clusterName;
@@ -401,13 +411,6 @@ public class TDimensionTable extends BaseEntity
         this.jdbcPrimaryKey = jdbcPrimaryKey;
     }
 
-    public String getOptionalParam() {
-        return optionalParam;
-    }
-
-    public void setOptionalParam(String optionalParam) {
-        this.optionalParam = optionalParam;
-    }
 
     @Override
     public String toString() {

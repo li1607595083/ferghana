@@ -75,7 +75,7 @@ public class TVariablePackageManagerController extends BaseController {
             }
         }
         // 把这些包数据库的状态修改过来
-        if (uplist.size()>0) tVariablePackageManagerService.updateRuningState(uplist);
+        if (uplist.size() > 0) tVariablePackageManagerService.updateRuningState(uplist);
         return getDataTable(list);
     }
 
@@ -185,20 +185,18 @@ public class TVariablePackageManagerController extends BaseController {
         log.setVariablePackNameEn(pk.getVariablePackEn());
         log.setOperateType("变量包测试");
         logService.insertTVariablePackageOperateLog(log);
-        System.out.println("-------------------------1");
+        LOG.info("-------------------------变量包测试start-----------");
         //根据变量分类-数据源表-主键
         Map mapParam = tVariablePackageManagerService.getKeyByVariableId(pk.getVariableClassification());
-        LOG.info("----1："+mapParam.toString());
-        LOG.info("----2----");
+        LOG.info("----变量包分类-数据源表-主键：" + mapParam);
         List<TVariableCenter> variableListByIds = tVariablePackageManagerService.getVariableListByIds(pk.getVariableId());
         String millis = "topic" + System.currentTimeMillis();
         // 组装测试参数
         String variableTest = tVariablePackageManagerService.variableTest(pk, mapParam, variableListByIds, "test", millis);
-        LOG.info("----3:" + variableTest);
+        LOG.info("----变量包组装测试参数:{}" , variableTest);
         // 获取测试结果
         List result = tVariableCenterService.testRun(variableTest, millis);
-        LOG.info("----4:" + result);
-        LOG.info("----5");
+        LOG.info("----变量包获取测试结果:{}" , result);
         // 顺序
         ArrayList sourceTableValue = (ArrayList) pk.getSourceTableValue();
         ArrayList testResultItem = (ArrayList) pk.getTestResultItem();
@@ -228,7 +226,7 @@ public class TVariablePackageManagerController extends BaseController {
         }
 
         // 值
-        LOG.info("----result:" + s);
+        LOG.info("----result:{}" , s);
         return AjaxResult.success(s);
     }
 
@@ -237,6 +235,7 @@ public class TVariablePackageManagerController extends BaseController {
     @PreAuthorize("@ss.hasPermi('variable:package:start')")
     @PutMapping("/start")
     public AjaxResult startVariablePackage(@RequestBody TVariablePackageManager pkManager) {
+        LOG.info("-----------package start------------");
         // 日志记录
         TVariablePackageOperateLog log = new TVariablePackageOperateLog();
         log.setVariablePackNameEn(pkManager.getVariablePackEn());
@@ -245,10 +244,9 @@ public class TVariablePackageManagerController extends BaseController {
         //变量包名字、SQL（以分号拼接）、字段个数、主键名称、运行or测试、资源配置情况（以分号拼接）并发数、taskmanager内存、jobmanager内存
 
         String[] pathArray = null;
-        LOG.info("-----------package start------------");
-        LOG.info("-----------packType------------" + pkManager.getVariablePackType());
 
-        if ("01".equals(pkManager.getVariablePackType())){
+        LOG.info("-----------packType:{}" , pkManager.getVariablePackType());
+        if ("01".equals(pkManager.getVariablePackType())) {
             //根据变量分类-数据源表-主键
             Map map = tVariablePackageManagerService.getKeyByVariableId(pkManager.getVariableClassification());
             // sql 拼接 ： 建表sql + 变量运行sql ; 中间用分号连接;  用变量id用查对应的sql
@@ -257,26 +255,26 @@ public class TVariablePackageManagerController extends BaseController {
 
             pathArray = tVariablePackageManagerService.joinPath(map, pkManager, variableListByIds);
 
-            LOG.info("-------normal----pathArray1------------" + pathArray[1]);
-            LOG.info("-------normal----pathArray2------------" + pathArray[2]);
-        } else if ("02".equals(pkManager.getVariablePackType())){ // mysql-cdc
+            LOG.info("-------normal----pathArray1:{}" , pathArray[1]);
+            LOG.info("-------normal----pathArray2:{}" , pathArray[2]);
+        } else if ("02".equals(pkManager.getVariablePackType())) { // mysql-cdc
             //根据变量分类-数据源表-主键
             Map map = tVariablePackageManagerService.getKeyByVariableId(pkManager.getVariableClassification());
 
             // 拼接运行参数
             pathArray = tVariablePackageManagerService.joinMysqlPath(map, pkManager);
-            LOG.info("-------mysql-cdc----pathArray1------------" + pathArray[1]);
-            LOG.info("-------mysql-cdc----pathArray2------------" + pathArray[2]);
-        } else if ("03".equals(pkManager.getVariablePackType())){ // oracle-cdc
+            LOG.info("-------mysql-cdc----pathArray1:{}" , pathArray[1]);
+            LOG.info("-------mysql-cdc----pathArray2:{}" , pathArray[2]);
+        } else if ("03".equals(pkManager.getVariablePackType())) { // oracle-cdc
             // 拼接运行参数
             pathArray = tVariablePackageManagerService.joinOraclePath(pkManager);
-            LOG.info("-------oracle-cdc----pathArray1------------" + pathArray[1]);
-            LOG.info("-------oracle-cdc----pathArray2------------" + pathArray[2]);
+            LOG.info("-------oracle-cdc----pathArray1:{}" , pathArray[1]);
+            LOG.info("-------oracle-cdc----pathArray2:{}" , pathArray[2]);
         }
 
 
         Map mapResult = tVariablePackageManagerService.exe(pathArray);
-        LOG.info("--------------mapResult---------------");
+        LOG.info("--------------mapResult:{}",mapResult);
 
         int i = 0;
         Object jobId = mapResult.get("jobId");
@@ -288,8 +286,8 @@ public class TVariablePackageManagerController extends BaseController {
             pkManager.setStartParamBase(s[0]);
             pkManager.setSavePointDir("");
             i = tVariablePackageManagerService.updateTVariablePackageManagerOnApplication(pkManager);
-            LOG.info("--------------update applicationId: " + applicationId);
-            LOG.info("--------------update jobId: " + jobId);
+            LOG.info("--------------update applicationId:{} " , applicationId);
+            LOG.info("--------------update jobId:{} " , jobId);
         }
 
         return AjaxResult.success(i > 0 ? "success" : "failure");
