@@ -800,144 +800,150 @@
 
                     <el-tab-pane label="测试数据" name="first">
                                       <!--  数据源表                   -->
-                                      <el-form ref="form" :model="form" :rules="testRules" label-width="120px" class="el-col-24">
-                                        <div v-show="sourceTableValueItem">
-                                          <el-scrollbar class="el-scrollbar-show">
-                                            <span style="font-size: 16px;font-weight: bold">{{dataSourceName}}</span>
+                        <el-form ref="form" :model="form" :rules="testRules" label-width="120px" class="el-col-24">
+                          <div v-show="sourceTableValueItem">
+                            <el-scrollbar class="el-scrollbar-show">
+                              <span style="font-size: 16px;font-weight: bold">{{dataSourceName}}</span>
 
-                                            <el-table :data="form.sourceTableValue" border ref="multipleTable" tooltip-effect="dark"
-                                                      style="width: 100%; margin-top: 10px"
-                                                      empty-text="未选择输入参数表">
-                                              <template v-for='(col,index) in sourceTableCol'>
-                                                <el-table-column :show-overflow-tooltip="true"
-                                                                 :prop="col.dataItem" align="center" :label="col.dataName" :key="index"
-                                                                 width="300px">
-                                                  <template slot="header" slot-scope="scope" v-if="!testRunLoading">
-                                                          {{col.dataName}}
-                                                          <el-tooltip class="item" effect="dark" placement="top" v-if="col.relations && col.relations.length > 0" :content="arrayToStr(col.relations)" >
-                                                              <i class="el-icon-info"></i>
-                                                          </el-tooltip>
-                                                  </template>
-                                                  <template scope="scope">
-                                                   <el-form-item label-width="0px" :prop="col.dataName.indexOf('水印') > 0 ? 'sourceTableValue.'+scope.$index+'.' + col.dataItem : ''"
-                                                                  :rules="col.dataName.indexOf('水印') > 0 ? testRules.waterMark :[{ required: false }]">
-                                                      <el-input v-model="scope.row[col.dataItem]" placeholder="请输入内容" />
-                                                    </el-form-item>
-                                                  </template>
-                                                </el-table-column>
-                                              </template>
-                                              <el-table-column label="操作" width="200px" align="center"
-                                                               class-name="small-padding fixed-width">
-                                                <template slot-scope="scope">
-                                                  <el-button @click="addInputSource"><i class="el-icon-plus"/>
-                                                  </el-button>
-                                                  <el-button @click="removeInputSource(scope)"><i class="el-icon-minus"/></el-button>
-                                                </template>
-                                              </el-table-column>
-                                            </el-table>
-                                          </el-scrollbar>
-                                        </div>
+                              <el-table :data="form.sourceTableValue"  border ref="multipleTable" tooltip-effect="dark"
+                                        style="width: 100%; margin-top: 10px"
+                                        empty-text="未选择输入参数表">
+                                <el-table-column label="序号" width="50px" align="center" prop="test_serial_number">
+                                  <template slot-scope="scope">
+                                    {{scope.$index+1}}
+                                    <el-input type="hidden" v-model="test_serial_number" value="1" />
+                                  </template>
+                                </el-table-column>
+                                <template v-for='(col,index) in sourceTableCol'>
+                                  <el-table-column :show-overflow-tooltip="true"
+                                                   :prop="col.dataItem" align="center" :label="col.dataName" :key="index"
+                                                   width="300px">
+                                    <template slot="header" slot-scope="scope" v-if="!testRunLoading">
+                                            {{col.dataName}}
+                                            <el-tooltip class="item" effect="dark" placement="top" v-if="col.relations && col.relations.length > 0" :content="arrayToStr(col.relations)" >
+                                                <i class="el-icon-info"></i>
+                                            </el-tooltip>
+                                    </template>
+                                    <template scope="scope">
+                                     <el-form-item label-width="0px" :prop="col.dataName.indexOf('水印') > 0 ? 'sourceTableValue.'+scope.$index+'.' + col.dataItem : ''"
+                                                    :rules="col.dataName.indexOf('水印') > 0 ? testRules.waterMark :[{ required: false }]">
+                                        <el-input v-model="scope.row[col.dataItem]" placeholder="请输入内容" />
+                                      </el-form-item>
+                                    </template>
+                                  </el-table-column>
+                                </template>
+                                <el-table-column label="操作" width="200px" align="center"
+                                                 class-name="small-padding fixed-width">
+                                  <template slot-scope="scope">
+                                    <el-button @click="addInputSource"><i class="el-icon-plus"/>
+                                    </el-button>
+                                    <el-button @click="removeInputSource(scope)"><i class="el-icon-minus"/></el-button>
+                                  </template>
+                                </el-table-column>
+                              </el-table>
+                            </el-scrollbar>
+                          </div>
 
-                                        <!--  数据源表(二)                   -->
-                                        <div v-show="twoSourceTableValueItem" style="margin-top: 10px">
-                                          <el-scrollbar class="el-scrollbar-show">
-                                            <span style="font-size: 16px;font-weight: bold">{{dataSourceTwoName}}</span>
+                          <!--  数据源表(二)                   -->
+                          <div v-show="twoSourceTableValueItem" style="margin-top: 10px">
+                            <el-scrollbar class="el-scrollbar-show">
+                              <span style="font-size: 16px;font-weight: bold">{{dataSourceTwoName}}</span>
 
-                                            <el-table :data="form.twoSourceTableValue" border ref="multipleTable" tooltip-effect="dark"
-                                                      style="width: 100%; margin-top: 10px"
-                                                      empty-text="未选择输入参数表">
-                                              <template v-for='(col,index) in twoSourceTableCol' v-if="!testRunLoading">
-                                                <el-table-column :show-overflow-tooltip="true"
-                                                                 :prop="col.dataItem" align="center" :label="col.dataName" :key="index"
-                                                                 width="300px">
-                                                  <template slot="header" slot-scope="scope">
-                                                          {{col.dataName}}
-                                                          <el-tooltip class="item" effect="dark" placement="top" v-if="col.relations && col.relations.length > 0" :content="arrayToStr(col.relations)" >
-                                                              <i class="el-icon-info"></i>
-                                                          </el-tooltip>
-                                                  </template>
-                                                  <template scope="scope">
-                                                    <el-form-item label-width="0px" :prop="col.dataName.indexOf('水印') > 0 ? 'twoSourceTableValue.'+scope.$index+'.' + col.dataItem : ''"
-                                                                  :rules="col.dataName.indexOf('水印') > 0 ? testRules.twoWaterMark :[{ required: false }]">
-                                                      <el-input v-model="scope.row[col.dataItem]" placeholder="请输入内容" />
-                                                    </el-form-item>
-                                                  </template>
-                                                </el-table-column>
-                                              </template>
-                                              <el-table-column label="操作" width="200px" align="center"
-                                                               class-name="small-padding fixed-width">
-                                                <template slot-scope="scope">
-                                                  <el-button @click="addInputTwoSource"><i class="el-icon-plus"/>
-                                                  </el-button>
-                                                  <el-button @click="removeInputTwoSource(scope)"><i class="el-icon-minus"/></el-button>
-                                                </template>
-                                              </el-table-column>
-                                            </el-table>
-                                          </el-scrollbar>
-                                        </div>
+                              <el-table :data="form.twoSourceTableValue" border ref="multipleTable" tooltip-effect="dark"
+                                        style="width: 100%; margin-top: 10px"
+                                        empty-text="未选择输入参数表">
+                                <template v-for='(col,index) in twoSourceTableCol' v-if="!testRunLoading">
+                                  <el-table-column :show-overflow-tooltip="true"
+                                                   :prop="col.dataItem" align="center" :label="col.dataName" :key="index"
+                                                   width="300px">
+                                    <template slot="header" slot-scope="scope">
+                                            {{col.dataName}}
+                                            <el-tooltip class="item" effect="dark" placement="top" v-if="col.relations && col.relations.length > 0" :content="arrayToStr(col.relations)" >
+                                                <i class="el-icon-info"></i>
+                                            </el-tooltip>
+                                    </template>
+                                    <template scope="scope">
+                                      <el-form-item label-width="0px" :prop="col.dataName.indexOf('水印') > 0 ? 'twoSourceTableValue.'+scope.$index+'.' + col.dataItem : ''"
+                                                    :rules="col.dataName.indexOf('水印') > 0 ? testRules.twoWaterMark :[{ required: false }]">
+                                        <el-input v-model="scope.row[col.dataItem]" placeholder="请输入内容" />
+                                      </el-form-item>
+                                    </template>
+                                  </el-table-column>
+                                </template>
+                                <el-table-column label="操作" width="200px" align="center"
+                                                 class-name="small-padding fixed-width">
+                                  <template slot-scope="scope">
+                                    <el-button @click="addInputTwoSource"><i class="el-icon-plus"/>
+                                    </el-button>
+                                    <el-button @click="removeInputTwoSource(scope)"><i class="el-icon-minus"/></el-button>
+                                  </template>
+                                </el-table-column>
+                              </el-table>
+                            </el-scrollbar>
+                          </div>
 
 
-                                        <!--  数据维表                   -->
-                                        <div v-show="dimensionTableValueItem" style="margin-top: 10px">
-                                          <el-scrollbar class="el-scrollbar-show">
-                                            <div v-for="(dataAll,indexList) in listResultDimension" style="margin-top: 10px">
-                                              <span style="font-size: 16px;font-weight: bold">{{dataAll.name}}</span>
-                                                <el-table :data="listResultDimension[indexList].dimensionTableValue" border ref="multipleTable"
-                                                          tooltip-effect="dark"
-                                                          style="width: 100%; margin-top: 10px"
-                                                          empty-text="未选择输入参数表">
-                                                  <template v-for='(col,index) in listResultDimension[indexList].dimensionTableCol'>
-                                                    <el-table-column :show-overflow-tooltip="true"
-                                                                     :prop="col.dataItem" align="center" :label="col.dataName" :key="index"
-                                                                     width="300px">
-                                                      <template slot="header" slot-scope="scope" v-if="!testRunLoading">
-                                                              {{col.dataName}}
-                                                              <el-tooltip class="item" effect="dark" placement="top" v-if="col.relations && col.relations.length > 0" :content="arrayToStr(col.relations)" >
-                                                                  <i class="el-icon-info"></i>
-                                                              </el-tooltip>
-                                                      </template>
-                                                      <template scope="scope">
-                    <!--                                      <el-form-item label-width="0px" :prop="col.dataName.indexOf('主键') > 0 ? 'listResultDimension['+indexList+'].dimensionTableValue.'+scope.$index+'.' + col.dataItem : ''"-->
-                    <!--                                                    :rules="col.dataName.indexOf('主键') > 0 ? {required: true, message:'主键不能为空', trigger: 'blur'} : [{ required: false }]">-->
-                                                          <el-input v-model="scope.row[col.dataItem]" placeholder="请输入内容"/>
-                    <!--                                      </el-form-item>-->
-                                                      </template>
-                                                    </el-table-column>
-                                                  </template>
-                                                  <el-table-column label="操作" width="200px" align="center"
-                                                                   class-name="small-padding fixed-width">
-                                                    <template slot-scope="scope">
-                                                      <el-button @click="addInputDimension(dataAll.name)"><i class="el-icon-plus"/>
-                                                      </el-button>
-                                                      <el-button @click="removeInputDimension(scope,dataAll.name)"><i
-                                                        class="el-icon-minus"/>
-                                                      </el-button>
-                                                    </template>
-                                                  </el-table-column>
-                                                </el-table>
-                                            </div>
-                                          </el-scrollbar>
-                                        </div>
-                                      </el-form>
-                                    </el-tab-pane>
+                          <!--  数据维表                   -->
+                          <div v-show="dimensionTableValueItem" style="margin-top: 10px">
+                            <el-scrollbar class="el-scrollbar-show">
+                              <div v-for="(dataAll,indexList) in listResultDimension" style="margin-top: 10px">
+                                <span style="font-size: 16px;font-weight: bold">{{dataAll.name}}</span>
+                                  <el-table :data="listResultDimension[indexList].dimensionTableValue" border ref="multipleTable"
+                                            tooltip-effect="dark"
+                                            style="width: 100%; margin-top: 10px"
+                                            empty-text="未选择输入参数表">
+                                    <template v-for='(col,index) in listResultDimension[indexList].dimensionTableCol'>
+                                      <el-table-column :show-overflow-tooltip="true"
+                                                       :prop="col.dataItem" align="center" :label="col.dataName" :key="index"
+                                                       width="300px">
+                                        <template slot="header" slot-scope="scope" v-if="!testRunLoading">
+                                                {{col.dataName}}
+                                                <el-tooltip class="item" effect="dark" placement="top" v-if="col.relations && col.relations.length > 0" :content="arrayToStr(col.relations)" >
+                                                    <i class="el-icon-info"></i>
+                                                </el-tooltip>
+                                        </template>
+                                        <template scope="scope">
+      <!--                                      <el-form-item label-width="0px" :prop="col.dataName.indexOf('主键') > 0 ? 'listResultDimension['+indexList+'].dimensionTableValue.'+scope.$index+'.' + col.dataItem : ''"-->
+      <!--                                                    :rules="col.dataName.indexOf('主键') > 0 ? {required: true, message:'主键不能为空', trigger: 'blur'} : [{ required: false }]">-->
+                                            <el-input v-model="scope.row[col.dataItem]" placeholder="请输入内容"/>
+      <!--                                      </el-form-item>-->
+                                        </template>
+                                      </el-table-column>
+                                    </template>
+                                    <el-table-column label="操作" width="200px" align="center"
+                                                     class-name="small-padding fixed-width">
+                                      <template slot-scope="scope">
+                                        <el-button @click="addInputDimension(dataAll.name)"><i class="el-icon-plus"/>
+                                        </el-button>
+                                        <el-button @click="removeInputDimension(scope,dataAll.name)"><i
+                                          class="el-icon-minus"/>
+                                        </el-button>
+                                      </template>
+                                    </el-table-column>
+                                  </el-table>
+                              </div>
+                            </el-scrollbar>
+                          </div>
+                        </el-form>
+                      </el-tab-pane>
 
-                                    <el-tab-pane label="测试结果" name="second">
-                                      <div class="table">
-                                        <el-table
-                                          :data="testResultData"
-                                          tooltip-effect="dark"
-                                          border
-                                          stripe
-                                          style="width: 100%">
-                                          <template v-for='(col,index) in testResultCol'>
-                                            <el-table-column :show-overflow-tooltip="true" align="center" :prop="col.dataItem"
-                                                             :label="col.dataName" :key="index"
-                                                             width="200px">
-                                            </el-table-column>
-                                          </template>
-                                        </el-table>
-                                      </div>
-                                    </el-tab-pane>
+                      <el-tab-pane label="测试结果" name="second">
+                        <div class="table">
+                          <el-table
+                            :data="testResultData"
+                            tooltip-effect="dark"
+                            border
+                            stripe
+                            style="width: 100%">
+                            <template v-for='(col,index) in testResultCol'>
+                              <el-table-column :show-overflow-tooltip="true" align="center" :prop="col.dataItem"
+                                               :label="col.dataName" :key="index"
+                                               width="200px">
+                              </el-table-column>
+                            </template>
+                          </el-table>
+                        </div>
+                      </el-tab-pane>
 
                   </el-tabs>
                  <div style="margin-top: 30px;display: flex;justify-content: flex-end;">
@@ -1760,6 +1766,9 @@
 
           if (valid) {
             for (let j = 0; j < this.form.sourceTableValue.length; j++) {
+              // 第一列添加序号
+              this.$set(this.form.sourceTableValue[j], 'test_serial_number', j+1);
+              // 添加其他字段
               for (let i = 0; i < this.sourceTableCol.length; i++) {
                 if (JSON.stringify(this.form.sourceTableValue[j]).indexOf(this.sourceTableCol[i].dataItem) <= 0) {
                   let s = this.sourceTableCol[i].dataItem;
@@ -2929,6 +2938,7 @@
 
       // 点击测试
       testRun() {
+
         this.$refs["form"].validate(valid => {
           if (valid) {
             this.testRunLoading = true;
