@@ -749,7 +749,7 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
                 joinDecisionSql(mapParam, variable, millis);
             }
         }
-        mapParam.put("sourcePrimaryKey", map.get("schemaPrimaryKey").toString());
+//        mapParam.put("sourcePrimaryKey", map.get("schemaPrimaryKey").toString());
         ArrayList sourceTableValue = (ArrayList) variable.getSourceTableValue();
         if (sourceTableValue != null && sourceTableValue.size() > 0) {
             mapParam.put("testSourcedata", parseSplit(sourceTableValue));
@@ -888,7 +888,7 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
     /**
      * 调试
      */
-    public List testRun(String paramJsonString, String millis) {
+    public List testRun(String paramJsonString, String millis, int size, int waterMarkTime) {
         List messageList = new ArrayList();
         //第一个变量是sh命令，第二个变量是需要执行的脚本路径，从第三个变量开始是我们要传到脚本里的参数。
         try {
@@ -920,7 +920,7 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
 
             // 获取计算出来的kafka结果
             if (jobId != null) {
-                messageList = kafkaMessageGet(PropertiesUtil.getPro(TESTKAFKAADDRESS), millis);
+                messageList = kafkaMessageGet(PropertiesUtil.getPro(TESTKAFKAADDRESS), millis, size, waterMarkTime);
             }
 
             LOG.info("---------messageList----------");
@@ -999,7 +999,7 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
 
 
     // 从kafka取信息
-    public List kafkaMessageGet(String kafkaAddress, String topicName) {
+    public List kafkaMessageGet(String kafkaAddress, String topicName, int size, int waterMarkTime) {
         Properties props = new Properties();
         // 配置集群信息，至少一个 最好多个
         props.put("bootstrap.servers", kafkaAddress);
@@ -1019,20 +1019,36 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
         consumer.subscribe(Collections.singletonList(topicName));
 
         List list = new ArrayList();
+        boolean isFirstPoll = true;
+        int totalRecords = 0;
         while (true) {
             // 拉数据
-            try {
-                Thread.sleep(5000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            if(isFirstPoll == true){
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
+
             ConsumerRecords<String, String> records = consumer.poll(100);
             if (records.count() > 0) {
                 for (ConsumerRecord<String, String> record : records) {
                     list.add(record.value());
                     LOG.info("------result----:" + record.value());
                 }
-                return list;
+                totalRecords = totalRecords + records.count();
+                if(totalRecords == size){
+                    return list;
+                }else{
+                    try {
+                        Thread.sleep((waterMarkTime + 1) * 1000);
+                        isFirstPoll = false;
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+
             }
         }
     }

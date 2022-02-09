@@ -85,11 +85,6 @@ public interface ITVariablePackageManagerService {
     // 组装oracle测试参数
     public String[] joinOraclePath(TVariablePackageManager pkManager);
 
-
-
-    // 获取结果
-    public List getTestResult(Object jobId);
-
     // test
     public List testRun(String paramJsonString);
 

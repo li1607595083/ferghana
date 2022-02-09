@@ -80,7 +80,7 @@ public interface ITVariableCenterService {
     public String variableTest(TVariableCenter variable, Map map, String millis);
 
     //调试
-    public List testRun(String paramJsonString, String millis);
+    public List testRun(String paramJsonString, String millis, int size, int waterMarkTime);
 
     // 根据变量名获取对应的变量所需参数
     public List getCol(String names);

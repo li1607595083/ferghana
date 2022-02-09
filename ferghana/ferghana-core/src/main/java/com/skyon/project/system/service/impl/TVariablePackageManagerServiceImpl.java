@@ -219,19 +219,19 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
 
             // 拼接字段
             String field = "";
-            boolean flag = true;
+//            boolean flag = true;
             for (int i = 0; i < array.size(); i++) {
                 String o = array.get(i).toString();
                 String[] split = o.split("\\.");
-                if (split[1].equals(map.get("schemaPrimaryKey"))) {
-                    flag = false;
-                }
+//                if (split[1].equals(map.get("schemaPrimaryKey"))) {
+//                    flag = false;
+//                }
                 field = field + split[1] + ",";
             }
-            // 拼接主键
-            if (flag == true) {
-                field = map.get("schemaPrimaryKey") + "," + field;
-            }
+//            // 拼接主键
+//            if (flag == true) {
+//                field = map.get("schemaPrimaryKey") + "," + field;
+//            }
             sb.append(field, 0, field.length() - 1);
             sb.append(" FROM " + tableName);
         }
@@ -351,12 +351,14 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
             }
 
             if ("03".equals(resultSource.getConnectorType())) {  // hbase
-                sb.append(map.get("schemaPrimaryKey")).append(", row(");
+//                sb.append(map.get("schemaPrimaryKey")).append(", row(");
+                sb.append("row(");
                 // 普通查询和统计查询的输出字段为变量的英文名  一对一
                 // 数据加工可能有多个输出字段，不能为变量的英文名，为函数的输出字段
 
                 if (ssss.length() > 0) sb.append(ssss, 0, ssss.length() - 1).append(") as family from ");
-                sb.append("(select cast(o.").append(map.get("schemaPrimaryKey")).append(" as STRING) as ").append(map.get("schemaPrimaryKey")).append(",");
+//                sb.append("(select cast(o.").append(map.get("schemaPrimaryKey")).append(" as STRING) as ").append(map.get("schemaPrimaryKey")).append(",");
+                sb.append("(select ");
                 if (shbase.length() > 0) sb.append(shbase, 0, shbase.length() - 1);
                 if ("test".equals(runFlag)) {
                     sb.append(" FROM " + millis + "o))"); // 测试的时候去 test_var_topic
@@ -366,8 +368,8 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
             } else {
                 // 普通查询和统计查询的输出字段为变量的英文名  一对一
                 // 数据加工可能有多个输出字段，不能为变量的英文名，为函数的输出字段
-                sb.append(ssss);
-                sb.append(map.get("schemaPrimaryKey"));
+                sb.append(ssss.substring(0, ssss.length() - 1));
+//                sb.append(map.get("schemaPrimaryKey"));
 //                if (ssss.length() > 0) sb.append(ssss, 0, ssss.length() - 1);
 //                sb.append(" from tmp_").append(pkManager.getVariablePackEn()).append(")");
                 if ("test".equals(runFlag)) {
@@ -497,16 +499,6 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
     }
 
     @Override
-    public List getTestResult(Object jobId) {
-        List list = new ArrayList();
-        if (jobId != null) {
-            List messageList = tVariableCenterService.
-                    kafkaMessageGet(PropertiesUtil.getPro(TESTKAFKAADDRESS), "test_var_topic_package");
-        }
-        return list;
-    }
-
-    @Override
     public List testRun(String paramJsonString) {
 
         return null;
@@ -588,9 +580,7 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
             for (int i = 0; i < originalVariable.size(); i++) {
                 String s = originalVariable.get(i).toString();
                 String[] split = s.split("\\.");
-                if (!map.get("schemaPrimaryKey").equals(split[1])) {
-                    num = num + 1;
-                }
+                num = num + 1;
             }
         }
 
@@ -601,7 +591,7 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
 
 
         mapParam.put("fieldOutNum", (int) map1.get("outVariableNum") + 1 + num);
-        mapParam.put("sourcePrimaryKey", map.get("schemaPrimaryKey").toString());
+//        mapParam.put("sourcePrimaryKey", map.get("schemaPrimaryKey").toString());
         ArrayList sourceTableValue = (ArrayList) pk.getSourceTableValue();
         if (sourceTableValue != null && sourceTableValue.size() > 0) {
             ArrayList value = new ArrayList();
@@ -672,7 +662,7 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
         mapParam.put("runMode", "02");
 
         // 数据源表主键
-        mapParam.put("sourcePrimaryKey", map.get("schemaPrimaryKey").toString());
+//        mapParam.put("sourcePrimaryKey", map.get("schemaPrimaryKey").toString());
 
         // 输出参数sql
         mapParam.put("sinkSql", pkManager.getResultTableSql());
@@ -828,13 +818,13 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
         if (originalVariable1 != null) {
             JSONArray originalVariable = (JSONArray) JSON.parseArray(originalVariable1.toString());
             mapParam.put("originalVariableSql", pkManager.getOriginalVariableSql());
-            for (int i = 0; i < originalVariable.size(); i++) {
-                String s = originalVariable.get(i).toString();
-                String[] split = s.split("\\.");
-                if (!map.get("schemaPrimaryKey").equals(split[1])) {
-                    num = num + 1;
-                }
-            }
+//            for (int i = 0; i < originalVariable.size(); i++) {
+//                String s = originalVariable.get(i).toString();
+//                String[] split = s.split("\\.");
+//                if (!map.get("schemaPrimaryKey").equals(split[1])) {
+//                    num = num + 1;
+//                }
+//            }
         }
 
         // 拼接条件运行sql
@@ -871,7 +861,7 @@ public class TVariablePackageManagerServiceImpl implements ITVariablePackageMana
         mapParam.put("fieldOutNum", variableListByIds.size() + 1 + num);
 
         // 数据源表主键
-        mapParam.put("sourcePrimaryKey", map.get("schemaPrimaryKey").toString());
+//        mapParam.put("sourcePrimaryKey", map.get("schemaPrimaryKey").toString());
         // 运行参数 测试
         mapParam.put("runMode", "02");
         //

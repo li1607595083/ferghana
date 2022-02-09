@@ -1,6 +1,7 @@
 package com.skyon.project.system.controller;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.skyon.common.utils.poi.ExcelUtil;
 import com.skyon.framework.aspectj.lang.annotation.Log;
@@ -223,15 +224,35 @@ public class TVariableCenterController extends BaseController {
     public AjaxResult test(@RequestBody TVariableCenter tVariableCenter) {
         LOG.info("-------------------------变量测试start----------");
         //根据变量分类-数据源表-主键
-        Map mapValue = tVariablePackageManagerService.getKeyByVariableId(tVariableCenter.getVariableClassification());
+        Map<String,String> mapValue = tVariablePackageManagerService.getKeyByVariableId(tVariableCenter.getVariableClassification());
+
+        //测试数据条数
+        int size = ((ArrayList<String>) tVariableCenter.getSourceTableValue()).size();
+        //waterMark大小
+        int waterMarkTime = Integer.valueOf(mapValue.get("waterMarkTime"));
+
+        //=====
+        String createTableSql = mapValue.get("createTableSql");
+        createTableSql = createTableSql.replaceFirst("\\(", "(`test_serial_number` STRING,");
+        mapValue.replace("createTableSql",createTableSql);
+
+        ArrayList aa = (ArrayList) tVariableCenter.getSourceTableValue();
+        for (int i = 1; i <= aa.size(); i++) {
+            Map map1 = new HashMap();
+            Map o1 = (Map) aa.get(i - 1);
+            o1.put("test_serial_number", i + "");
+        }
+
+        //=====
         LOG.info("-----分类-数据源表-主键:{}", mapValue);
         String millis = "topic" + System.currentTimeMillis();
+
         // 组装测试参数
         String variableTest = tVariableCenterService.variableTest(tVariableCenter, mapValue, millis);
 
         LOG.info("----组装测试参数:{}", variableTest);
         // 获取测试结果
-        List result = tVariableCenterService.testRun(variableTest, millis);
+        List result = tVariableCenterService.testRun(variableTest, millis, size, waterMarkTime);
         LOG.info("----获取测试结果:{}", result);
         // 顺序
         ArrayList sourceTableValue = (ArrayList) tVariableCenter.getSourceTableValue();
@@ -244,10 +265,10 @@ public class TVariableCenterController extends BaseController {
                     Map o = (Map) sourceTableValue.get(i); // 页面的
                     Object o2 = result.get(j); // 结果的
                     JSONObject jsonObject = JSON.parseObject(o2.toString());
-                    Object tmp2 = jsonObject.get(tVariableCenter.getSourceKey());
-                    Object tmp = o.get(tVariableCenter.getSourceKey());  // 主键的值
+                    Object tmp2 = jsonObject.get("test_serial_number");
+                    Object tmp = o.get("test_serial_number");
                     if (tmp.equals(tmp2)) {
-                        map.put(tVariableCenter.getSourceKey(), tmp);
+                        map.put("test_serial_number", tmp);
                         map.put(tVariableCenter.getVariableNameEn(), jsonObject.get(tVariableCenter.getVariableNameEn()));
                         list.add(map);
                     }

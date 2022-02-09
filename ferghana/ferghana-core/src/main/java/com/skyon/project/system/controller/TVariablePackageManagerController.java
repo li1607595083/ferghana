@@ -187,7 +187,16 @@ public class TVariablePackageManagerController extends BaseController {
         logService.insertTVariablePackageOperateLog(log);
         LOG.info("-------------------------变量包测试start-----------");
         //根据变量分类-数据源表-主键
-        Map mapParam = tVariablePackageManagerService.getKeyByVariableId(pk.getVariableClassification());
+        Map<String,String> mapParam = tVariablePackageManagerService.getKeyByVariableId(pk.getVariableClassification());
+        //测试数据条数
+        int size = ((ArrayList<String>) pk.getSourceTableValue()).size();
+        //waterMark大小
+        int waterMarkTime = Integer.valueOf(mapParam.get("waterMarkTime"));
+
+        String createTableSql = mapParam.get("createTableSql");
+        createTableSql = createTableSql.replaceFirst("\\(", "(`test_serial_number` STRING,");
+        mapParam.replace("createTableSql",createTableSql);
+
         LOG.info("----变量包分类-数据源表-主键：" + mapParam);
         List<TVariableCenter> variableListByIds = tVariablePackageManagerService.getVariableListByIds(pk.getVariableId());
         String millis = "topic" + System.currentTimeMillis();
@@ -195,7 +204,7 @@ public class TVariablePackageManagerController extends BaseController {
         String variableTest = tVariablePackageManagerService.variableTest(pk, mapParam, variableListByIds, "test", millis);
         LOG.info("----变量包组装测试参数:{}" , variableTest);
         // 获取测试结果
-        List result = tVariableCenterService.testRun(variableTest, millis);
+        List result = tVariableCenterService.testRun(variableTest, millis, size, waterMarkTime);
         LOG.info("----变量包获取测试结果:{}" , result);
         // 顺序
         ArrayList sourceTableValue = (ArrayList) pk.getSourceTableValue();
