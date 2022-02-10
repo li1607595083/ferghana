@@ -811,7 +811,6 @@
                                 <el-table-column label="序号" width="50px" align="center" prop="test_serial_number">
                                   <template slot-scope="scope">
                                     {{scope.$index+1}}
-                                    <el-input type="hidden" v-model="test_serial_number" value="1" />
                                   </template>
                                 </el-table-column>
                                 <template v-for='(col,index) in sourceTableCol'>
@@ -2993,6 +2992,10 @@
             //   dataName: this.sourceTwoCol[1],
             //   dataItem: this.sourceTwoCol[1],
             // })
+            this.testResultCol.push({
+              dataName: "序号",
+              dataItem: "test_serial_number"
+            })
             this.testResultCol.push({
               dataName: this.form.variableNameEn,
               dataItem: this.form.variableNameEn

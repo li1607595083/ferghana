@@ -185,6 +185,11 @@
                     <span style="font-size: 16px;font-weight: bold">数据源表字段</span>
                     <el-table :data="form.sourceTableValue" border ref="multipleTable" tooltip-effect="dark"
                       style="width: 100%; margin-top: 10px" empty-text="未选择输入参数表">
+                      <el-table-column label="序号" width="200px" align="center" prop="test_serial_number">
+                        <template slot-scope="scope">
+                          {{scope.$index+1}}
+                        </template>
+                      </el-table-column>
                       <template v-for='(col,index) in sourceTableCol'>
                         <el-table-column :show-overflow-tooltip="true" :prop="col.dataItem" align="center"
                           :label="col.dataName" :key="index" width="300px">
@@ -360,6 +365,7 @@
     },
     data() {
       return {
+        test_serial_number:"",
         // 遮罩层
         loading: true,
         // 变量包更新加载
@@ -569,8 +575,10 @@
 
       // 确认测试
       confirmTest() {
-        console.log("++++++++qqq");
-        console.log(this.form.variableId);
+        // 添加序号
+        for (let i = 0; i < this.form.sourceTableValue.length; i++) {
+          this.$set(this.form.sourceTableValue[i], 'test_serial_number', i+1);
+        }
         let tmp = this.form.variableId;
         this.form.testResultItem = [];
         let dmo = [];
@@ -628,12 +636,8 @@
           tmp = tmp.concat(dmo);
         }
         this.form.variableId = tmp;
-        console.log("++++++++++++++++++++++++++++++++++++q");
-        console.log(this.form.variableId);
         testPackage(this.form).then(resp => {
           loading.close();
-
-
           // this.testResultData 为测试结果数据 第一列为主键  第二列为结果
           if (resp.msg === "no success") {
             this.$alert("测试报错了！", {
