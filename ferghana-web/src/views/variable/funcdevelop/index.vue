@@ -131,7 +131,7 @@
           <el-input v-model="form.functionPackagePath" placeholder="请输入函数路径" :disabled="detailViem"/>
         </el-form-item>
         <el-form-item label="函数描述" prop="selfFunctionDesc" class="el-col-12">
-          <el-input v-model="form.selfFunctionDesc" placeholder="请输入函数路径" :disabled="detailViem"/>
+          <el-input v-model="form.selfFunctionDesc" placeholder="请输入函数描述" :disabled="detailViem"/>
         </el-form-item>
         <el-form-item label="函数类型" prop="functionType" class="el-col-24">
           <el-select v-model="form.functionType" :disabled="detailViem" style="width:355px" placeholder="请输入函数类型">
@@ -301,7 +301,7 @@
           selfFunctionNameCn: undefined,
           moduleType: undefined,
           functionName: undefined,
-          selfFunctionDesc: undefined,
+          selfFunctionDesc: "",
           functionType: undefined
         },
         // 表单参数
@@ -310,9 +310,6 @@
         rules: {
           selfFunctionNameCn: [
             {required: true, message: "函数中文名不能为空", trigger: "blur"}
-          ],
-          selfFunctionDesc: [
-            {required: true, message: "函数描述不能为空", trigger: "blur"}
           ],
           functionType: [
             {required: true, message: "函数类型不能为空", trigger: "blur"}
@@ -471,7 +468,7 @@
           functionPackagePath: undefined,
           filePath: undefined,
           functionParams: undefined,
-          selfFunctionDesc: undefined,
+          selfFunctionDesc: "",
           functionType: undefined,
           dynamicItem: [
             {
