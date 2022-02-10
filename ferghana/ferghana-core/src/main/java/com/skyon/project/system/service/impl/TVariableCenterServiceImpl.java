@@ -393,7 +393,9 @@ public class TVariableCenterServiceImpl implements ITVariableCenterService {
                 sb.append(s, 0, s.length() - 1).append(") AS ").append(variable.getVariableNameEn());
                 sb.append(" FROM " + resultTableName);
             } else if ("04".equals(variable.getVariableModelType())) {
-                sb.append(variable.getUserDefinedSql());
+                String userDefinedSql = variable.getUserDefinedSql().replaceFirst("select", "select *,");
+                userDefinedSql = userDefinedSql.replace(variable.getSourceTableName(), resultTableName);
+                sb.append(userDefinedSql);
             }
         } else if ("02".equals(variable.getVariableType())) { // 派生变量 sqlContext
             if ("02".equals(variable.getDeriveVariableModelType())){ // 计算引擎

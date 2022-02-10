@@ -22,8 +22,8 @@ server:
   port: 8089
   servlet:
     # 应用的访问路径
-    context-path: /prod-api
-#    context-path: /
+#   context-path: /prod-api
+   context-path: /
   tomcat:
     # tomcat的URI编码
     uri-encoding: UTF-8

@@ -105,7 +105,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="filePath != null  and filePath != ''">file_path = #{filePath},</if>
             <if test="filePathTwo != null  and filePathTwo != ''">file_path_two = #{filePathTwo},</if>
             <if test="functionParams != null  and functionParams != ''">function_params = #{functionParams},</if>
-            <if test="selfFunctionDesc != null  and selfFunctionDesc != ''">self_function_desc = #{selfFunctionDesc},</if>
+            self_function_desc = #{selfFunctionDesc},
             <if test="inputParam != null  and inputParam != ''">input_Param = #{inputParam},</if>
             <if test="outputParam != null  and outputParam != ''">output_Param = #{outputParam},</if>
             <if test="updateBy != null ">update_by = #{updateBy},</if>
