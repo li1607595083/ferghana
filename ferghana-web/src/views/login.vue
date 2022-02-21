@@ -475,7 +475,7 @@
     </el-form>
     <!--  底部  -->
      <div class="el-login-footer">
-       <span>Copyright © 1999-2021 上海诺祺科技有限公司. </span>
+       <span>Copyright © 1999-2022 上海诺祺科技有限公司. </span>
      </div>
   </div>
 </template>

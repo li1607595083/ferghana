@@ -195,6 +195,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
             <if test="schemaDefine != null  and schemaDefine != ''">schema_define = #{schemaDefine},</if>
             <if test="dataBaseType != null  and dataBaseType != ''">data_base_type = #{dataBaseType},</if>
+            optional_param = #{optionalParam},
             <if test="description != null  and description != ''">description = #{description},</if>
             <if test="schemaPrimaryKey != null  and schemaPrimaryKey != ''">schema_Primary_Key = #{schemaPrimaryKey},</if>
             <if test="createTableSql != null  and createTableSql != ''">create_table_sql = #{createTableSql},</if>

@@ -138,7 +138,7 @@
             placeholder="请选择连接器类型"
             clearable
             style="width: 100%"
-            :disabled="detailViem"
+            :disabled="detailViemOnly"
             @change="connectorTypeChange"
           >
             <el-option
@@ -211,7 +211,7 @@
           </el-form-item>
         </div>
 
-        <el-form-item label="可选参数" prop="optionalParam" class="el-col-24">
+        <el-form-item v-show="optionalParamShow"  label="可选参数" prop="optionalParam" class="el-col-24">
           <el-input v-model="form.optionalParam" placeholder="通常情况下无需添加其他参数" type="textarea"  :disabled="detailViem" v-on:blur="optionalParamValidate()"/>
         </el-form-item>
         <el-form-item label="描述" prop="description" class="el-col-24">
@@ -334,6 +334,8 @@
         title: "",
         // 是否显示弹出层
         open: false,
+        optionalParamShow:true,
+        detailViemOnly: false,
         // 数据源类型数据
         dataSourceTypeOptions: [],
         // 连接器类型
@@ -439,9 +441,7 @@
             {required : true, message: "数据操作必须选择", trigger: "blur"}
           ],
           optionalParam: [
-            {validator: kafkaOptionalParamValidator, trigger: "blur"},
-            {validator: mysqlCdcOptionalParamValidator, trigger: "blur"},
-            {validator: optionalParamValidator, trigger: "blur"}
+            {validator: kafkaOptionalParamValidator, trigger: "blur"}
           ],
           dynamicItem: {
             schemaDefine: [
@@ -509,12 +509,15 @@
           }
       },
       connectorTypeChange(value){
+        // this.optionalParamValidate();
+        // this.$refs.form.validateField("optionalParam");
         console.log("---connectorTypeChange");
         console.log(value);
         // 控制显示kafka或mysql板块
         this.connShow = value === '01';
         //  控制kafka或mysql板块的必输项
         if (value === '01') { // kafka
+          this.optionalParamShow = true;
           this.rules.topicName[0].required = true;
           this.rules.topicName[0].validator = isLegitimateName;
           this.rules.consumerGroup[0].required = true;
@@ -530,6 +533,7 @@
           this.rules.scanAll[0].required = false;
           this.rules.handleData[0].required = false;
         } else if (value === '02'){
+          this.optionalParamShow = true;
           this.mysqlPropertyShow = true;
           this.rules.topicName[0].required = false;
           this.rules.topicName[0].validator = false;
@@ -547,6 +551,7 @@
           this.rules.handleData[0].required = true;
           this.mysqlIPFlag = true;
         } else if (value === '03'){
+          this.optionalParamShow = false;
           this.mysqlPropertyShow = false;
           this.rules.topicName[0].required = false;
           this.rules.topicName[0].validator = false;
@@ -711,6 +716,7 @@
       handleAdd() {
         this.reset();
         this.detailViem = false;
+        this.detailViemOnly = false;
         this.updateViem = false;
         this.showSubmitForm = true;
         this.open = true;
@@ -731,6 +737,7 @@
           this.form = response.data;
           this.open = true;
           this.detailViem = false;
+          this.detailViemOnly = true;
           this.updateViem = true;
           this.showSubmitForm = true;
           this.title = "修改数据源";
@@ -755,6 +762,7 @@
           this.form = response.data;
           this.open = true;
           this.detailViem = true;
+          this.detailViemOnly = true;
           this.updateViem = true;
           this.showSubmitForm = false;
           this.title = "查看数据源";
@@ -775,6 +783,9 @@
       submitForm: function () {
         console.log("--submitForm");
         console.log(this.form);
+        // this.$refs.form.validateField("optionalParam");
+        // this.rules.optionalParam[0].validator = null;
+        // this.optionalParamValidate();
         this.$refs["form"].validate(valid => {
           if (valid) {
             if (this.form.dataSourceId !== undefined) {

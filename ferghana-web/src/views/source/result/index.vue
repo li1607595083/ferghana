@@ -133,7 +133,7 @@
             clearable
             style="width: 100%"
             @change="connectorTypeChange"
-            :disabled="detailViem"
+            :disabled="detailViemOnly"
           >
             <el-option
               v-for="dict in connectorTypeOptions"
@@ -180,9 +180,9 @@
           </el-form-item>
         </div>
 
-        <el-form-item label="可选参数" prop="optionalParam" class="el-col-24">
-          <el-input v-model="form.optionalParam" placeholder="通常情况下无需添加其他参数" type="textarea" :disabled="detailViem"/>
-        </el-form-item>
+<!--        <el-form-item label="可选参数" prop="optionalParam" class="el-col-24">-->
+<!--          <el-input v-model="form.optionalParam" placeholder="通常情况下无需添加其他参数" type="textarea" :disabled="detailViem"/>-->
+<!--        </el-form-item>-->
         <el-form-item label="描述" prop="description" class="el-col-24">
           <el-input v-model="form.description" placeholder="请输入描述" type="textarea" :disabled="detailViem"/>
         </el-form-item>
@@ -226,7 +226,7 @@
         dataSourceTypeOptions: [],
         // 连接器类型
         connectorTypeOptions: [],
-
+        detailViemOnly: false,
         // 消费模式类型
         consumerModeOptions: [],
         // 数据类型
@@ -486,6 +486,7 @@
       handleAdd() {
         this.reset();
         this.detailViem = false;
+        this.detailViemOnly = false;
         this.showSubmitForm = true;
         this.open = true;
         this.title = "添加数据结果表";
@@ -506,6 +507,7 @@
           this.form = response.data;
           this.open = true;
           this.detailViem = false;
+          this.detailViemOnly = true;
           this.showSubmitForm = true;
           this.title = "修改数据结果表";
           this.connectorTypeChange(this.form.connectorType);
@@ -519,6 +521,7 @@
           this.form = response.data;
           this.open = true;
           this.detailViem = true;
+          this.detailViemOnly = true;
           this.showSubmitForm = false;
           this.title = "查看数据结果表";
           this.connectorTypeChange(this.form.connectorType);

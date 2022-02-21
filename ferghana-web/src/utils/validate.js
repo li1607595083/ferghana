@@ -105,7 +105,7 @@ export function isLegitimateName(rule, value, callback) {
 
 // 校验表的英文名 规则：英文字母、数字、下划线且首字母必须是英文字母 ^[a-zA-Z][a-zA-Z0-9_]*$
 export function isHbaseName(rule, value, callback) {
-  const reg = /^[a-zA-Z]*:[a-zA-Z0-9_]*$/;
+  const reg = /^[a-zA-Z0-9_]*:[a-zA-Z0-9_]*$/;
   if ((!reg.test(value)) && value != '') {
     callback(new Error('请输入正确的英文名'));
   } else {

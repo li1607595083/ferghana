@@ -210,7 +210,7 @@
           <el-input v-model="form.zookeeperAddress" placeholder="master:2181,slave:2181" :disabled="detailViem" />
         </el-form-item>
 
-        <el-form-item label="可选参数" prop="optionalParam" class="el-col-24">
+        <el-form-item v-show="optionalParamShow" label="可选参数" prop="optionalParam" class="el-col-24">
           <el-input v-model="form.optionalParam" placeholder="通常情况下无需添加其他参数" type="textarea" :disabled="detailViem" v-on:blur="optionalParamValidate()"/>
         </el-form-item>
         <el-form-item label="描述" prop="description" class="el-col-24">
@@ -374,6 +374,7 @@
         title: "",
         // 是否显示弹出层
         open: false,
+        optionalParamShow:true,
         // 连接器类型字典
         connectorTypeOptions: [],
         // redis运行环境
@@ -437,18 +438,13 @@
             },
             {
               validator: isHbaseName,
-              message: "格式：只能包含英文字母、数字、下划线且首字母必须是英文字母,必有：",
+              message: "格式：只能包含英文字母、数字、下划线且首字母必须是英文字母,必有:",
               trigger: "blur"
             }
           ],
           connectorType: [{
             required: true,
             message: "连接器类型不能为空",
-            trigger: "blur"
-          }],
-          dataSource: [{
-            required: true,
-            message: "数据来源不能为空",
             trigger: "blur"
           }],
           redisAddress: [{
@@ -915,6 +911,7 @@
       // 当前为redis的校验
       redisCheck() {
         this.jdbcItem = false;
+        this.optionalParamShow = true;
         this.jdbcAndHbaseAndes = true;
         this.ZKItem = false;
         this.redisItem = true;
@@ -958,6 +955,7 @@
       // 当前为jdbc的校验
       jdbcCheck() {
         this.jdbcItem = true;
+        this.optionalParamShow = true;
         this.jdbcAndHbaseAndes = true;
         this.ZKItem = false;
         this.redisItem = false;
@@ -1005,6 +1003,7 @@
       // 当前为hbase的校验
       hbaseCheck() {
         this.jdbcItem = false;
+        this.optionalParamShow = true;
         this.ZKItem = true;
         this.jdbcAndHbaseAndes = true;
         this.redisItem = false;
@@ -1026,10 +1025,10 @@
         this.rules.jdbcDynamicItem.jdbcKey[1].required = false;
         this.rules.jdbcDynamicItem.jdbcType[0].required = false;
         this.rules.jdbcDynamicItem.schemaFieldName[0].required = false;
-        this.rules.redisDynamicItem.redisKey[0].required = true;
+        this.rules.redisDynamicItem.redisKey[0].required = false;
         this.rules.redisDynamicItem.redisKey[1].validator = isLegitimateName;
-        this.rules.redisDynamicItem.redisType[0].required = true;
-        this.rules.redisDynamicItem.schemaFieldName[0].required = true;
+        this.rules.redisDynamicItem.redisType[0].required = false;
+        this.rules.redisDynamicItem.schemaFieldName[0].required = false;
         this.rules.esDynamicItem.esKey[0].required = false;
         this.rules.esDynamicItem.esKey[1].validator = false;
         this.rules.esDynamicItem.esType[0].required = false;
@@ -1051,6 +1050,7 @@
       },
       // 当前为elasticsearch-6.X、elasticsearch-7.X的校验
       elasticsearchCheck() {
+        this.optionalParamShow = false;
         this.jdbcItem = false;
         this.jdbcAndHbaseAndes = true;
         this.ZKItem = false;
@@ -1070,10 +1070,10 @@
         this.rules.jdbcDynamicItem.jdbcKey[1].required = false;
         this.rules.jdbcDynamicItem.jdbcType[0].required = false;
         this.rules.jdbcDynamicItem.schemaFieldName[0].required = false;
-        this.rules.redisDynamicItem.redisKey[0].required = true;
+        this.rules.redisDynamicItem.redisKey[0].required = false;
         this.rules.redisDynamicItem.redisKey[1].validator = isLegitimateName;
-        this.rules.redisDynamicItem.redisType[0].required = true;
-        this.rules.redisDynamicItem.schemaFieldName[0].required = true;
+        this.rules.redisDynamicItem.redisType[0].required = false;
+        this.rules.redisDynamicItem.schemaFieldName[0].required = false;
         this.rules.esDynamicItem.esKey[0].required = true;
         this.rules.esDynamicItem.esKey[1].validator = isLegitimateName;
         this.rules.esDynamicItem.esType[0].required = true;
