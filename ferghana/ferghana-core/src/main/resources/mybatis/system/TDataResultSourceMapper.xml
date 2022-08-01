@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.skyon.project.system.mapper.TDataResultSourceMapper">
+
+    <resultMap type="TDataResultSource" id="TDataResultSourceResult">
+        <result property="dataResultSourceId"    column="data_result_source_id"    />
+        <result property="dataSourceName"    column="data_source_name"    />
+        <result property="dataSourceType"    column="data_source_type"    />
+        <result property="connectorType"    column="connector_type"    />
+        <result property="dataSource"    column="data_source"    />
+        <result property="topicName"    column="topic_name"    />
+        <result property="tableName"    column="table_name"    />
+        <result property="consumerGroup"    column="consumer_group"    />
+        <result property="consumerMode"    column="consumer_mode"    />
+        <result property="zookeeperAddress"    column="zookeeper_address"    />
+        <result property="kafkaAddress"    column="kafka_address"    />
+        <result property="schemaDefine"    column="schema_define"    />
+        <result property="dataBaseType"    column="data_base_type"    />
+        <result property="jdbcUrlAddress"    column="jdbc_url_address"    />
+        <result property="jdbcDrive"    column="jdbc_drive"    />
+        <result property="jdbcUserName"    column="jdbc_user_name"    />
+        <result property="jdbcUserPwd"    column="jdbc_user_pwd"    />
+        <result property="hbaseZKAddress"    column="hbase_ZK_address"    />
+        <result property="esAddress"    column="es_Address"    />
+        <result property="description"    column="description"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="updateBy"    column="update_by"    />
+    </resultMap>
+
+    <sql id="selectTDataResultSourceVo">
+        select data_result_source_id, data_source_name, data_source_type, connector_type,
+        data_source, topic_name, table_name, consumer_group, consumer_mode, zookeeper_address,
+         kafka_address, schema_define, data_base_type,jdbc_url_address,jdbc_drive,jdbc_user_name,jdbc_user_pwd,hbase_ZK_address,es_Address,
+          description, create_time, update_time,create_by,update_by from t_data_result_source
+    </sql>
+
+    <select id="selectTDataResultSourceList" parameterType="TDataResultSource" resultMap="TDataResultSourceResult">
+        <include refid="selectTDataResultSourceVo"/>
+        <where>
+            <if test="dataSourceName != null  and dataSourceName != ''"> and data_source_name like concat('%', #{dataSourceName}, '%')</if>
+            <if test="dataSourceType != null  and dataSourceType != ''"> and data_source_type = #{dataSourceType}</if>
+            <if test="connectorType != null  and connectorType != ''"> and connector_type = #{connectorType}</if>
+            <if test="dataSource != null  and dataSource != ''"> and data_source = #{dataSource}</if>
+            <if test="topicName != null  and topicName != ''"> and topic_name like concat('%', #{topicName}, '%')</if>
+            <if test="tableName != null  and tableName != ''"> and table_name like concat('%', #{tableName}, '%')</if>
+            <if test="consumerGroup != null  and consumerGroup != ''"> and consumer_group = #{consumerGroup}</if>
+            <if test="consumerMode != null  and consumerMode != ''"> and consumer_mode = #{consumerMode}</if>
+            <if test="zookeeperAddress != null  and zookeeperAddress != ''"> and zookeeper_address = #{zookeeperAddress}</if>
+            <if test="kafkaAddress != null  and kafkaAddress != ''"> and kafka_address = #{kafkaAddress}</if>
+            <if test="schemaDefine != null  and schemaDefine != ''"> and schema_define = #{schemaDefine}</if>
+            <if test="dataBaseType != null  and dataBaseType != ''"> and data_base_type = #{dataBaseType}</if>
+
+            <if test="jdbcUrlAddress != null  and jdbcUrlAddress != ''"> and jdbc_url_address = #{jdbcUrlAddress}</if>
+            <if test="jdbcDrive != null  and jdbcDrive != ''"> and jdbc_drive = #{jdbcDrive}</if>
+            <if test="jdbcUserName != null  and jdbcUserName != ''"> and jdbc_user_name = #{jdbcUserName}</if>
+            <if test="jdbcUserPwd != null  and jdbcUserPwd != ''"> and jdbc_user_pwd = #{jdbcUserPwd}</if>
+            <if test="hbaseZKAddress != null  and hbaseZKAddress != ''"> and hbase_ZK_address = #{hbaseZKAddress}</if>
+            <if test="esAddress != null  and esAddress != ''"> and es_Address = #{esAddress}</if>
+
+            <if test="description != null  and description != ''"> and description = #{description}</if>
+        </where>
+        order by create_time desc
+    </select>
+
+    <select id="selectTDataResultSourceById" parameterType="Long" resultMap="TDataResultSourceResult">
+        <include refid="selectTDataResultSourceVo"/>
+        where data_result_source_id = #{dataResultSourceId}
+    </select>
+
+    <select id="selectTDataResultSourceByName" parameterType="string" resultMap="TDataResultSourceResult">
+        <include refid="selectTDataResultSourceVo"/>
+        where table_name = #{tableName}
+    </select>
+
+    <insert id="insertTDataResultSource" parameterType="TDataResultSource" useGeneratedKeys="true" keyProperty="dataResultSourceId">
+        insert into t_data_result_source
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="dataSourceName != null  and dataSourceName != ''">data_source_name,</if>
+            <if test="dataSourceType != null  and dataSourceType != ''">data_source_type,</if>
+            <if test="connectorType != null  and connectorType != ''">connector_type,</if>
+            <if test="dataSource != null  and dataSource != ''">data_source,</if>
+            <if test="topicName != null  and topicName != ''">topic_name,</if>
+            <if test="tableName != null  and tableName != ''">table_name,</if>
+            <if test="consumerGroup != null  and consumerGroup != ''">consumer_group,</if>
+            <if test="consumerMode != null  and consumerMode != ''">consumer_mode,</if>
+            <if test="zookeeperAddress != null  and zookeeperAddress != ''">zookeeper_address,</if>
+            <if test="kafkaAddress != null  and kafkaAddress != ''">kafka_address,</if>
+            <if test="schemaDefine != null  and schemaDefine != ''">schema_define,</if>
+            <if test="dataBaseType != null  and dataBaseType != ''">data_base_type,</if>
+            <if test="jdbcUrlAddress != null  and jdbcUrlAddress != ''">jdbc_url_address,</if>
+            <if test="jdbcDrive != null  and jdbcDrive != ''">jdbc_drive,</if>
+            <if test="jdbcUserName != null  and jdbcUserName != ''">jdbc_user_name,</if>
+            <if test="jdbcUserPwd != null  and jdbcUserPwd != ''">jdbc_user_pwd,</if>
+            <if test="hbaseZKAddress != null  and hbaseZKAddress != ''">hbase_ZK_address,</if>
+            <if test="esAddress != null  and esAddress != ''">es_Address,</if>
+            <if test="description != null  and description != ''">description,</if>
+            <if test="createBy != null  and createBy != ''">create_by,</if>
+            create_time
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="dataSourceName != null  and dataSourceName != ''">#{dataSourceName},</if>
+            <if test="dataSourceType != null  and dataSourceType != ''">#{dataSourceType},</if>
+            <if test="connectorType != null  and connectorType != ''">#{connectorType},</if>
+            <if test="dataSource != null  and dataSource != ''">#{dataSource},</if>
+            <if test="topicName != null  and topicName != ''">#{topicName},</if>
+            <if test="tableName != null  and tableName != ''">#{tableName},</if>
+            <if test="consumerGroup != null  and consumerGroup != ''">#{consumerGroup},</if>
+            <if test="consumerMode != null  and consumerMode != ''">#{consumerMode},</if>
+            <if test="zookeeperAddress != null  and zookeeperAddress != ''">#{zookeeperAddress},</if>
+            <if test="kafkaAddress != null  and kafkaAddress != ''">#{kafkaAddress},</if>
+            <if test="schemaDefine != null  and schemaDefine != ''">#{schemaDefine},</if>
+            <if test="dataBaseType != null  and dataBaseType != ''">#{dataBaseType},</if>
+
+            <if test="jdbcUrlAddress != null  and jdbcUrlAddress != ''">#{jdbcUrlAddress},</if>
+            <if test="jdbcDrive != null  and jdbcDrive != ''">#{jdbcDrive},</if>
+            <if test="jdbcUserName != null  and jdbcUserName != ''">#{jdbcUserName},</if>
+            <if test="jdbcUserPwd != null  and jdbcUserPwd != ''">#{jdbcUserPwd},</if>
+            <if test="hbaseZKAddress != null  and hbaseZKAddress != ''">#{hbaseZKAddress},</if>
+            <if test="esAddress != null  and esAddress != ''">#{esAddress},</if>
+            <if test="description != null  and description != ''">#{description},</if>
+            <if test="createBy != null  and createBy != ''">#{createBy},</if>
+            sysdate()
+        </trim>
+    </insert>
+
+    <update id="updateTDataResultSource" parameterType="TDataResultSource">
+        update t_data_result_source
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="dataSourceName != null  and dataSourceName != ''">data_source_name = #{dataSourceName},</if>
+            <if test="dataSourceType != null  and dataSourceType != ''">data_source_type = #{dataSourceType},</if>
+            <if test="connectorType != null  and connectorType != ''">connector_type = #{connectorType},</if>
+            <if test="dataSource != null  and dataSource != ''">data_source = #{dataSource},</if>
+            <if test="topicName != null  and topicName != ''">topic_name = #{topicName},</if>
+            <if test="tableName != null  and tableName != ''">table_name = #{tableName},</if>
+            <if test="consumerGroup != null  and consumerGroup != ''">consumer_group = #{consumerGroup},</if>
+            <if test="consumerMode != null  and consumerMode != ''">consumer_mode = #{consumerMode},</if>
+            <if test="zookeeperAddress != null  and zookeeperAddress != ''">zookeeper_address = #{zookeeperAddress},</if>
+            <if test="kafkaAddress != null  and kafkaAddress != ''">kafka_address = #{kafkaAddress},</if>
+            <if test="schemaDefine != null  and schemaDefine != ''">schema_define = #{schemaDefine},</if>
+            <if test="dataBaseType != null  and dataBaseType != ''">data_base_type = #{dataBaseType},</if>
+
+
+            <if test="jdbcUrlAddress != null  and jdbcUrlAddress != ''">jdbc_url_address = #{jdbcUrlAddress},</if>
+            <if test="jdbcDrive != null  and jdbcDrive != ''">jdbc_drive = #{jdbcDrive},</if>
+            <if test="jdbcUserName != null  and jdbcUserName != ''">jdbc_user_name = #{jdbcUserName},</if>
+            <if test="jdbcUserPwd != null  and jdbcUserPwd != ''">jdbc_user_pwd = #{jdbcUserPwd},</if>
+            <if test="hbaseZKAddress != null  and hbaseZKAddress != ''">hbase_ZK_address = #{hbaseZKAddress},</if>
+            <if test="esAddress != null  and esAddress != ''">es_Address = #{esAddress},</if>
+
+            <if test="description != null  and description != ''">description = #{description},</if>
+            <if test="updateBy != null ">update_by = #{updateBy},</if>
+            update_time=sysdate()
+        </trim>
+        where data_result_source_id = #{dataResultSourceId}
+    </update>
+
+    <delete id="deleteTDataResultSourceById" parameterType="Long">
+        delete from t_data_result_source where data_result_source_id = #{dataResultSourceId}
+    </delete>
+
+    <delete id="deleteTDataResultSourceByIds" parameterType="String">
+        delete from t_data_result_source where data_result_source_id in
+        <foreach item="dataResultSourceId" collection="array" open="(" separator="," close=")">
+            #{dataResultSourceId}
+        </foreach>
+    </delete>
+
+</mapper>
