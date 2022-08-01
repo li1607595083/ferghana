@@ -1,0 +1,8 @@
+com.skyon.connect.redis.table.RedisDynamicTableFactory
+com.skyon.connect.redis.deserializ.RedisStringFormatFactory
+org.apache.flink.streaming.connectors.kafka.table.Kafka011DynamicTableFactory
+org.apache.flink.streaming.connectors.kafka.table.Kafka010DynamicTableFactory
+com.alibaba.ververica.cdc.connectors.mysql.table.MySQLTableSourceFactory
+org.apache.flink.connector.hbase.HBaseDynamicTableFactory
+org.apache.flink.table.factories.DataGenTableSourceFactory
+org.apache.flink.connector.jdbc.table.JdbcDynamicTableFactory

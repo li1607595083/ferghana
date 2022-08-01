@@ -1,0 +1,10 @@
+RedisTest.class
+UtilData.class
+InFluxdbTest.class
+HbaseTest.class
+MySqlTest.class
+OperatorTest.class
+KafkaTest.class
+SqlFormatting.class
+OracelTest.class
+TableTest.class
