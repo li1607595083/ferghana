@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.skyon.project.system.mapper.WarningConfigMapper">
+
+    <resultMap type="WarningConfig" id="WarningConfigResult">
+        <id     property="warningId"      column="warning_id"      />
+        <result property="variablePackageId" column="variable_pack_id" />
+        <result property="variablePackageName" column="variable_pack_name" />
+        <result property="warningName"    column="warning_name"    />
+        <result property="warningNoticeType"   column="warning_notice_type"   />
+        <result property="warningState"    column="warning_state"    />
+        <result property="description"    column="description"    />
+        <result property="createBy"      column="create_by"      />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"      column="update_by"      />
+        <result property="updateTime"    column="update_time"    />
+        <result property="warningContent"    column="warning_content"    />
+        <result property="warningFrequency"   column="warning_frequency"   />
+        <result property="warningEffectTime"    column="warning_effect_time"    />
+        <result property="warningNoticeUser"    column="warning_notice_user"    />
+    </resultMap>
+
+    <resultMap id="WarningConfigListResult" type="WarningConfig">
+        <id     property="warningId"      column="warning_id"      />
+        <result property="variablePackageName" column="variable_pack_name" />
+        <result property="warningName"    column="warning_name"    />
+        <result property="warningNoticeType"   column="warning_notice_type"   />
+        <result property="warningState"    column="warning_state"    />
+        <result property="description"    column="description"    />
+        <result property="createBy"      column="create_by"      />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"      column="update_by"      />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <resultMap id="WarningConfigMapResult" type="java.util.Map">
+        <id     property="warningId"      column="warning_id"      />
+        <result property="warningNoticeType"   column="warning_notice_type"   />
+        <result property="warningState"    column="warning_state"    />
+        <result property="warningName"    column="warning_name"    />
+        <result property="variablePackageName"    column="variable_pack_name"    />
+        <result property="variablePackageJobId"    column="job_id"    />
+        <result property="warningContent"    column="warning_content"    />
+        <result property="warningFrequency"   column="warning_frequency"   />
+        <result property="warningEffectTime"    column="warning_effect_time"    />
+        <result property="warningNoticeUser"    column="warning_notice_user"    />
+    </resultMap>
+
+    <sql id="selectWarningConfigDetail">
+        select warning_id, a.variable_pack_id, warning_name, warning_notice_type, warning_state, a.description, a.create_by, a.create_time, a.update_by, a.update_time, warning_content,
+               warning_frequency, warning_effect_time, warning_notice_user, variable_pack_name
+        from `warning_config` a left join `t_variable_package_manager` b on a.variable_pack_id = b.variable_pack_id
+    </sql>
+
+    <sql id="selectWarningConfig">
+        select warning_id, warning_name, warning_notice_type, warning_state, a.description, a.create_by, a.create_time, a.update_by, a.update_time,
+               variable_pack_name
+        from `warning_config` a left join `t_variable_package_manager` b on a.variable_pack_id = b.variable_pack_id
+    </sql>
+
+    <sql id="selectWarningConfigMap">
+        select warning_id, warning_name, warning_notice_type, warning_state, warning_content,warning_frequency, warning_effect_time, warning_notice_user, b.job_id, b.variable_pack_name
+        from `warning_config` a left join `t_variable_package_manager` b on a.variable_pack_id = b.variable_pack_id
+    </sql>
+
+    <update id="runWarningConfig">
+        update warning_config set warning_state = '1' where warning_id = #{warningId}
+    </update>
+
+    <update id="stopWarningConfig">
+        update warning_config set warning_state = '0' where warning_id = #{warningId}
+    </update>
+
+    <select id="selectWarningConfigList" parameterType="WarningConfig" resultMap="WarningConfigListResult">
+        <include refid="selectWarningConfig"/>
+        <where>
+            <if test="warningName != null  and warningName != ''"> and warning_name like concat('%', #{warningName}, '%')</if>
+            <if test="variablePackageName != null  and variablePackageName != ''"> and variable_pack_name like concat('%', #{variablePackageName}, '%')</if>
+            <if test="warningState != null  and warningState != ''"> and warning_state = #{warningState} </if>
+        </where>
+        order by create_time desc
+    </select>
+
+    <select id="selectWarningConfigById" parameterType="WarningConfig" resultMap="WarningConfigResult">
+        <include refid="selectWarningConfigDetail"></include>
+        <where>
+            warning_id = #{warningId}
+        </where>
+    </select>
+
+    <select id="selectWarningConfigMapById" parameterType="WarningConfig" resultMap="WarningConfigMapResult">
+        <include refid="selectWarningConfigMap"></include>
+        <where>
+            warning_id = #{warningId}
+        </where>
+    </select>
+
+    <select id="selectWarningConfigMapList" parameterType="WarningConfig" resultMap="WarningConfigMapResult">
+        <include refid="selectWarningConfigMap"></include>
+        <where>
+            warning_state = '1'
+        </where>
+    </select>
+
+    <insert id="insertWarningConfig" parameterType="WarningConfig" useGeneratedKeys="true" keyProperty="warningId">
+        insert into warning_config
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="warningName != null  and warningName != ''">warning_name,</if>
+            <if test="variablePackageId != null  and variablePackageId != ''">variable_pack_id,</if>
+            <if test="warningContent != null  and warningContent != ''">warning_content,</if>
+            <if test="warningEffectTime != null  and warningEffectTime != ''">warning_effect_time,</if>
+            <if test="warningFrequency != null  and warningFrequency != ''">warning_frequency,</if>
+            <if test="warningNoticeType != null  and warningNoticeType != ''">warning_notice_type,</if>
+            <if test="warningNoticeUser != null  and warningNoticeUser != ''">warning_notice_user,</if>
+            <if test="description != null  and description != ''">description,</if>
+            <if test="createBy != null  and createBy != ''">create_by,</if>
+            create_time
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="warningName != null  and warningName != ''">#{warningName},</if>
+            <if test="variablePackageId != null  and variablePackageId != ''">#{variablePackageId},</if>
+            <if test="warningContent != null  and warningContent != ''">#{warningContent},</if>
+            <if test="warningEffectTime != null  and warningEffectTime != ''">#{warningEffectTime},</if>
+            <if test="warningFrequency != null  and warningFrequency != ''">#{warningFrequency},</if>
+            <if test="warningNoticeType != null  and warningNoticeType != ''">#{warningNoticeType},</if>
+            <if test="warningNoticeUser != null  and warningNoticeUser != ''">#{warningNoticeUser},</if>
+            <if test="description != null  and description != ''">#{description},</if>
+            <if test="createBy != null  and createBy != ''">#{createBy},</if>
+            sysdate()
+        </trim>
+    </insert>
+
+    <delete id="deleteWarningConfigByIds">
+        delete from warning_config where warning_id in
+        <foreach collection="array" item="warningId" open="(" separator="," close=")">
+            #{warningId}
+        </foreach>
+    </delete>
+
+    <update id="updateWarningConfig" parameterType="WarningConfig">
+        update warning_config
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="warningName != null  and warningName != ''">warning_name = #{warningName},</if>
+            <if test="variablePackageId != null  and variablePackageId != ''">variable_pack_id = #{variablePackageId},</if>
+            <if test="warningContent != null  and warningContent != ''">warning_content = #{warningContent},</if>
+            <if test="warningEffectTime != null  and warningEffectTime != ''">warning_effect_time = #{warningEffectTime},</if>
+            <if test="warningFrequency != null  and warningFrequency != ''">warning_frequency = #{warningFrequency},</if>
+            <if test="warningNoticeType != null  and warningNoticeType != ''">warning_notice_type = #{warningNoticeType},</if>
+            <if test="warningNoticeUser != null  and warningNoticeUser != ''">warning_notice_user = #{warningNoticeUser},</if>
+            <if test="description != null  and description != ''">description = #{description},</if>
+            <if test="updateBy != null  and updateBy != ''">update_by = #{updateBy},</if>
+            update_time=sysdate()
+        </trim>
+        where warning_id = #{warningId}
+    </update>
+</mapper>

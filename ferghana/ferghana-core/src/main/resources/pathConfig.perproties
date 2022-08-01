@@ -1,0 +1,66 @@
+# ----------------------------------------------------------sql启动脚本路径
+#job_submit_path = /Users/liqiang/Install/upwisdom/bin/
+#job_submit_path = /root/play/
+job_submit_path=/Users/liqiang/Install/ferghana/bin/
+# 启动脚本文件名
+job_submit_name=job_submit.sh
+# 停用脚本路径
+job_kill_path=/Users/liqiang/Install/upwisdom/bin/
+# 停用脚文件名
+job_kill_name=job_kill.sh
+# 访问flink Web
+#flink_web_address=http://192.168.4.95:8088/proxy/
+flink_web_address=http://master:8088/proxy/
+# -----------------------------------------------------------变量测试
+# zookeeper地址
+test_zookeeper_addree=/User
+# kafka地址
+test_kafka_address=master:9092
+#-------------------------------------------------------------变量测试路径配置
+# 变量启动脚本路径
+var_submit_path=/home/ferghana/install/ferghana/bin/
+# 变量启动脚本文件名
+var_submit_name=test_job_submit.sh
+# 变量停用文件路径
+var_kill_path=/home/ferghana/install/ferghana/bin/
+# 变量停用文件路径
+var_kill_name=test_job_kill.sh
+
+#-------------------------------------------------------------变量包测试配置
+#路劲
+package_test_path=/home/ferghana/install/ferghana/bin/
+# 脚本名字
+package_test_name=job_submit.sh
+# 变量包停用文件路径
+package_test_kill_path=/home/ferghana/install/ferghana/bin/
+# 偏移量
+job_read_offset=job_read_offset.sh
+# 变量包停用文件路径
+package_test_kill_name=job_kill.sh
+
+#-------------------------------------------------------------变量包启动配置
+package_start_var_dir=hdfs://master:9000/flink/savepoints/
+package_start_jobid=hdfs://master:9000/flink/checkpoints/
+
+
+
+#-------------------------------------------------------------自定义函数上传 校验集群是否重启成功  配置
+
+flink_cluster_restart_path=/home/ferghana/install/ferghana/bin/
+flink_cluster_restart_name=flink_cluster_restart.sh
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
